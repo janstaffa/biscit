@@ -1,3 +1,4 @@
 # Biscit
-![Biscit logo](/logo.gif =250)
+<img src="logo.gif" alt="Biscit logo" width="200"/>
+
 Welcome to Biscit!
