@@ -32,3 +32,6 @@
   <li>Add chat capability.</li>
   <li>Voice/Video calls, group chats,...</li>
 </ol>
+
+<h3>The story</h3>
+<p>Biscit started a year ago as a PHP/JQuery project... That failed miserably!😂 Half a year later I came back stronger with Node backend and WebSockets but I used a template engine to render the frontend which was probably the worst mistake I made as a full stack developer. I tried finishing it but my code got uglier and uglier until I eventually gave up. So now I hope I finally finish what I started a year ago. </p> 
