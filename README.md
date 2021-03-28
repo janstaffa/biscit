@@ -19,7 +19,7 @@
   <li>PostgreSQL</li>
 </ul>
 
-<p>Frontend:</p>
+<b>Frontend:</b>
 <ul>
   <li>React</li>
   <li>Next</li>
