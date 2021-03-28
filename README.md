@@ -2,4 +2,4 @@
   <img src="logo.gif" alt="Biscit logo" width="200"/>
 </p>
 <hr />
-## Welcome to Biscit!
+<h2>Welcome to Biscit!</h2>
