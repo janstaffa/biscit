@@ -10,8 +10,8 @@
 </ul>
 
 <h3>The technology</h3>
-I'm planning to use these technologies for the development of Biscit:
-Backend:
+<b>I'm planning to use these technologies for the development of Biscit:</b>
+<p>Backend:</p>
 <ul>
   <li>Node.js</li>
   <li>GraphQL</li>
@@ -20,7 +20,7 @@ Backend:
   <li>PostgreSQL</li>
 </ul>
 
-Frontend:
+<p>Frontend:</p>
 <ul>
   <li>React</li>
   <li>Next</li>
