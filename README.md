@@ -10,7 +10,7 @@
 </ul>
 
 <h3>The technologies</h3>
-**Backend:**
+<b>Backend:</b>
 <ul>
   <li>Node.js</li>
   <li>GraphQL</li>
