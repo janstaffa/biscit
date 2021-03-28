@@ -8,3 +8,20 @@
   <li>The development will start 1. April 2021.</li>
   <li>The goal is to create a functional 'Discord' like chat application.</li>
 </ul>
+
+<h3>The technology</h3>
+I'm planning to use these technologies for the development of Biscit:
+Backend:
+<ul>
+  <li>Node.js</li>
+  <li>GraphQL</li>
+  <li>Socket.io</li>
+  <li>WebRTC</li>
+  <li>PostgreSQL</li>
+</ul>
+
+Frontend:
+<ul>
+  <li>React</li>
+  <li>Next</li>
+</ul>
