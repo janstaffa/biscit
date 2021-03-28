@@ -31,6 +31,8 @@
   <li>Start the React frontend. (login/register page, friend/thread ui, chat window)</li>
   <li>Add chat capability.</li>
   <li>Voice/Video calls, group chats,...</li>
+  <li>Electron wrapper for desktop app.</li>
+  <li>React-native app for mobile.</li>
 </ol>
 
 <h3>The story</h3>
