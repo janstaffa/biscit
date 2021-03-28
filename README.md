@@ -1,3 +1,3 @@
 # Biscit
-![Biscit logo](/logo.gif =100x20)
+![Biscit logo](/logo.gif =250x)
 Welcome to Biscit!
