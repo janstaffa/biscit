@@ -1,1 +1,2 @@
-# biscit
+# Biscit
+Welcome to Biscit!
