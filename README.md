@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.gif" alt="Biscit logo" width="200"/>
+  <img src="logo.gif" alt="Biscit logo" width="300"/>
 </p>
 <hr />
 <h3>What is Biscit</h3>
