@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.gif" alt="Biscit logo" width="300"/>
+  <img src="./assets/logo.gif" alt="Biscit logo" width="300"/>
 </p>
 <hr />
 <h3>What is Biscit</h3>
@@ -20,6 +20,7 @@
 </ul>
 
 <b>Frontend:</b>
+
 <ul>
   <li>React</li>
   <li>Next</li>
@@ -36,4 +37,4 @@
 </ol>
 
 <h3>The story</h3>
-<p>Biscit started a year ago as a PHP/JQuery project... That failed miserably!😂 Half a year later I came back stronger with Node backend and WebSockets but I used a template engine to render the frontend which was probably the worst mistake I made as a full stack developer. I tried finishing it but my code got uglier and uglier until I eventually gave up. So now I hope I finally finish what I started a year ago. </p> 
+<p>Biscit started a year ago as a PHP/JQuery project... That failed miserably!😂 Half a year later I came back stronger with Node backend and WebSockets but I used a template engine to render the frontend which was probably the worst mistake I made as a full stack developer. I tried finishing it but my code got uglier and uglier until I eventually gave up. So now I hope I finally finish what I started a year ago. </p>
