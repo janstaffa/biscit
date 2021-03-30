@@ -1,0 +1,14 @@
+{
+  "name": "biscit",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/janstaffa/biscit.git"
+  },
+  "author": "janstaffa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/janstaffa/biscit/issues"
+  },
+  "homepage": "https://github.com/janstaffa/biscit#readme"
+}
