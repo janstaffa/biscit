@@ -6,6 +6,7 @@ import { createConnection, getConnection } from 'typeorm';
 import { TypeormStore } from 'typeorm-store';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Session } from './entities/Session';
+import { User } from './entities/User';
 
 (async () => {
   const conn = await createConnection({
@@ -24,7 +25,6 @@ import { Session } from './entities/Session';
     res.send('Hey from the server!');
   });
   const repository = getConnection().getRepository(Session);
-
   app.use(
     session({
       name: COOKIE_NAME,
@@ -45,4 +45,15 @@ import { Session } from './entities/Session';
   app.listen(port, () => {
     console.log(`server running on port ${port}`);
   });
+
+  await User.delete({});
+  console.log(
+    '1111111111111111111111111111111',
+    await User.create({
+      username: 'John',
+      email: 'john@babel.com',
+      password: 'hhhhh',
+    }).save()
+  );
+  console.log('2222222222222', await User.find({}));
 })().catch((err) => console.error(err));
