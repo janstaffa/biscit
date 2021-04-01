@@ -1,12 +1,16 @@
 require('dotenv-safe').config();
+import { ApolloServer } from 'apollo-server-express';
 import express from 'express';
 import session from 'express-session';
 import path from 'path';
+import 'reflect-metadata';
+import { buildSchema } from 'type-graphql';
 import { createConnection, getConnection } from 'typeorm';
 import { TypeormStore } from 'typeorm-store';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Session } from './entities/Session';
-import { User } from './entities/User';
+import { UserResolver } from './resolvers/user';
+import { ContextType } from './types';
 
 (async () => {
   const conn = await createConnection({
@@ -28,7 +32,8 @@ import { User } from './entities/User';
   app.use(
     session({
       name: COOKIE_NAME,
-      secret: process.env.SESSION_SECRET,
+      secret:
+        process.env.SESSION_SECRET || 'dsa41d65sads6ads6a1ds16dsa16d1s6ad',
       resave: false,
       saveUninitialized: false,
       store: new TypeormStore({ repository }),
@@ -41,19 +46,24 @@ import { User } from './entities/User';
       rolling: true,
     })
   );
-  const port = process.env.PORT || 4000;
+
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [UserResolver],
+      validate: false,
+    }),
+    context: ({ req, res }): ContextType => ({
+      req,
+      res,
+    }),
+    playground: true,
+    introspection: true,
+  });
+
+  apolloServer.applyMiddleware({ app, cors: false });
+
+  const port = process.env.PORT || 9000;
   app.listen(port, () => {
     console.log(`server running on port ${port}`);
   });
-
-  await User.delete({});
-  console.log(
-    '1111111111111111111111111111111',
-    await User.create({
-      username: 'John',
-      email: 'john@babel.com',
-      password: 'hhhhh',
-    }).save()
-  );
-  console.log('2222222222222', await User.find({}));
 })().catch((err) => console.error(err));
