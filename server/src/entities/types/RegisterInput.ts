@@ -13,6 +13,7 @@ export class RegisterInput {
   @Field()
   @IsEmail()
   @IsUnique(User)
+  @MaxLength(255)
   email: string;
 
   @Field()

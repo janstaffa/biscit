@@ -39,8 +39,8 @@ import { ContextType } from './types';
       saveUninitialized: false,
       store: new TypeormStore({ repository }),
       cookie: {
-        maxAge: 1000 * 3600 * 24,
-        httpOnly: true,
+        maxAge: 1000 * 3600 * 24 * 7,
+        httpOnly: false,
         secure: __prod__,
         sameSite: 'lax',
       },

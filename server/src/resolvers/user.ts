@@ -1,4 +1,6 @@
 import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql';
+import { EMAIL_REGEX } from '../constants';
+import { LoginInput } from '../entities/types/LoginInput';
 import { RegisterInput } from '../entities/types/RegisterInput';
 import { User } from '../entities/User';
 import { ContextType } from '../types';
@@ -13,31 +15,35 @@ export class UserResolver {
   @Mutation(() => User)
   async UserRegister(
     @Ctx() { req, res }: ContextType,
-    @Arg('options') options: RegisterInput
+    @Arg('options') { username, email, password }: RegisterInput
   ): Promise<User> {
-    const user = User.create({
-      username: options.username,
-      email: options.email,
-      password: options.password,
-    });
-    await user.save();
+    const user = await User.create({
+      username,
+      email,
+      password,
+    }).save();
 
-    req.session.userId = user.id!;
+    console.log('uid: ', user.id);
+    console.log('cookie: ', req.session);
+    req.session.userId = user.id;
     return user;
   }
 
-  @Mutation(() => User)
+  @Mutation(() => Boolean)
   async UserLogin(
     @Ctx() { req, res }: ContextType,
-    @Arg('options') options: RegisterInput
-  ): Promise<User> {
-    const user = User.create({
-      username: options.username,
-      email: options.email,
-      password: options.password,
-    });
-    await user.save();
+    @Arg('options') { usernameOrEmail, password }: LoginInput
+  ): Promise<boolean> {
+    let field = 'username';
+    if (EMAIL_REGEX.test(usernameOrEmail)) field = 'email';
 
-    return user;
+    const user = await User.findOne({ where: { [field]: usernameOrEmail } });
+
+    if (user && user.password === password) {
+      req.session.userId = user.id;
+      return true;
+    }
+
+    return false;
   }
 }
