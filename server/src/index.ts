@@ -1,5 +1,6 @@
 require('dotenv-safe').config();
 import { ApolloServer } from 'apollo-server-express';
+import { ValidationError } from 'class-validator';
 import express from 'express';
 import session from 'express-session';
 import path from 'path';
@@ -50,7 +51,7 @@ import { ContextType } from './types';
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
       resolvers: [UserResolver],
-      validate: false,
+      validate: true,
     }),
     context: ({ req, res }): ContextType => ({
       req,
@@ -58,6 +59,27 @@ import { ContextType } from './types';
     }),
     playground: true,
     introspection: true,
+    formatError: (error) => {
+      if (error.message === 'Argument Validation Error') {
+        return {
+          message: error.message,
+          details: error.extensions?.exception.validationErrors.map(
+            (err: ValidationError) => {
+              return {
+                field: err.property,
+                value: err.value,
+                constraints: err.constraints
+                  ? Object.entries(err.constraints).map((e) => ({
+                      [e[0]]: e[1],
+                    }))
+                  : null,
+              };
+            }
+          ),
+        };
+      }
+      return error;
+    },
   });
 
   apolloServer.applyMiddleware({ app, cors: false });

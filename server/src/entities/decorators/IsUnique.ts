@@ -16,8 +16,6 @@ export class IsUniqueConstraint implements ValidatorConstraintInterface {
     const property = args.property;
     const [repository] = args.constraints;
 
-    console.log('repository', repository);
-    console.log('propertyName', property);
     const response = await getRepository(repository)
       .createQueryBuilder('table')
       .where(`table.${property} = :value`, { value: value })
