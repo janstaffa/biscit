@@ -1,11 +1,17 @@
 require('dotenv-safe').config();
+import { ApolloServer } from 'apollo-server-express';
+import { ValidationError } from 'class-validator';
 import express from 'express';
 import session from 'express-session';
 import path from 'path';
+import 'reflect-metadata';
+import { buildSchema } from 'type-graphql';
 import { createConnection, getConnection } from 'typeorm';
 import { TypeormStore } from 'typeorm-store';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Session } from './entities/Session';
+import { UserResolver } from './resolvers/user';
+import { ContextType } from './types';
 
 (async () => {
   const conn = await createConnection({
@@ -24,11 +30,11 @@ import { Session } from './entities/Session';
     res.send('Hey from the server!');
   });
   const repository = getConnection().getRepository(Session);
-
   app.use(
     session({
       name: COOKIE_NAME,
-      secret: process.env.SESSION_SECRET,
+      secret:
+        process.env.SESSION_SECRET || 'dsa41d65sads6ads6a1ds16dsa16d1s6ad',
       resave: false,
       saveUninitialized: false,
       store: new TypeormStore({ repository }),
@@ -41,7 +47,44 @@ import { Session } from './entities/Session';
       rolling: true,
     })
   );
-  const port = process.env.PORT || 4000;
+
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [UserResolver],
+      validate: true,
+    }),
+    context: ({ req, res }): ContextType => ({
+      req,
+      res,
+    }),
+    playground: true,
+    introspection: true,
+    formatError: (error) => {
+      if (error.message === 'Argument Validation Error') {
+        return {
+          message: error.message,
+          details: error.extensions?.exception.validationErrors.map(
+            (err: ValidationError) => {
+              return {
+                field: err.property,
+                value: err.value,
+                constraints: err.constraints
+                  ? Object.entries(err.constraints).map((e) => ({
+                      [e[0]]: e[1],
+                    }))
+                  : null,
+              };
+            }
+          ),
+        };
+      }
+      return error;
+    },
+  });
+
+  apolloServer.applyMiddleware({ app, cors: false });
+
+  const port = process.env.PORT || 9000;
   app.listen(port, () => {
     console.log(`server running on port ${port}`);
   });
