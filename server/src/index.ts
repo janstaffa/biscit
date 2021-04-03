@@ -39,8 +39,8 @@ import { ContextType } from './types';
       saveUninitialized: false,
       store: new TypeormStore({ repository }),
       cookie: {
-        maxAge: 1000 * 3600 * 24,
-        httpOnly: true,
+        maxAge: 1000 * 3600 * 24 * 7,
+        httpOnly: false,
         secure: __prod__,
         sameSite: 'lax',
       },
@@ -60,25 +60,32 @@ import { ContextType } from './types';
     playground: true,
     introspection: true,
     formatError: (error) => {
-      if (error.message === 'Argument Validation Error') {
-        return {
-          message: error.message,
-          details: error.extensions?.exception.validationErrors.map(
-            (err: ValidationError) => {
-              return {
-                field: err.property,
-                value: err.value,
-                constraints: err.constraints
-                  ? Object.entries(err.constraints).map((e) => ({
-                      [e[0]]: e[1],
-                    }))
-                  : null,
-              };
-            }
-          ),
-        };
+      switch (error.message) {
+        case 'Argument Validation Error':
+          return {
+            message: error.message,
+            details: error.extensions?.exception.validationErrors.map(
+              (err: ValidationError) => {
+                return {
+                  field: err.property,
+                  value: err.value,
+                  constraints: err.constraints
+                    ? Object.entries(err.constraints).map((e) => ({
+                        [e[0]]: e[1],
+                      }))
+                    : null,
+                };
+              }
+            ),
+          };
+        case 'Authentication Error':
+          return {
+            message: error.message,
+            details: error.extensions?.exception.details,
+          };
+        default:
+          return error;
       }
-      return error;
     },
   });
 
@@ -86,6 +93,6 @@ import { ContextType } from './types';
 
   const port = process.env.PORT || 9000;
   app.listen(port, () => {
-    console.log(`server running on port ${port}`);
+    console.log(`🚀 server running on port ${port}`);
   });
 })().catch((err) => console.error(err));

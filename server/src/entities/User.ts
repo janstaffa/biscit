@@ -19,9 +19,21 @@ export class User extends BaseEntity {
   @Field(() => String)
   @PrimaryColumn()
   id!: string;
+
   @BeforeInsert()
-  generateId() {
-    this.id = shortid.generate();
+  async generateId() {
+    const getId = async (resolve: (id: string) => void): Promise<any> => {
+      const id: string = shortid.generate();
+      const check = await User.findOne({ where: { id } });
+      if (check) return getId(resolve);
+      resolve(id);
+    };
+
+    await new Promise<string>((resolve: (id: string) => void) => {
+      getId(resolve);
+    }).then((id) => {
+      this.id = id;
+    });
   }
 
   //username field (validation: length)
