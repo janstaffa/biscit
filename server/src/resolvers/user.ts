@@ -11,7 +11,23 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  async register(
+  async UserRegister(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: RegisterInput
+  ): Promise<User> {
+    const user = User.create({
+      username: options.username,
+      email: options.email,
+      password: options.password,
+    });
+    await user.save();
+
+    req.session.userId = user.id!;
+    return user;
+  }
+
+  @Mutation(() => User)
+  async UserLogin(
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: RegisterInput
   ): Promise<User> {
