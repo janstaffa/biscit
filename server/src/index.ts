@@ -78,11 +78,6 @@ import { ContextType } from './types';
               }
             ),
           };
-        case 'Authentication Error':
-          return {
-            message: error.message,
-            details: error.extensions?.exception.details,
-          };
         default:
           return error;
       }
