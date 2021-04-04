@@ -2,12 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "module": "esnext",
-    "lib": [
-      "dom",
-      "es6",
-      "es2017",
-      "esnext.asynciterable"
-    ],
+    "lib": ["dom", "es6", "es2017", "esnext.asynciterable"],
     "jsx": "preserve",
     "sourceMap": true,
     "outDir": "./dist",
@@ -34,16 +29,7 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "exclude": [
-    "node_modules"
-  ],
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "typeRoots": [
-    "./src/typings",
-    "./node_modules/@types"
-  ]
+  "exclude": ["node_modules"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "declaration.d.ts"],
+  "typeRoots": ["./src/typings", "./node_modules/@types"]
 }

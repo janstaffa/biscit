@@ -11,10 +11,6 @@
     "url": "https://github.com/janstaffa/biscit/issues"
   },
   "homepage": "https://github.com/janstaffa/biscit#readme",
-  "dependencies": {
-    "bcrypt": "^5.0.1"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^3.0.0"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
