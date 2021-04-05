@@ -1,5 +1,5 @@
-import '../styles/globals.scss';
-
+import '../styles/fonts.css';
+import '../styles/globals.css';
 interface appProps {
   Component: React.ElementType;
   pageProps: any;
