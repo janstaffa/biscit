@@ -1,21 +1,12 @@
 import { GraphQLClient } from 'graphql-request';
 import { useQuery, UseQueryOptions } from 'react-query';
 export type Maybe<T> = T | null;
-export type Exact<T extends { [key: string]: unknown }> = {
-  [K in keyof T]: T[K];
-};
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> &
-  { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> &
-  { [SubKey in K]: Maybe<T[SubKey]> };
+export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 
-function fetcher<TData, TVariables>(
-  client: GraphQLClient,
-  query: string,
-  variables?: TVariables
-) {
-  return async (): Promise<TData> =>
-    client.request<TData, TVariables>(query, variables);
+function fetcher<TData, TVariables>(client: GraphQLClient, query: string, variables?: TVariables) {
+  return async (): Promise<TData> => client.request<TData, TVariables>(query, variables);
 }
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
@@ -38,9 +29,11 @@ export type Mutation = {
   UserLogout: Scalars['Boolean'];
 };
 
+
 export type MutationUserRegisterArgs = {
   options: RegisterInput;
 };
+
 
 export type MutationUserLoginArgs = {
   options: LoginInput;
@@ -69,16 +62,32 @@ export type User = {
   updatedAt: Scalars['String'];
 };
 
-export type UserSnippetFragment = { __typename?: 'User' } & Pick<
-  User,
-  'id' | 'username' | 'email' | 'status' | 'bio'
->;
+export type UserSnippetFragment = (
+  { __typename?: 'User' }
+  & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
+);
 
-export type MeQueryVariables = Exact<{ [key: string]: never }>;
+export type GetAllUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
-export type MeQuery = { __typename?: 'Query' } & {
-  me?: Maybe<{ __typename?: 'User' } & UserSnippetFragment>;
-};
+
+export type GetAllUsersQuery = (
+  { __typename?: 'Query' }
+  & { getAllUsers: Array<(
+    { __typename?: 'User' }
+    & UserSnippetFragment
+  )> }
+);
+
+export type MeQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MeQuery = (
+  { __typename?: 'Query' }
+  & { me?: Maybe<(
+    { __typename?: 'User' }
+    & UserSnippetFragment
+  )> }
+);
 
 export const UserSnippetFragmentDoc = `
     fragment userSnippet on User {
@@ -89,6 +98,26 @@ export const UserSnippetFragmentDoc = `
   bio
 }
     `;
+export const GetAllUsersDocument = `
+    query GetAllUsers {
+  getAllUsers {
+    ...userSnippet
+  }
+}
+    ${UserSnippetFragmentDoc}`;
+export const useGetAllUsersQuery = <
+      TData = GetAllUsersQuery,
+      TError = unknown
+    >(
+      client: GraphQLClient, 
+      variables?: GetAllUsersQueryVariables, 
+      options?: UseQueryOptions<GetAllUsersQuery, TError, TData>
+    ) => 
+    useQuery<GetAllUsersQuery, TError, TData>(
+      ['GetAllUsers', variables],
+      fetcher<GetAllUsersQuery, GetAllUsersQueryVariables>(client, GetAllUsersDocument, variables),
+      options
+    );
 export const MeDocument = `
     query Me {
   me {
@@ -96,13 +125,16 @@ export const MeDocument = `
   }
 }
     ${UserSnippetFragmentDoc}`;
-export const useMeQuery = <TData = MeQuery, TError = unknown>(
-  client: GraphQLClient,
-  variables?: MeQueryVariables,
-  options?: UseQueryOptions<MeQuery, TError, TData>
-) =>
-  useQuery<MeQuery, TError, TData>(
-    ['Me', variables],
-    fetcher<MeQuery, MeQueryVariables>(client, MeDocument, variables),
-    options
-  );
+export const useMeQuery = <
+      TData = MeQuery,
+      TError = unknown
+    >(
+      client: GraphQLClient, 
+      variables?: MeQueryVariables, 
+      options?: UseQueryOptions<MeQuery, TError, TData>
+    ) => 
+    useQuery<MeQuery, TError, TData>(
+      ['Me', variables],
+      fetcher<MeQuery, MeQueryVariables>(client, MeDocument, variables),
+      options
+    );

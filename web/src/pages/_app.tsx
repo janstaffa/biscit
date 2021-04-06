@@ -1,3 +1,4 @@
+require('dotenv-safe').config();
 import { QueryClient, QueryClientProvider } from 'react-query';
 import '../styles/fonts.css';
 import '../styles/globals.css';
