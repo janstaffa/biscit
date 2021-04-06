@@ -9,13 +9,13 @@ export interface LandingPageProps {}
 const LandingPage: React.FC<LandingPageProps> = () => {
   return (
     <>
-      <div className="w-screen h-screen bg-dark-300">
+      <div className="w-screen h-screen bg-dark-300 bg-landing">
         <Head>
           <title>Biscit | Home</title>
           <link rel="icon" href="/logo_browser.gif" />
         </Head>
         <HomeNav />
-        <div className="w-full h-auto bg-dark-300 flex flex-row justify-center items-center mt-10">
+        <div className="w-full h-auto bg-transparent flex flex-row justify-center items-center mt-10">
           <div className="w-full h-80">
             <p className="text-light text-3xl font-opensans font-bold text-center">
               Welcome to Biscit
@@ -24,7 +24,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
               the open source chat
             </p>
             <div className="w-full flex flex-row flex-wrap justify-center mt-10">
-              <button className="bg-accent hover:bg-accent-hover hover:shadow-md hover:text-dark-300 duration-75 px-5 py-2 rounded-full font-bold m-2 flex flex-row items-center">
+              <button className="bg-accent hover:bg-accent-hover hover:shadow-md hover:text-dark-300 duration-75 px-5 py-2 rounded-full font-bold m-2 flex flex-row items-center cursor-not-allowed">
                 <HiOutlineDownload className="text-2xl mr-2" />
                 Download the app
               </button>
@@ -33,9 +33,15 @@ const LandingPage: React.FC<LandingPageProps> = () => {
               </button>
             </div>
             <div className="absolute bottom-20 w-full flex">
-              <a href="#about" className="mx-auto">
-                <FiArrowDownCircle className="text-7xl text-accent hover:text-accent-hover" />
-              </a>
+              <div className="mx-auto">
+                <FiArrowDownCircle
+                  className="text-7xl text-accent hover:text-accent-hover cursor-pointer"
+                  onClick={() => {
+                    window &&
+                      document.querySelector('#about')!.scrollIntoView();
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
