@@ -18,6 +18,7 @@ button:focus {
 
 body {
   overflow-x: hidden;
+  background-color: #0e1116;
 }
 
 ::-webkit-scrollbar {

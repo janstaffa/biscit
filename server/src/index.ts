@@ -1,6 +1,7 @@
 require('dotenv-safe').config();
 import { ApolloServer } from 'apollo-server-express';
 import { ValidationError } from 'class-validator';
+import cors from 'cors';
 import express from 'express';
 import session from 'express-session';
 import path from 'path';
@@ -29,6 +30,14 @@ import { ContextType } from './types';
   app.get('/', (_, res) => {
     res.send('Hey from the server!');
   });
+
+  app.use(
+    cors({
+      origin: 'http://localhost:3000',
+      credentials: true,
+    })
+  );
+
   const repository = getConnection().getRepository(Session);
   app.use(
     session({

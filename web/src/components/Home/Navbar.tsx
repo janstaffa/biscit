@@ -1,11 +1,19 @@
 export interface HomeNavProps {}
+import Link from 'next/link';
 import { FaGithub } from 'react-icons/fa';
 
 const HomeNav: React.FC<HomeNavProps> = () => {
   return (
     <nav className="flex flex-row items-center py-5 px-7 bg-transparent">
       <div className="flex-grow">
-        <img src="/logo.gif" alt="Biscit logo" width="130px" />
+        <Link href="/">
+          <img
+            src="/logo.gif"
+            alt="Biscit logo"
+            width="130px"
+            className="cursor-pointer"
+          />
+        </Link>
       </div>
       <div className="flex flex-row items-center">
         <a
