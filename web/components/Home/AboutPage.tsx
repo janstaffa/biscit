@@ -2,25 +2,39 @@ export interface AboutPageProps {}
 
 const AboutPage: React.FC<AboutPageProps> = () => {
   return (
-    <div className="w-screen h-auto bg-dark-200">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 100">
-        <path
-          fill="#0e1116"
-          fill-opacity="1"
-          d="M0,64L80,69.3C160,75,320,85,480,85.3C640,85,800,75,960,64C1120,53,1280,43,1360,37.3L1440,32L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"
-        ></path>
-      </svg>
-      <div className="w-1/2 h-80 mx-auto rounded-3xl p-10 bg-dark-300">
-        <p
-          className="text-light text-3xl font-opensans font-bold text-center mb-2"
-          id="about"
-        >
-          About Biscit
-        </p>
-        <p className="text-light text-xl font-opensans text-center">
-          Biscit is a open source project. It is a chat application with a lot
-          of inspiration from Discord.
-        </p>
+    <div className="w-screen h-auto bg-dark-200 py-24" id="about">
+      <div className="w-full h-auto py-10 flex flex-row justify-center flex-wrap sm:flex-nowrap">
+        <div className="mx-8 mb-8">
+          <img src="/chat_image.svg" className="w-96" />
+        </div>
+        <div className="mx-8 mb-8">
+          <p className="text-light text-3xl font-opensans font-bold text-left mb-2">
+            About Biscit
+          </p>
+          <div className="text-light text-xl w-full max-w-xl break-words">
+            Biscit is an open source project. It is a chat application with a
+            lot of inspiration from Discord. The development has started back in
+            2020 and went through three major iterations.
+          </div>
+        </div>
+      </div>
+      <div className="w-full h-auto py-10 mt-32 flex flex-row justify-center flex-wrap-reverse sm:flex-nowrap">
+        <div className="mx-8 mb-8">
+          <p
+            className="text-light text-3xl font-opensans font-bold text-left mb-2"
+            id="about"
+          >
+            Availability
+          </p>
+          <div className="text-light text-xl w-full max-w-xl break-words">
+            Currently Biscit is available just as a web app, but in the near
+            future we are planning to introduce a desktop as well as a mobile
+            app.
+          </div>
+        </div>
+        <div className="mx-8 mb-8">
+          <img src="/pwa_image.svg" className="w-96" />
+        </div>
       </div>
     </div>
   );

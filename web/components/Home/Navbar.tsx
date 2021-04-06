@@ -3,7 +3,7 @@ import { FaGithub } from 'react-icons/fa';
 
 const HomeNav: React.FC<HomeNavProps> = () => {
   return (
-    <nav className="flex flex-row items-center py-5 px-7 bg-dark-300">
+    <nav className="flex flex-row items-center py-5 px-7 bg-transparent">
       <div className="flex-grow">
         <img src="/logo.gif" alt="Biscit logo" width="130px" />
       </div>
