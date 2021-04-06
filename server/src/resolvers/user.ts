@@ -20,6 +20,14 @@ export class UserResolver {
     return await User.find({});
   }
 
+  @Query(() => User, { nullable: true })
+  async me(@Ctx() { req, res }: ContextType): Promise<User | undefined> {
+    const userId = req.session.userId;
+    if (!userId) return undefined;
+
+    return await User.findOne({ where: { id: userId } });
+  }
+
   @Mutation(() => User)
   async UserRegister(
     @Ctx() { req, res }: ContextType,

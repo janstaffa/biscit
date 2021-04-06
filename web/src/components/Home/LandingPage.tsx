@@ -1,19 +1,14 @@
-import Head from 'next/head';
+import Link from 'next/link';
 import React from 'react';
 import { FiArrowDownCircle } from 'react-icons/fi';
 import { HiOutlineDownload } from 'react-icons/hi';
 import HomeNav from './Navbar';
-
 export interface LandingPageProps {}
 
 const LandingPage: React.FC<LandingPageProps> = () => {
   return (
     <>
-      <div className="w-screen h-screen bg-dark-300 bg-landing">
-        <Head>
-          <title>Biscit | Home</title>
-          <link rel="icon" href="/logo_browser.gif" />
-        </Head>
+      <div className="w-screen h-screen">
         <HomeNav />
         <div className="w-full h-auto bg-transparent flex flex-row justify-center items-center mt-10">
           <div className="w-full h-80">
@@ -28,9 +23,11 @@ const LandingPage: React.FC<LandingPageProps> = () => {
                 <HiOutlineDownload className="text-2xl mr-2" />
                 Download the app
               </button>
-              <button className="border-2 border-accent bg-dark-300 text-accent hover:border-accent-hover hover:text-accent-hover hover:bg-dark-200 hover:shadow-md px-5 duration-75 py-2 rounded-full font-bold m-2">
-                Open in browser
-              </button>
+              <Link href="/login">
+                <a className="border-2 border-accent bg-dark-300 text-accent hover:border-accent-hover hover:text-accent-hover hover:bg-dark-200 hover:shadow-md px-5 duration-75 py-2 rounded-full font-bold m-2">
+                  Open in browser
+                </a>
+              </Link>
             </div>
             <div className="absolute bottom-20 w-full flex">
               <div className="mx-auto">
