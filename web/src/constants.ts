@@ -1,4 +1,2 @@
 export const __prod__ = process.env.NODE_ENV === 'production';
-export const gqlEndpoint = __prod__
-  ? process.env.GRAPHQL_API_URL
-  : process.env.GRAPHQL_API_DEV_URL;
+export const gqlEndpoint = __prod__ ? '' : 'http://localhost:9000/graphql';

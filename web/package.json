@@ -6,12 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "gen": "graphql-codegen --config codegen.yml",
-    "gen-env": "npx gen-env-types .env -o src/types/env.d.ts -e ."
+    "gen": "graphql-codegen --config codegen.yml"
   },
   "dependencies": {
     "@types/yup": "^0.29.11",
-    "dotenv-safe": "^8.2.0",
+    "dotenv": "^8.2.0",
     "formik": "^2.2.6",
     "graphql": "^15.5.0",
     "graphql-request": "^3.4.0",
