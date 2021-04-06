@@ -3,12 +3,14 @@ import React from 'react';
 import AboutPage from '../components/Home/AboutPage';
 import Footer from '../components/Home/Footer';
 import LandingPage from '../components/Home/LandingPage';
-import { useMeQuery } from '../generated/graphql';
+import { useGetAllUsersQuery } from '../generated/graphql';
 import { graphQLClient } from '../utils/createGQLClient';
 
 const Home: React.FC = () => {
-  const { data } = useMeQuery(graphQLClient);
+  // const { data } = useMeQuery(graphQLClient);
+  const { data } = useGetAllUsersQuery(graphQLClient);
   if (data) console.log(data);
+
   return (
     <>
       <Head>
