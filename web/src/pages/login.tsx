@@ -1,11 +1,12 @@
 import { Form, Formik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
-import React from 'react';
+import React, { useState } from 'react';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
+import { useLoginMutation } from '../generated/graphql';
 
 const LoginSchema = yup.object().shape({
   usernameOrEmail: yup.string().required('username or email is required'),
@@ -13,6 +14,18 @@ const LoginSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
+  const [formErrors, setFormErrors] = useState<{
+    usernameOrEmail: string;
+    password: string;
+  }>();
+  const { mutate, error } = useLoginMutation({
+    onSuccess: (data) => console.log(data),
+    onError: (err) => {
+      console.log(err);
+      // const formatedErr = JSON.parse(err);
+      // console.log(formatedErr);
+    },
+  });
   return (
     <>
       <Head>
@@ -28,8 +41,8 @@ const Login: React.FC = () => {
               initialValues={{ usernameOrEmail: '', password: '' }}
               validationSchema={LoginSchema}
               validateOnBlur={false}
-              onSubmit={(values, { setSubmitting, setErrors }) => {
-                alert(JSON.stringify(values, null, 2));
+              onSubmit={async (values, { setSubmitting, setErrors }) => {
+                mutate({ options: values });
                 setSubmitting(false);
               }}
             >
@@ -51,9 +64,9 @@ const Login: React.FC = () => {
                   />
                   <div className="text-right text-light">
                     Don't have an account?{' '}
-                    <a className="text-accent hover:text-accent-hover hover:underline">
+                    <span className="text-accent hover:text-accent-hover hover:underline">
                       <Link href="/register">register</Link>
-                    </a>
+                    </span>
                   </div>
                   <SubmitButton disabled={isSubmitting}>Login</SubmitButton>
                 </Form>

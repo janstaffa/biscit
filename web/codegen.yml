@@ -8,7 +8,9 @@ generates:
       - 'typescript-operations'
       - 'typescript-react-query'
     config:
-      fetcher: 'graphql-request'
+      fetcher:
+        func: '../utils/useGQLRequest#useGQLRequest'
+        isReactHook: true
   ./graphql.schema.json:
     plugins:
       - 'introspection'
