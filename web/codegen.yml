@@ -9,7 +9,7 @@ generates:
       - 'typescript-react-query'
     config:
       fetcher:
-        func: '../utils/useGQLFetch#useGQLFetch'
+        func: '../utils/useGQLRequest#useGQLRequest'
         isReactHook: true
   ./graphql.schema.json:
     plugins:

@@ -1,4 +1,3 @@
-import { IsEmail, Length, MaxLength } from 'class-validator';
 import shortid from 'shortid';
 import { Field, ObjectType } from 'type-graphql';
 import {
@@ -10,7 +9,6 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { IsUnique } from './decorators/IsUnique';
 
 @ObjectType()
 @Entity()
@@ -36,23 +34,18 @@ export class User extends BaseEntity {
     });
   }
 
-  //username field (validation: length)
+  //username field
   @Field(() => String)
   @Column({ unique: true })
-  @Length(1, 255)
-  @IsUnique(User)
   username!: string;
 
-  //username field (validation: email)
+  //username field
   @Field(() => String)
   @Column({ unique: true })
-  @IsEmail()
-  @IsUnique(User)
   email!: string;
 
-  //password field (validation: length)
+  //password field
   @Column()
-  @MaxLength(255)
   password!: string;
 
   //status field

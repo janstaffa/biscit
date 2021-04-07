@@ -1,6 +1,13 @@
+import { setLogger } from 'react-query';
 import { graphqlClient } from './createGQLClient';
 
-export const useGQLFetch = <TData, TVariables>(
+setLogger({
+  log: () => {},
+  warn: () => {},
+  error: () => {},
+});
+
+export const useGQLRequest = <TData, TVariables>(
   query: string
 ): (() => Promise<TData>) => {
   return async (variables?: TVariables): Promise<TData> =>

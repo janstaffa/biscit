@@ -12,7 +12,7 @@ const RegisterSchema = yup.object().shape({
   email: yup
     .string()
     .required('email is required')
-    .email('this imail is invalid'),
+    .email('this email is invalid'),
   password: yup
     .string()
     .required('password is required')

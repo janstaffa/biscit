@@ -1,5 +1,10 @@
-import { useQuery, UseQueryOptions } from 'react-query';
-import { useGQLFetch } from '../utils/useGQLFetch';
+import {
+  useMutation,
+  UseMutationOptions,
+  useQuery,
+  UseQueryOptions,
+} from 'react-query';
+import { useGQLRequest } from '../utils/useGQLRequest';
 export type Maybe<T> = T | null;
 export type Exact<T extends { [key: string]: unknown }> = {
   [K in keyof T]: T[K];
@@ -65,6 +70,15 @@ export type UserSnippetFragment = { __typename?: 'User' } & Pick<
   'id' | 'username' | 'email' | 'status' | 'bio'
 >;
 
+export type LoginMutationVariables = Exact<{
+  options: LoginInput;
+}>;
+
+export type LoginMutation = { __typename?: 'Mutation' } & Pick<
+  Mutation,
+  'UserLogin'
+>;
+
 export type GetAllUsersQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetAllUsersQuery = { __typename?: 'Query' } & {
@@ -86,6 +100,23 @@ export const UserSnippetFragmentDoc = `
   bio
 }
     `;
+export const LoginDocument = `
+    mutation Login($options: LoginInput!) {
+  UserLogin(options: $options)
+}
+    `;
+export const useLoginMutation = <TError = unknown, TContext = unknown>(
+  options?: UseMutationOptions<
+    LoginMutation,
+    TError,
+    LoginMutationVariables,
+    TContext
+  >
+) =>
+  useMutation<LoginMutation, TError, LoginMutationVariables, TContext>(
+    useGQLRequest<LoginMutation, LoginMutationVariables>(LoginDocument),
+    options
+  );
 export const GetAllUsersDocument = `
     query GetAllUsers {
   getAllUsers {
@@ -99,7 +130,7 @@ export const useGetAllUsersQuery = <TData = GetAllUsersQuery, TError = unknown>(
 ) =>
   useQuery<GetAllUsersQuery, TError, TData>(
     ['GetAllUsers', variables],
-    useGQLFetch<GetAllUsersQuery, GetAllUsersQueryVariables>(
+    useGQLRequest<GetAllUsersQuery, GetAllUsersQueryVariables>(
       GetAllUsersDocument
     ).bind(null, variables),
     options
@@ -117,6 +148,6 @@ export const useMeQuery = <TData = MeQuery, TError = unknown>(
 ) =>
   useQuery<MeQuery, TError, TData>(
     ['Me', variables],
-    useGQLFetch<MeQuery, MeQueryVariables>(MeDocument).bind(null, variables),
+    useGQLRequest<MeQuery, MeQueryVariables>(MeDocument).bind(null, variables),
     options
   );
