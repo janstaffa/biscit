@@ -51,9 +51,9 @@ const Login: React.FC = () => {
                   />
                   <div className="text-right text-light">
                     Don't have an account?{' '}
-                    <a className="text-accent hover:text-accent-hover hover:underline">
+                    <span className="text-accent hover:text-accent-hover hover:underline">
                       <Link href="/register">register</Link>
-                    </a>
+                    </span>
                   </div>
                   <SubmitButton disabled={isSubmitting}>Login</SubmitButton>
                 </Form>
