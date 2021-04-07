@@ -1,3 +1,8 @@
 mutation Login($options: LoginInput!) {
-  UserLogin(options: $options)
+  UserLogin(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
 }

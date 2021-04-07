@@ -10,7 +10,5 @@
   "bugs": {
     "url": "https://github.com/janstaffa/biscit/issues"
   },
-  "homepage": "https://github.com/janstaffa/biscit#readme",
-  "dependencies": {},
-  "devDependencies": {}
+  "homepage": "https://github.com/janstaffa/biscit#readme"
 }

@@ -22,15 +22,6 @@ interface ResponseType<T> {
 
 @ObjectType()
 class UserResponse {
-  @Field({ nullable: true })
-  data: User;
-
-  @Field(() => [GQLValidationError], { nullable: true })
-  errors: GQLValidationError[];
-}
-
-@ObjectType()
-class LoginResponse {
   @Field()
   data: boolean;
 
@@ -58,7 +49,14 @@ export class UserResolver {
     @Ctx() { req, res }: ContextType,
     @Arg('options')
     options: RegisterInput
-  ): Promise<ResponseType<User>> {
+  ): Promise<ResponseType<boolean>> {
+    if (req.session.userId) {
+      return {
+        data: false,
+        errors: null,
+      };
+    }
+
     const RegisterSchema = yup.object().shape({
       username: yup
         .string()
@@ -67,7 +65,9 @@ export class UserResolver {
           'username',
           "username can't contain a @",
           (value) => !value?.includes('@')
-        ),
+        )
+        .min(5, 'username must have at least 5 characters'),
+
       email: yup
         .string()
         .required('email is required')
@@ -75,7 +75,8 @@ export class UserResolver {
       password: yup
         .string()
         .required('password is required')
-        .matches(/[0-9]/, { message: 'password must contain a number' }),
+        .matches(/[0-9]/, { message: 'password must contain a number' })
+        .min(5, 'password must have at least 5 characters'),
       confirmPassword: yup
         .string()
         .test('confirmPassword', "passwords don't match", function (value) {
@@ -83,13 +84,14 @@ export class UserResolver {
         }),
     });
 
-    const errors = await validateSchema(RegisterSchema, options);
-    if (errors) return { data: null, errors };
+    let errors = await validateSchema(RegisterSchema, options);
+    if (errors) return { data: false, errors };
 
     const { username, email, password } = options;
     const check = await User.find({ where: [{ username }, { email }] });
+
     if (check.length > 0) {
-      const errors = check.map((user) => {
+      errors = check.map((user) => {
         if (user.email === email) {
           return new GQLValidationError({
             field: 'email',
@@ -105,7 +107,7 @@ export class UserResolver {
         }
       });
       return {
-        data: null,
+        data: false,
         errors,
       };
     }
@@ -119,12 +121,12 @@ export class UserResolver {
 
     req.session.userId = user.id;
     return {
-      data: user,
+      data: true,
       errors,
     };
   }
 
-  @Mutation(() => LoginResponse)
+  @Mutation(() => UserResponse)
   async UserLogin(
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: LoginInput
@@ -135,7 +137,7 @@ export class UserResolver {
         errors: null,
       };
     }
-
+    console.log(1);
     const LoginSchema = yup.object().shape({
       usernameOrEmail: yup.string().required('username or email is required'),
       password: yup.string().required('password is required'),

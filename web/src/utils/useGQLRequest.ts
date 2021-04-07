@@ -2,8 +2,8 @@ import { setLogger } from 'react-query';
 import { graphqlClient } from './createGQLClient';
 
 setLogger({
-  log: () => {},
-  warn: () => {},
+  log: (message) => console.log(message),
+  warn: (message) => console.log(message),
   error: () => {},
 });
 
