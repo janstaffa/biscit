@@ -31,16 +31,10 @@ export type LoginInput = {
   password: Scalars['String'];
 };
 
-export type LoginResponse = {
-  __typename?: 'LoginResponse';
-  data: Scalars['Boolean'];
-  errors?: Maybe<Array<GqlValidationError>>;
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
   UserRegister: UserResponse;
-  UserLogin: LoginResponse;
+  UserLogin: UserResponse;
   UserLogout: Scalars['Boolean'];
 };
 
@@ -80,7 +74,7 @@ export type User = {
 
 export type UserResponse = {
   __typename?: 'UserResponse';
-  data?: Maybe<User>;
+  data: Scalars['Boolean'];
   errors?: Maybe<Array<GqlValidationError>>;
 };
 
@@ -106,8 +100,8 @@ export type LoginMutationVariables = Exact<{
 export type LoginMutation = (
   { __typename?: 'Mutation' }
   & { UserLogin: (
-    { __typename?: 'LoginResponse' }
-    & Pick<LoginResponse, 'data'>
+    { __typename?: 'UserResponse' }
+    & Pick<UserResponse, 'data'>
     & { errors?: Maybe<Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
@@ -115,15 +109,21 @@ export type LoginMutation = (
   ) }
 );
 
-export type GetAllUsersQueryVariables = Exact<{ [key: string]: never; }>;
+export type RegisterMutationVariables = Exact<{
+  options: RegisterInput;
+}>;
 
 
-export type GetAllUsersQuery = (
-  { __typename?: 'Query' }
-  & { getAllUsers: Array<(
-    { __typename?: 'User' }
-    & UserSnippetFragment
-  )> }
+export type RegisterMutation = (
+  { __typename?: 'Mutation' }
+  & { UserRegister: (
+    { __typename?: 'UserResponse' }
+    & Pick<UserResponse, 'data'>
+    & { errors?: Maybe<Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )>> }
+  ) }
 );
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
@@ -174,23 +174,22 @@ export const useLoginMutation = <
       useGQLRequest<LoginMutation, LoginMutationVariables>(LoginDocument),
       options
     );
-export const GetAllUsersDocument = `
-    query GetAllUsers {
-  getAllUsers {
-    ...userSnippet
+export const RegisterDocument = `
+    mutation Register($options: RegisterInput!) {
+  UserRegister(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
   }
 }
-    ${UserSnippetFragmentDoc}`;
-export const useGetAllUsersQuery = <
-      TData = GetAllUsersQuery,
-      TError = unknown
-    >(
-      variables?: GetAllUsersQueryVariables, 
-      options?: UseQueryOptions<GetAllUsersQuery, TError, TData>
-    ) => 
-    useQuery<GetAllUsersQuery, TError, TData>(
-      ['GetAllUsers', variables],
-      useGQLRequest<GetAllUsersQuery, GetAllUsersQueryVariables>(GetAllUsersDocument).bind(null, variables),
+    ${ErrorSnippetFragmentDoc}`;
+export const useRegisterMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<RegisterMutation, TError, RegisterMutationVariables, TContext>) => 
+    useMutation<RegisterMutation, TError, RegisterMutationVariables, TContext>(
+      useGQLRequest<RegisterMutation, RegisterMutationVariables>(RegisterDocument),
       options
     );
 export const MeDocument = `

@@ -15,7 +15,7 @@ const LoginSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  const { mutate, error } = useLoginMutation({
+  const { mutate: login } = useLoginMutation({
     onError: (err) => {
       console.error(err);
     },
@@ -36,7 +36,7 @@ const Login: React.FC = () => {
               validationSchema={LoginSchema}
               validateOnBlur={false}
               onSubmit={async (values, { setSubmitting, setErrors }) => {
-                await mutate(
+                await login(
                   { options: values },
                   {
                     onSuccess: (data) => {
