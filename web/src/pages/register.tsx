@@ -1,7 +1,10 @@
 import { Form, Formik } from 'formik';
+import Cookies from 'js-cookie';
 import Head from 'next/head';
 import Link from 'next/link';
+import router from 'next/router';
 import React from 'react';
+import { toast } from 'react-toastify';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
@@ -36,6 +39,9 @@ const RegisterSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
+  const uid = Cookies.get('uid');
+  if (uid) router.replace('/app');
+
   const { mutate: register } = useRegisterMutation({
     onError: (err) => {
       console.error(err);
@@ -72,7 +78,14 @@ const Login: React.FC = () => {
                           setErrors(errorMap);
                         }
                       } else {
-                        console.log(data);
+                        if (data.UserRegister.data) {
+                          router.replace('/app');
+                        } else {
+                          toast.error(
+                            'Something went wrong, please try again later.',
+                            { position: toast.POSITION.BOTTOM_RIGHT }
+                          );
+                        }
                       }
                     },
                   }
