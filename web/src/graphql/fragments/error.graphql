@@ -1,0 +1,8 @@
+fragment errorSnippet on GQLValidationError {
+  name
+  details {
+    field
+    value
+    message
+  }
+}

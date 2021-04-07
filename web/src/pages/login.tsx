@@ -1,12 +1,13 @@
 import { Form, Formik } from 'formik';
 import Head from 'next/head';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React from 'react';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useLoginMutation } from '../generated/graphql';
+import { toErrorMap } from '../utils/toErrorMap';
 
 const LoginSchema = yup.object().shape({
   usernameOrEmail: yup.string().required('username or email is required'),
@@ -14,16 +15,9 @@ const LoginSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  const [formErrors, setFormErrors] = useState<{
-    usernameOrEmail: string;
-    password: string;
-  }>();
   const { mutate, error } = useLoginMutation({
-    onSuccess: (data) => console.log(data),
     onError: (err) => {
-      console.log(err);
-      // const formatedErr = JSON.parse(err);
-      // console.log(formatedErr);
+      console.error(err);
     },
   });
   return (
@@ -42,7 +36,21 @@ const Login: React.FC = () => {
               validationSchema={LoginSchema}
               validateOnBlur={false}
               onSubmit={async (values, { setSubmitting, setErrors }) => {
-                mutate({ options: values });
+                await mutate(
+                  { options: values },
+                  {
+                    onSuccess: (data) => {
+                      if (data.UserLogin.errors) {
+                        const errorMap = toErrorMap(data.UserLogin.errors);
+                        if (errorMap) {
+                          setErrors(errorMap);
+                        }
+                      } else {
+                        console.log(data);
+                      }
+                    },
+                  }
+                );
                 setSubmitting(false);
               }}
             >

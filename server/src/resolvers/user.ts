@@ -135,7 +135,7 @@ export class UserResolver {
         errors: null,
       };
     }
-
+    console.log(1);
     const LoginSchema = yup.object().shape({
       usernameOrEmail: yup.string().required('username or email is required'),
       password: yup.string().required('password is required'),
