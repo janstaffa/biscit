@@ -54,7 +54,6 @@ const Login: React.FC = () => {
     <>
       <Head>
         <title>Biscit | Login</title>
-        <link rel="icon" href="/logo_browser.gif" />
       </Head>
       <div className="w-screen h-screen">
         <HomeNav />
