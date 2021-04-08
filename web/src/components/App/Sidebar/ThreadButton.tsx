@@ -16,7 +16,8 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   return (
     <div
       className={
-        'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100')
+        'py-1 rounded-sm' +
+        (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')
       }
     >
       <div className="w-full h-16 flex flex-row items-center cursor-pointer py-2">

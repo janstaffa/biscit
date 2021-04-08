@@ -14,9 +14,7 @@ const TabButton: React.FC<TabButtonProps> = ({
       <button
         className={
           'w-full py-3 rounded-sm text-light-200 text-lg font-roboto flex flex-row place-items-center px-4' +
-          (active
-            ? ' bg-dark-50'
-            : ' bg-dark-200 hover:bg-dark-100 hover:text-white')
+          (active ? ' bg-dark-50' : ' hover:bg-dark-100 hover:text-white')
         }
         onClick={(e) => onClick?.(e)}
       >
