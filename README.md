@@ -18,7 +18,7 @@
 <ul>
   <li>Node.js</li>
   <li>GraphQL</li>
-  <li>Socket.io</li>
+  <li>ws || isomorphic-ws</li>
   <li>WebRTC</li>
   <li>PostgreSQL</li>
 </ul>
