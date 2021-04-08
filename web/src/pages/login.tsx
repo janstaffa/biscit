@@ -3,13 +3,13 @@ import Cookies from 'js-cookie';
 import Head from 'next/head';
 import Link from 'next/link';
 import router from 'next/router';
-import React from 'react';
-import { toast } from 'react-toastify';
+import React, { useEffect } from 'react';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useLoginMutation } from '../generated/graphql';
+import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 
 const LoginSchema = yup.object().shape({
@@ -18,24 +18,18 @@ const LoginSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
+  useEffect(() => {
+    const uid = Cookies.get('uid');
+    if (uid) router.replace('/app');
+  }, []);
+
   const { mutate: login } = useLoginMutation({
     onError: (err) => {
       console.error(err);
+      errorToast('Something went wrong, please try again later.');
     },
   });
 
-  const uid = Cookies.get('uid');
-  if (uid) router.replace('/app');
-
-  toast('🦄 Wow so easy!', {
-    position: 'top-right',
-    autoClose: 5000,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-  });
   return (
     <>
       <Head>
@@ -65,9 +59,8 @@ const Login: React.FC = () => {
                         if (data.UserLogin.data) {
                           router.replace('/app');
                         } else {
-                          toast.error(
-                            'Something went wrong, please try again later.',
-                            { position: toast.POSITION.BOTTOM_RIGHT }
+                          errorToast(
+                            'Something went wrong, please try again later.'
                           );
                         }
                       }
