@@ -12,6 +12,8 @@ module.exports = {
         },
         light: {
           DEFAULT: '#d2d9e6',
+          200: '#cccccc',
+          300: '#9e9e9e',
           hover: '#e1e4e9',
         },
         accent: {

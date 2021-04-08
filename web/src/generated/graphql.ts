@@ -109,6 +109,14 @@ export type LoginMutation = (
   ) }
 );
 
+export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type LogoutMutation = (
+  { __typename?: 'Mutation' }
+  & Pick<Mutation, 'UserLogout'>
+);
+
 export type RegisterMutationVariables = Exact<{
   options: RegisterInput;
 }>;
@@ -172,6 +180,19 @@ export const useLoginMutation = <
     >(options?: UseMutationOptions<LoginMutation, TError, LoginMutationVariables, TContext>) => 
     useMutation<LoginMutation, TError, LoginMutationVariables, TContext>(
       useGQLRequest<LoginMutation, LoginMutationVariables>(LoginDocument),
+      options
+    );
+export const LogoutDocument = `
+    mutation Logout {
+  UserLogout
+}
+    `;
+export const useLogoutMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<LogoutMutation, TError, LogoutMutationVariables, TContext>) => 
+    useMutation<LogoutMutation, TError, LogoutMutationVariables, TContext>(
+      useGQLRequest<LogoutMutation, LogoutMutationVariables>(LogoutDocument),
       options
     );
 export const RegisterDocument = `

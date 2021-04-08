@@ -3,8 +3,8 @@ import { graphqlClient } from './createGQLClient';
 
 setLogger({
   log: (message) => console.log(message),
-  warn: (message) => console.log(message),
-  error: () => {},
+  warn: (message) => console.warn(message),
+  error: (message) => console.error(message),
 });
 
 export const useGQLRequest = <TData, TVariables>(

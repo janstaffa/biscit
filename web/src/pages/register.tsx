@@ -3,13 +3,13 @@ import Cookies from 'js-cookie';
 import Head from 'next/head';
 import Link from 'next/link';
 import router from 'next/router';
-import React from 'react';
-import { toast } from 'react-toastify';
+import React, { useEffect } from 'react';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useRegisterMutation } from '../generated/graphql';
+import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 
 const RegisterSchema = yup.object().shape({
@@ -39,19 +39,21 @@ const RegisterSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  const uid = Cookies.get('uid');
-  if (uid) router.replace('/app');
+  useEffect(() => {
+    const uid = Cookies.get('uid');
+    if (uid) router.replace('/app');
+  }, []);
 
   const { mutate: register } = useRegisterMutation({
     onError: (err) => {
       console.error(err);
+      errorToast('Something went wrong, please try again later.');
     },
   });
   return (
     <>
       <Head>
         <title>Biscit | Login</title>
-        <link rel="icon" href="/logo_browser.gif" />
       </Head>
       <div className="w-screen h-screen">
         <HomeNav />
@@ -81,9 +83,8 @@ const Login: React.FC = () => {
                         if (data.UserRegister.data) {
                           router.replace('/app');
                         } else {
-                          toast.error(
-                            'Something went wrong, please try again later.',
-                            { position: toast.POSITION.BOTTOM_RIGHT }
+                          errorToast(
+                            'Something went wrong, please try again later.'
                           );
                         }
                       }
