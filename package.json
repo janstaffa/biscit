@@ -11,12 +11,9 @@
     "url": "https://github.com/janstaffa/biscit/issues"
   },
   "scripts": {
-    "preview": "cd ./puppeteer && yarn start"
+    "gen-preview": "cd ./puppeteer && yarn start"
   },
   "homepage": "https://github.com/janstaffa/biscit#readme",
-  "pre-commit": [
-    "preview"
-  ],
   "devDependencies": {
     "pre-commit": "^1.2.2"
   }
