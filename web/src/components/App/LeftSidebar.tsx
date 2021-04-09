@@ -38,7 +38,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
         </TabButton>
       </div>
 
-      <div className="h-16 w-full px-5 flex flex-col justify-center border-b border-dark-50">
+      <div className="h-20 w-full px-5 flex flex-col justify-center border-b border-dark-50">
         <div className="w-full h-9 flex flex-row">
           <input
             type="text"
@@ -53,9 +53,44 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
           </div>
         </div>
       </div>
-      <div className="h-full flex flex-col overflow-y-hidden">
-        <div className="flex-1">
-          <div className="max-h-full overflow-y-scroll">
+      <div className="h-full flex flex-col">
+        <div className="flex-1 flex flex-col relative">
+          <div
+            className="flex-1 h-full w-full overflow-y-scroll absolute"
+            style={{
+              maxHeight: 'calc(100% - 96px)',
+            }}
+          >
+            <ThreadButton
+              username="janstaffa"
+              time="10:00"
+              latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              undread={true}
+            />
+            <ThreadButton
+              username="janstaffa"
+              time="10:00"
+              latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              undread={true}
+            />
+            <ThreadButton
+              username="janstaffa"
+              time="10:00"
+              latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              undread={true}
+            />
+            <ThreadButton
+              username="janstaffa"
+              time="10:00"
+              latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              undread={true}
+            />
+            <ThreadButton
+              username="janstaffa"
+              time="10:00"
+              latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              undread={true}
+            />
             <ThreadButton
               username="janstaffa"
               time="10:00"
@@ -94,7 +129,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
             />
           </div>
         </div>
-        <div className="w-full h-24 bg-dark-300 bottom-0">
+        <div className="absolute w-full h-24 bg-dark-300 bottom-0">
           <div className="w-full h-full flex flex-row items-center">
             <div className="w-16 h-full flex flex-col justify-center items-center">
               <div className="w-12 h-12 rounded-full bg-light"></div>
