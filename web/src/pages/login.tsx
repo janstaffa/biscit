@@ -91,7 +91,9 @@ const Login: React.FC = () => {
                       <Link href="/register">register</Link>
                     </span>
                   </div>
-                  <SubmitButton disabled={isSubmitting}>Login</SubmitButton>
+                  <SubmitButton disabled={isSubmitting} id="login_button">
+                    Login
+                  </SubmitButton>
                 </Form>
               )}
             </Formik>
