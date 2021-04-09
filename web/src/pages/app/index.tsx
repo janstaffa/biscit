@@ -17,7 +17,7 @@ const App: React.FC<AppProps> = () => {
         <title>Biscit | App</title>
       </Head>
       <Layout>
-        <div>content</div>
+        <div className="text-red-600">This should be visible now</div>
       </Layout>
     </>
   );
