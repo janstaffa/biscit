@@ -10,7 +10,7 @@
 </ul>
 
 <h3>Current state</h3>
-<img src="./assets/current_state.jpg" alt="current state of Biscit" width="500"/>
+<img src="./assets/current_state/current_state.jpg" alt="current state of Biscit" width="500"/>
 
 <h3>The technologies</h3>
 <b>Backend:</b>
