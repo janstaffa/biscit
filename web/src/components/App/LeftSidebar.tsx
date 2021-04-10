@@ -1,9 +1,10 @@
 import router from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { MdSettings } from 'react-icons/md';
+import { currentUrl } from '../../constants';
 import { useLogoutMutation } from '../../generated/graphql';
 import { errorToast } from '../../utils/toasts';
 import TabButton from './Sidebar/TabButton';
@@ -11,7 +12,12 @@ import ThreadButton from './Sidebar/ThreadButton';
 export interface LeftSidebarProps {}
 
 const LeftSidebar: React.FC<LeftSidebarProps> = () => {
-  const [activeTab, setActiveTab] = useState<string>();
+  const [currentPath, setCurrentPath] = useState<string>();
+
+  useEffect(() => {
+    setCurrentPath(currentUrl()?.pathname);
+  }, [currentUrl()]);
+
   const { mutate: logout } = useLogoutMutation({
     onError: (err) => {
       console.error(err);
@@ -22,17 +28,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
   return (
     <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
       <div className="flex-col w-full h-auto border-b-2 border-dark-50 px-10 py-5">
-        <TabButton
-          onClick={() => setActiveTab('friends')}
-          active={activeTab === 'friends'}
-        >
+        <TabButton active={currentPath === '/app/friends'} href="/app/friends">
           <FaUserFriends className="mr-4" />
           Friends
         </TabButton>
-        <TabButton
-          onClick={() => setActiveTab('threads')}
-          active={activeTab === 'threads'}
-        >
+        <TabButton active={currentPath === '/app/threads'} href="/app/threads">
           <HiUserGroup className="mr-4" />
           Threads
         </TabButton>
