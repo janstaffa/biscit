@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Layout from '../../components/App/Layout';
-import withAuth from '../../utils/withAuth';
+import withRedirect from '../../utils/withRedirect';
 export interface AppProps {}
 
 const App: NextPage<AppProps> = () => {
@@ -11,10 +11,10 @@ const App: NextPage<AppProps> = () => {
         <title>Biscit | App</title>
       </Head>
       <Layout>
-        <div className="text-red-600">This should be visible now</div>
+        <div></div>
       </Layout>
     </>
   );
 };
 
-export default withAuth(App);
+export default withRedirect({ location: '/app/friends' })(App);

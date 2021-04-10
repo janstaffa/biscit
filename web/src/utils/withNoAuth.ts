@@ -3,12 +3,12 @@ import { NextPageContext } from 'next';
 import { useIsAuthenticated } from '../providers/AuthProvider';
 import withConditionalRedirect from './withConditionalRedirect';
 
-export default function withAuth(Component, location = '/login') {
+export default function withNoAuth(Component, location = '/app/friends') {
   return withConditionalRedirect({
     Component,
     location,
     clientCondition: () => {
-      return !useIsAuthenticated();
+      return useIsAuthenticated();
     },
     serverCondition: (context: NextPageContext) => {
       const req = context.req;
@@ -17,7 +17,7 @@ export default function withAuth(Component, location = '/login') {
         const parsed = cookie.parse(req.headers.cookie);
         authenticated = !!parsed.uid;
       }
-      return !authenticated;
+      return authenticated;
     },
   });
 }

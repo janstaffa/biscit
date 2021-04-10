@@ -4,13 +4,18 @@ const main = async () => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto('http://localhost:3000/login', {
-    waitUntil: 'networkidle2',
+    waitUntil: 'networkidle0',
   });
   await page.setViewport({
     width: 1920,
     height: 1080,
     deviceScaleFactor: 1,
   });
+  page.on('console', (message) =>
+    console.log(
+      `${message.type().substr(0, 3).toUpperCase()} ${message.text()}`
+    )
+  );
   const username = await page.$('[name="usernameOrEmail"]');
   await username?.type('TEST_USER');
   const password = await page.$('[name="password"]');

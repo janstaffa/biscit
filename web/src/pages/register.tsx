@@ -11,6 +11,7 @@ import InputField from '../components/Inputs/InputField';
 import { useRegisterMutation } from '../generated/graphql';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
+import withNoAuth from '../utils/withNoAuth';
 
 const RegisterSchema = yup.object().shape({
   username: yup
@@ -141,4 +142,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default withNoAuth(Login);

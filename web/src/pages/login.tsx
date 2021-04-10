@@ -11,6 +11,7 @@ import InputField from '../components/Inputs/InputField';
 import { useLoginMutation } from '../generated/graphql';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
+import withNoAuth from '../utils/withNoAuth';
 
 const LoginSchema = yup.object().shape({
   usernameOrEmail: yup.string().required('username or email is required'),
@@ -104,4 +105,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default withNoAuth(Login);

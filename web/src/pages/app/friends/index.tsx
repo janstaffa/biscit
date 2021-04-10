@@ -1,16 +1,9 @@
-import Cookies from 'js-cookie';
 import Head from 'next/head';
-import router from 'next/router';
-import { useEffect } from 'react';
 import Layout from '../../../components/App/Layout';
+import withAuth from '../../../utils/withAuth';
 export interface AppProps {}
 
 const Friends: React.FC<AppProps> = () => {
-  useEffect(() => {
-    const uid = Cookies.get('uid');
-    if (!uid) router.replace('/login');
-  }, []);
-
   return (
     <>
       <Head>
@@ -23,4 +16,4 @@ const Friends: React.FC<AppProps> = () => {
   );
 };
 
-export default Friends;
+export default withAuth(Friends);

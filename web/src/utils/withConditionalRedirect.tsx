@@ -2,7 +2,7 @@ import { NextPageContext } from 'next';
 import { useRouter } from 'next/router';
 import { isServer } from './isServer';
 
-export default function withRedirect({
+export default function withConditionalRedirect({
   Component,
   clientCondition,
   serverCondition,
