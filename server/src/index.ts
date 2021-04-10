@@ -48,7 +48,7 @@ import { ContextType } from './types';
       store: new TypeormStore({ repository }),
       cookie: {
         maxAge: 1000 * 3600 * 24 * 7,
-        httpOnly: false,
+        httpOnly: true,
         secure: __prod__,
         sameSite: 'lax',
       },

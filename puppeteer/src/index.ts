@@ -11,6 +11,11 @@ const main = async () => {
     height: 1080,
     deviceScaleFactor: 1,
   });
+  page.on('console', (message) =>
+    console.log(
+      `${message.type().substr(0, 3).toUpperCase()} ${message.text()}`
+    )
+  );
   const username = await page.$('[name="usernameOrEmail"]');
   await username?.type('TEST_USER');
   const password = await page.$('[name="password"]');
@@ -18,7 +23,7 @@ const main = async () => {
   await page.click('button#login_button');
   await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
 
-  await page.screenshot({ path: '../assets/current_state.jpg' });
+  await page.screenshot({ path: '../assets/current_state/current_state.jpg' });
   await browser.close();
 };
 

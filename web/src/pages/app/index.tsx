@@ -1,26 +1,20 @@
-import Cookies from 'js-cookie';
+import { NextPage } from 'next';
 import Head from 'next/head';
-import router from 'next/router';
-import { useEffect } from 'react';
 import Layout from '../../components/App/Layout';
+import withRedirect from '../../utils/withRedirect';
 export interface AppProps {}
 
-const App: React.FC<AppProps> = () => {
-  useEffect(() => {
-    const uid = Cookies.get('uid');
-    if (!uid) router.replace('/login');
-  }, []);
-
+const App: NextPage<AppProps> = () => {
   return (
     <>
       <Head>
         <title>Biscit | App</title>
       </Head>
       <Layout>
-        <div className="text-red-600">This should be visible now</div>
+        <div></div>
       </Layout>
     </>
   );
 };
 
-export default App;
+export default withRedirect({ location: '/app/friends' })(App);

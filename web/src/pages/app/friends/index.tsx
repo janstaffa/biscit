@@ -1,26 +1,19 @@
-import Cookies from 'js-cookie';
 import Head from 'next/head';
-import router from 'next/router';
-import { useEffect } from 'react';
 import Layout from '../../../components/App/Layout';
+import withAuth from '../../../utils/withAuth';
 export interface AppProps {}
 
 const Friends: React.FC<AppProps> = () => {
-  useEffect(() => {
-    const uid = Cookies.get('uid');
-    if (!uid) router.replace('/login');
-  }, []);
-
   return (
     <>
       <Head>
         <title>Biscit | Friends</title>
       </Head>
       <Layout>
-        <div className="w-full h-full bg-red-400"></div>
+        <div className="w-full h-full text-white">Hi, can you see me?</div>
       </Layout>
     </>
   );
 };
 
-export default Friends;
+export default withAuth(Friends);
