@@ -23,7 +23,7 @@ const main = async () => {
   await page.click('button#login_button');
   await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
 
-  await page.screenshot({ path: '../assets/current_state.jpg' });
+  await page.screenshot({ path: '../assets/current_state/current_state.jpg' });
   await browser.close();
 };
 
