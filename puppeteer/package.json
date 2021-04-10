@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node src/index.ts"
+    "start": "ts-node src/index.ts && git add ./assets && git commit -m updated app preview && git push https://github.com/janstaffa/biscit"
   },
   "devDependencies": {
     "@types/node": "^14.14.37",

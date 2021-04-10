@@ -1,16 +1,10 @@
-import Cookies from 'js-cookie';
+import { NextPage } from 'next';
 import Head from 'next/head';
-import router from 'next/router';
-import { useEffect } from 'react';
 import Layout from '../../components/App/Layout';
+import withAuth from '../../utils/withAuth';
 export interface AppProps {}
 
-const App: React.FC<AppProps> = () => {
-  useEffect(() => {
-    const uid = Cookies.get('uid');
-    if (!uid) router.replace('/login');
-  }, []);
-
+const App: NextPage<AppProps> = () => {
   return (
     <>
       <Head>
@@ -23,4 +17,4 @@ const App: React.FC<AppProps> = () => {
   );
 };
 
-export default App;
+export default withAuth(App);
