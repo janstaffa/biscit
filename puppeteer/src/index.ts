@@ -4,7 +4,7 @@ const main = async () => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.goto('http://localhost:3000/login', {
-    waitUntil: 'networkidle0',
+    waitUntil: 'networkidle2',
   });
   await page.setViewport({
     width: 1920,

@@ -6,12 +6,14 @@ import { HiUserGroup } from 'react-icons/hi';
 import { MdSettings } from 'react-icons/md';
 import { currentUrl } from '../../constants';
 import { useLogoutMutation } from '../../generated/graphql';
+import { useAuth } from '../../providers/AuthProvider';
 import { errorToast } from '../../utils/toasts';
 import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 export interface LeftSidebarProps {}
 
 const LeftSidebar: React.FC<LeftSidebarProps> = () => {
+  const { setAuthenticated } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>();
 
   useEffect(() => {
@@ -146,6 +148,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
                   <GoSignOut
                     className="hover:text-light-200 mx-1"
                     onClick={() => {
+                      setAuthenticated(false);
                       logout(
                         {},
                         {

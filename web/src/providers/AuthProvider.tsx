@@ -10,7 +10,7 @@ const AuthContext = createContext<AuthContext>({
 });
 
 export const AuthProvider = ({ children, authenticated }) => {
-  const [isAuthenticated, setAuthenticated] = useState(authenticated);
+  const [isAuthenticated, setAuthenticated] = useState<boolean>(authenticated);
   return (
     <AuthContext.Provider
       value={{

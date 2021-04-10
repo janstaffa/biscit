@@ -1,14 +1,14 @@
 import { Form, Formik } from 'formik';
-import Cookies from 'js-cookie';
 import Head from 'next/head';
 import Link from 'next/link';
 import router from 'next/router';
-import React, { useEffect } from 'react';
+import React from 'react';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useLoginMutation } from '../generated/graphql';
+import { useAuth } from '../providers/AuthProvider';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 import withNoAuth from '../utils/withNoAuth';
@@ -19,10 +19,7 @@ const LoginSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  useEffect(() => {
-    const uid = Cookies.get('uid');
-    if (uid) router.replace('/app');
-  }, []);
+  const { setAuthenticated } = useAuth();
 
   const { mutate: login } = useLoginMutation({
     onError: (err) => {
@@ -57,6 +54,7 @@ const Login: React.FC = () => {
                         }
                       } else {
                         if (data.UserLogin.data) {
+                          setAuthenticated(true);
                           router.replace('/app');
                         } else {
                           errorToast(

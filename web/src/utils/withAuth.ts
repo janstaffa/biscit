@@ -17,6 +17,7 @@ export default function withAuth(Component, location = '/login') {
         const parsed = cookie.parse(req.headers.cookie);
         authenticated = !!parsed.uid;
       }
+
       return !authenticated;
     },
   });

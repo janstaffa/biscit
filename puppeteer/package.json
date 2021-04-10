@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "start-push": "ts-node src/index.ts && cd .. && git add ./assets && git commit -m \"updated app preview\" && git push https://github.com/janstaffa/biscit staging"
+    "start-push": "ts-node src/index.ts && cd .. && git add ./assets/current_state && git commit -m \"updated app preview\" && git push https://github.com/janstaffa/biscit staging"
   },
   "devDependencies": {
     "@types/node": "^14.14.37",

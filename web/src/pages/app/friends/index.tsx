@@ -10,7 +10,7 @@ const Friends: React.FC<AppProps> = () => {
         <title>Biscit | Friends</title>
       </Head>
       <Layout>
-        <div className="w-full h-full bg-red-400"></div>
+        <div className="w-full h-full text-white">Hi, can you see me?</div>
       </Layout>
     </>
   );
