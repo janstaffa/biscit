@@ -1,6 +1,6 @@
 import cookie from 'cookie';
 import { NextPageContext } from 'next';
-import { useIsAuthenticated } from '../providers/AuthProvider';
+import { useAuthStore } from '../stores/useAuthStore';
 import withConditionalRedirect from './withConditionalRedirect';
 
 export default function withAuth(Component, location = '/login') {
@@ -8,7 +8,8 @@ export default function withAuth(Component, location = '/login') {
     Component,
     location,
     clientCondition: () => {
-      return !useIsAuthenticated();
+      const { authenticated } = useAuthStore();
+      return !authenticated;
     },
     serverCondition: (context: NextPageContext) => {
       const req = context.req;
