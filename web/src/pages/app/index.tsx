@@ -17,4 +17,4 @@ const App: NextPage<AppProps> = () => {
   );
 };
 
-export default withRedirect({ location: '/app/friends' })(App);
+export default withRedirect({ location: '/app/friends/all' })(App);
