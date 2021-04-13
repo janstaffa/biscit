@@ -14,8 +14,7 @@ import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
-import { LoginInput } from '../entities/types/LoginInput';
-import { RegisterInput } from '../entities/types/RegisterInput';
+import { LoginInput, RegisterInput } from '../entities/types/user';
 import { User } from '../entities/User';
 import { ContextType } from '../types';
 import { GQLValidationError, validateSchema } from '../utils/validateYupSchema';
@@ -66,7 +65,7 @@ export class UserResolver {
     if (userId === user.id) {
       const friends = await Friend.find({
         where: { userId },
-        relations: ['user', 'withUser'],
+        relations: ['user', 'friend'],
       });
 
       return friends;

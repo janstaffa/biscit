@@ -1,8 +1,10 @@
 import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from 'type-graphql';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
-import { FriendAcceptInput } from '../entities/types/FriendAcceptInput';
-import { FriendRequestInput } from '../entities/types/FriendRequestInput';
+import {
+  FriendAcceptInput,
+  FriendRequestInput,
+} from '../entities/types/friend';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
@@ -74,7 +76,7 @@ export class FriendRequestResolver {
     }
 
     const isFriends = await Friend.findOne({
-      where: { userId, withUserId: request.senderId },
+      where: { userId, friendId: request.senderId },
     });
 
     if (isFriends) {
@@ -87,11 +89,11 @@ export class FriendRequestResolver {
     await Friend.save([
       Friend.create({
         userId,
-        withUserId: request.senderId,
+        friendId: request.senderId,
       }),
       Friend.create({
         userId: request.senderId,
-        withUserId: userId,
+        friendId: userId,
       }),
     ]);
     await request.remove();
@@ -99,6 +101,42 @@ export class FriendRequestResolver {
     return {
       data: true,
       errors: null,
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async FriendRemove(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: FriendRequestInput
+  ): Promise<ResponseType<boolean>> {
+    if (!req.session.userId) {
+      return {
+        data: false,
+        errors: null,
+      };
+    }
+    const reciever = await User.findOne({
+      where: { username: options.username },
+    });
+    const errors: GQLValidationError[] = [];
+    if (reciever) {
+      await FriendRequest.create({
+        senderId: req.session.userId,
+        recieverId: reciever.id,
+      }).save();
+    } else {
+      errors.push(
+        new GQLValidationError({
+          field: 'username',
+          value: options.username,
+          message: "this user doesn't exist",
+        })
+      );
+    }
+    return {
+      data: true,
+      errors: errors,
     };
   }
 }
