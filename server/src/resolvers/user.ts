@@ -66,7 +66,7 @@ export class UserResolver {
     if (userId === user.id) {
       const friends = await Friend.find({
         where: { userId },
-        relations: ['user', 'withUser'],
+        relations: ['user', 'friend'],
       });
 
       return friends;

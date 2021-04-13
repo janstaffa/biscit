@@ -2,9 +2,12 @@ import Head from 'next/head';
 import React from 'react';
 import FriendTab from '../../../../components/App/Friends/FriendTab';
 import FriendsLayout from '../../../../components/App/FriendsLayout';
+import { useMeQuery } from '../../../../generated/graphql';
 export interface AllFriendsProps {}
 
 const AllFriends: React.FC<AllFriendsProps> = () => {
+  const { data: meData } = useMeQuery();
+  console.log(meData);
   return (
     <>
       <Head>
@@ -16,10 +19,16 @@ const AllFriends: React.FC<AllFriendsProps> = () => {
             All friends - 5
           </p>
           <div>
-            <FriendTab username="John" bio="babel is very good" />
-            <FriendTab username="John" bio="babel is very good" />
-
-            <FriendTab username="John" bio="babel is very good" />
+            {meData?.me?.friends?.map((friendship) => {
+              const { friend } = friendship;
+              return (
+                <FriendTab
+                  username={friend.username}
+                  bio={friend.bio || friend.status}
+                  key={friendship.id}
+                />
+              );
+            })}
           </div>
         </div>
       </FriendsLayout>

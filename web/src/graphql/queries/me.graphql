@@ -1,5 +1,32 @@
 query Me {
   me {
-    ...userSnippet
+    id
+    username
+    email
+    status
+    bio
+    friend_requests {
+      incoming {
+        id
+        sender {
+          ...userSnippet
+        }
+        createdAt
+      }
+      outcoming {
+        id
+        reciever {
+          ...userSnippet
+        }
+        createdAt
+      }
+    }
+    friends {
+      id
+      friend {
+        ...userSnippet
+      }
+      createdAt
+    }
   }
 }

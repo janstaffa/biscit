@@ -34,11 +34,11 @@ export class Friend extends BaseEntity {
 
   @Field(() => String)
   @Column()
-  withUserId: string;
+  friendId: string;
 
   @Field(() => User)
   @ManyToOne(() => User, (user) => user)
-  withUser: User;
+  friend: User;
 
   //createdAt field
   @Field(() => String)

@@ -13,11 +13,53 @@ export type Scalars = {
   Float: number;
 };
 
+export type BooleanResponse = {
+  __typename?: 'BooleanResponse';
+  data: Scalars['Boolean'];
+  errors?: Maybe<Array<GqlValidationError>>;
+};
+
 export type DetailsType = {
   __typename?: 'DetailsType';
   field?: Maybe<Scalars['String']>;
   value?: Maybe<Scalars['String']>;
   message?: Maybe<Scalars['String']>;
+};
+
+export type Friend = {
+  __typename?: 'Friend';
+  id: Scalars['String'];
+  userId: Scalars['String'];
+  user: User;
+  friendId: Scalars['String'];
+  friend: User;
+  createdAt: Scalars['String'];
+  updatedAt: Scalars['String'];
+};
+
+export type FriendAcceptInput = {
+  requestId: Scalars['Float'];
+};
+
+export type FriendRequest = {
+  __typename?: 'FriendRequest';
+  id: Scalars['Float'];
+  senderId: Scalars['String'];
+  sender: User;
+  recieverId: Scalars['String'];
+  reciever: User;
+  createdAt: Scalars['String'];
+  updatedAt: Scalars['String'];
+};
+
+export type FriendRequestInput = {
+  username: Scalars['String'];
+};
+
+export type FriendRequestResponse = {
+  __typename?: 'FriendRequestResponse';
+  incoming?: Maybe<Array<FriendRequest>>;
+  outcoming?: Maybe<Array<FriendRequest>>;
 };
 
 export type GqlValidationError = {
@@ -33,9 +75,21 @@ export type LoginInput = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  UserRegister: UserResponse;
-  UserLogin: UserResponse;
+  FriendRequestSend: BooleanResponse;
+  FriendRequestAccept: BooleanResponse;
+  UserRegister: BooleanResponse;
+  UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
+};
+
+
+export type MutationFriendRequestSendArgs = {
+  options: FriendRequestInput;
+};
+
+
+export type MutationFriendRequestAcceptArgs = {
+  options: FriendAcceptInput;
 };
 
 
@@ -68,14 +122,10 @@ export type User = {
   email: Scalars['String'];
   status: Scalars['String'];
   bio?: Maybe<Scalars['String']>;
+  friends?: Maybe<Array<Friend>>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
-};
-
-export type UserResponse = {
-  __typename?: 'UserResponse';
-  data: Scalars['Boolean'];
-  errors?: Maybe<Array<GqlValidationError>>;
+  friend_requests: FriendRequestResponse;
 };
 
 export type ErrorSnippetFragment = (
@@ -100,8 +150,8 @@ export type LoginMutationVariables = Exact<{
 export type LoginMutation = (
   { __typename?: 'Mutation' }
   & { UserLogin: (
-    { __typename?: 'UserResponse' }
-    & Pick<UserResponse, 'data'>
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
     & { errors?: Maybe<Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
@@ -125,8 +175,8 @@ export type RegisterMutationVariables = Exact<{
 export type RegisterMutation = (
   { __typename?: 'Mutation' }
   & { UserRegister: (
-    { __typename?: 'UserResponse' }
-    & Pick<UserResponse, 'data'>
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
     & { errors?: Maybe<Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
@@ -141,7 +191,32 @@ export type MeQuery = (
   { __typename?: 'Query' }
   & { me?: Maybe<(
     { __typename?: 'User' }
-    & UserSnippetFragment
+    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
+    & { friend_requests: (
+      { __typename?: 'FriendRequestResponse' }
+      & { incoming?: Maybe<Array<(
+        { __typename?: 'FriendRequest' }
+        & Pick<FriendRequest, 'id' | 'createdAt'>
+        & { sender: (
+          { __typename?: 'User' }
+          & UserSnippetFragment
+        ) }
+      )>>, outcoming?: Maybe<Array<(
+        { __typename?: 'FriendRequest' }
+        & Pick<FriendRequest, 'id' | 'createdAt'>
+        & { reciever: (
+          { __typename?: 'User' }
+          & UserSnippetFragment
+        ) }
+      )>> }
+    ), friends?: Maybe<Array<(
+      { __typename?: 'Friend' }
+      & Pick<Friend, 'id' | 'createdAt'>
+      & { friend: (
+        { __typename?: 'User' }
+        & UserSnippetFragment
+      ) }
+    )>> }
   )> }
 );
 
@@ -216,7 +291,34 @@ export const useRegisterMutation = <
 export const MeDocument = `
     query Me {
   me {
-    ...userSnippet
+    id
+    username
+    email
+    status
+    bio
+    friend_requests {
+      incoming {
+        id
+        sender {
+          ...userSnippet
+        }
+        createdAt
+      }
+      outcoming {
+        id
+        reciever {
+          ...userSnippet
+        }
+        createdAt
+      }
+    }
+    friends {
+      id
+      friend {
+        ...userSnippet
+      }
+      createdAt
+    }
   }
 }
     ${UserSnippetFragmentDoc}`;

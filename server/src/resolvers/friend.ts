@@ -74,7 +74,7 @@ export class FriendRequestResolver {
     }
 
     const isFriends = await Friend.findOne({
-      where: { userId, withUserId: request.senderId },
+      where: { userId, friendId: request.senderId },
     });
 
     if (isFriends) {
@@ -87,11 +87,11 @@ export class FriendRequestResolver {
     await Friend.save([
       Friend.create({
         userId,
-        withUserId: request.senderId,
+        friendId: request.senderId,
       }),
       Friend.create({
         userId: request.senderId,
-        withUserId: userId,
+        friendId: userId,
       }),
     ]);
     await request.remove();
