@@ -68,29 +68,29 @@ import { ContextType } from './types';
     }),
     playground: true,
     introspection: true,
-    // formatError: (error) => {
-    //   switch (error.message) {
-    //     case 'Argument Validation Error':
-    //       return {
-    //         message: error.message,
-    //         details: error.extensions?.exception.validationErrors.map(
-    //           (err: ValidationError) => {
-    //             return {
-    //               field: err.property,
-    //               value: err.value,
-    //               constraints: err.constraints
-    //                 ? Object.entries(err.constraints).map((e) => ({
-    //                     [e[0]]: e[1],
-    //                   }))
-    //                 : null,
-    //             };
-    //           }
-    //         ),
-    //       };
-    //     default:
-    //       return error;
-    //   }
-    // },
+    formatError: (error) => {
+      switch (error.message) {
+        // case 'Argument Validation Error':
+        //   return {
+        //     message: error.message,
+        //     details: error.extensions?.exception.validationErrors.map(
+        //       (err: ValidationError) => {
+        //         return {
+        //           field: err.property,
+        //           value: err.value,
+        //           constraints: err.constraints
+        //             ? Object.entries(err.constraints).map((e) => ({
+        //                 [e[0]]: e[1],
+        //               }))
+        //             : null,
+        //         };
+        //       }
+        //     ),
+        //   };
+        default:
+          return error;
+      }
+    },
   });
 
   apolloServer.applyMiddleware({ app, cors: false });

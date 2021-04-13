@@ -23,7 +23,7 @@ export class User extends BaseEntity {
 
   @BeforeInsert()
   async generateId() {
-    this.id = await getId(User);
+    this.id = await getId(User, 'id');
   }
 
   //username field
