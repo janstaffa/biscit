@@ -1,4 +1,3 @@
-import shortid from 'shortid';
 import { Field, ObjectType } from 'type-graphql';
 import {
   BaseEntity,
@@ -6,9 +5,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { getId } from '../utils/generateId';
+import { Friend } from './Friend';
+import { FriendRequest } from './FriendRequest';
 
 @ObjectType()
 @Entity()
@@ -20,18 +23,7 @@ export class User extends BaseEntity {
 
   @BeforeInsert()
   async generateId() {
-    const getId = async (resolve: (id: string) => void): Promise<any> => {
-      const id: string = shortid.generate();
-      const check = await User.findOne({ where: { id } });
-      if (check) return getId(resolve);
-      resolve(id);
-    };
-
-    await new Promise<string>((resolve: (id: string) => void) => {
-      getId(resolve);
-    }).then((id) => {
-      this.id = id;
-    });
+    this.id = await getId(User);
   }
 
   //username field
@@ -57,6 +49,18 @@ export class User extends BaseEntity {
   @Field(() => String, { nullable: true })
   @Column({ length: 200, nullable: true })
   bio: string;
+
+  //friend requests
+  @OneToMany(
+    () => FriendRequest,
+    (request) => request.sender || request.reciever
+  )
+  friend_requests: FriendRequest[];
+
+  //friends field
+  @Field(() => [Friend], { nullable: true })
+  @OneToMany(() => Friend, (friend) => friend.user)
+  friends: Friend[];
 
   //createdAt field
   @Field(() => String)
