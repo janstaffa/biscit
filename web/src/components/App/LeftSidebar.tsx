@@ -5,15 +5,14 @@ import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { MdSettings } from 'react-icons/md';
 import { currentUrl } from '../../constants';
-import { useLogoutMutation } from '../../generated/graphql';
-import { useAuth } from '../../providers/AuthProvider';
+import { useLogoutMutation, useMeQuery } from '../../generated/graphql';
+import { useAuthStore } from '../../stores/useAuthStore';
 import { errorToast } from '../../utils/toasts';
 import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 export interface LeftSidebarProps {}
 
 const LeftSidebar: React.FC<LeftSidebarProps> = () => {
-  const { setAuthenticated } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>();
 
   useEffect(() => {
@@ -26,6 +25,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
       errorToast('Something went wrong, please try again later.');
     },
   });
+  const { data: meData } = useMeQuery();
 
   return (
     <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
@@ -139,15 +139,18 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
             <div className="w-full flex-1 px-2">
               <div className="flex flex-row justify-between items-center">
                 <div className="flex flex-col">
-                  <div className=" text-light font-roboto">janstaffa</div>
+                  <div className=" text-light font-roboto">
+                    {meData?.me?.username}
+                  </div>
                   <div className="text-light-300 w-48 font-roboto text-sm truncate">
-                    this is a status and a half
+                    {meData?.me?.bio || 'add a status'}
                   </div>
                 </div>
                 <div className="flex flex-row text-light-300 text-2xl px-2 cursor-pointer ">
                   <GoSignOut
                     className="hover:text-light-200 mx-1"
                     onClick={() => {
+                      const { setAuthenticated } = useAuthStore.getState();
                       setAuthenticated(false);
                       logout(
                         {},

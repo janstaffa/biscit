@@ -3,34 +3,77 @@ import {
   Arg,
   Ctx,
   Field,
+  FieldResolver,
   Mutation,
   ObjectType,
   Query,
   Resolver,
+  Root,
 } from 'type-graphql';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
+import { Friend } from '../entities/Friend';
+import { FriendRequest } from '../entities/FriendRequest';
 import { LoginInput } from '../entities/types/LoginInput';
 import { RegisterInput } from '../entities/types/RegisterInput';
 import { User } from '../entities/User';
 import { ContextType } from '../types';
 import { GQLValidationError, validateSchema } from '../utils/validateYupSchema';
-interface ResponseType<T> {
-  data: T | null;
-  errors: GQLValidationError[] | null;
-}
+import { BooleanResponse, ResponseType } from './types';
 
 @ObjectType()
-class UserResponse {
-  @Field()
-  data: boolean;
+class FriendRequestResponse {
+  @Field(() => [FriendRequest], { nullable: true })
+  incoming: FriendRequest[];
 
-  @Field(() => [GQLValidationError], { nullable: true })
-  errors: GQLValidationError[];
+  @Field(() => [FriendRequest], { nullable: true })
+  outcoming: FriendRequest[];
 }
 
 @Resolver(User)
 export class UserResolver {
+  @FieldResolver(() => FriendRequestResponse)
+  async friend_requests(
+    @Root() user: User,
+    @Ctx() { req }: ContextType
+  ): Promise<FriendRequestResponse | null> {
+    const userId = req.session.userId;
+    if (userId === user.id) {
+      const friend_requests = await FriendRequest.find({
+        where: [{ senderId: user.id }, { recieverId: user.id }],
+        relations: ['sender', 'reciever'],
+      });
+      const incoming = friend_requests.filter(
+        (request) => request.recieverId === userId
+      );
+      const outcoming = friend_requests.filter(
+        (request) => request.senderId === userId
+      );
+      return {
+        incoming,
+        outcoming,
+      };
+    }
+    return null;
+  }
+
+  @FieldResolver(() => [Friend])
+  async friends(
+    @Root() user: User,
+    @Ctx() { req }: ContextType
+  ): Promise<Friend[] | null> {
+    const userId = req.session.userId;
+    if (userId === user.id) {
+      const friends = await Friend.find({
+        where: { userId },
+        relations: ['user', 'withUser'],
+      });
+
+      return friends;
+    }
+    return null;
+  }
+
   @Query(() => [User])
   async getAllUsers() {
     return await User.find({});
@@ -41,10 +84,12 @@ export class UserResolver {
     const userId = req.session.userId;
     if (!userId) return undefined;
 
-    return await User.findOne({ where: { id: userId } });
+    return await User.findOne({
+      where: { id: userId },
+    });
   }
 
-  @Mutation(() => UserResponse)
+  @Mutation(() => BooleanResponse)
   async UserRegister(
     @Ctx() { req, res }: ContextType,
     @Arg('options')
@@ -126,7 +171,7 @@ export class UserResolver {
     };
   }
 
-  @Mutation(() => UserResponse)
+  @Mutation(() => BooleanResponse)
   async UserLogin(
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: LoginInput

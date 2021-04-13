@@ -1,6 +1,6 @@
 import Head from 'next/head';
-import Layout from '../../../components/App/Layout';
-import withAuth from '../../../utils/withAuth';
+import FriendsLayout from '../../../components/App/FriendsLayout';
+import withRedirect from '../../../utils/withRedirect';
 export interface AppProps {}
 
 const Friends: React.FC<AppProps> = () => {
@@ -9,11 +9,11 @@ const Friends: React.FC<AppProps> = () => {
       <Head>
         <title>Biscit | Friends</title>
       </Head>
-      <Layout>
-        <div className="w-full h-full text-white">Hi, can you see me?</div>
-      </Layout>
+      <FriendsLayout>
+        <div></div>
+      </FriendsLayout>
     </>
   );
 };
 
-export default withAuth(Friends);
+export default withRedirect({ location: '/app/friends/all' })(Friends);

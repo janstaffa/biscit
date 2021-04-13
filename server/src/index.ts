@@ -10,6 +10,7 @@ import { createConnection, getConnection } from 'typeorm';
 import { TypeormStore } from 'typeorm-store';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Session } from './entities/Session';
+import { FriendRequestResolver } from './resolvers/friend';
 import { UserResolver } from './resolvers/user';
 import { ContextType } from './types';
 
@@ -58,7 +59,7 @@ import { ContextType } from './types';
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolver],
+      resolvers: [UserResolver, FriendRequestResolver],
       validate: false,
     }),
     context: ({ req, res }): ContextType => ({

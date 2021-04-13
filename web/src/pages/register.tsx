@@ -8,7 +8,7 @@ import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useRegisterMutation } from '../generated/graphql';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuthStore } from '../stores/useAuthStore';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 import withNoAuth from '../utils/withNoAuth';
@@ -40,8 +40,6 @@ const RegisterSchema = yup.object().shape({
 });
 
 const Register: React.FC = () => {
-  const { setAuthenticated } = useAuth();
-
   const { mutate: register } = useRegisterMutation({
     onError: (err) => {
       console.error(err);
@@ -79,6 +77,7 @@ const Register: React.FC = () => {
                         }
                       } else {
                         if (data.UserRegister.data) {
+                          const { setAuthenticated } = useAuthStore.getState();
                           setAuthenticated(true);
                           router.replace('/app');
                         } else {

@@ -8,7 +8,7 @@ import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useLoginMutation } from '../generated/graphql';
-import { useAuth } from '../providers/AuthProvider';
+import { useAuthStore } from '../stores/useAuthStore';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 import withNoAuth from '../utils/withNoAuth';
@@ -19,8 +19,6 @@ const LoginSchema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
-  const { setAuthenticated } = useAuth();
-
   const { mutate: login } = useLoginMutation({
     onError: (err) => {
       console.error(err);
@@ -54,6 +52,7 @@ const Login: React.FC = () => {
                         }
                       } else {
                         if (data.UserLogin.data) {
+                          const { setAuthenticated } = useAuthStore.getState();
                           setAuthenticated(true);
                           router.replace('/app');
                         } else {
