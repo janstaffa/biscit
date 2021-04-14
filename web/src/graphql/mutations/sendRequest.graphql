@@ -1,0 +1,13 @@
+mutation SendRequest($options: FriendRequestInput!) {
+  FriendRequestSend(options: $options) {
+    data
+    errors {
+      name
+      details {
+        field
+        value
+        message
+      }
+    }
+  }
+}

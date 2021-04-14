@@ -24,10 +24,10 @@ import { BooleanResponse, ResponseType } from './types';
 
 @ObjectType()
 class FriendRequestResponse {
-  @Field(() => [FriendRequest], { nullable: true })
+  @Field(() => [FriendRequest])
   incoming: FriendRequest[];
 
-  @Field(() => [FriendRequest], { nullable: true })
+  @Field(() => [FriendRequest])
   outcoming: FriendRequest[];
 }
 

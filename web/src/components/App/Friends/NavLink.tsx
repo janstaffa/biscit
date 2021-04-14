@@ -12,14 +12,16 @@ const NavLink: React.FC<NavLinkProps> = ({
   active = false,
 }) => {
   return (
-    <div
-      className={
-        'text-light-200 font-roboto mx-2 px-3 rounded-sm' +
-        (active ? ' bg-dark-50' : ' hover:bg-dark-100')
-      }
-    >
-      <Link href={href}>{children}</Link>
-    </div>
+    <Link href={href}>
+      <div
+        className={
+          'text-light-200 font-roboto mx-2 px-3 rounded-sm cursor-pointer' +
+          (active ? ' bg-dark-50' : ' hover:bg-dark-100')
+        }
+      >
+        {children}
+      </div>
+    </Link>
   );
 };
 

@@ -9,9 +9,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div>
       <div className="bg-dark-100 flex flex-col h-screen">
         <Navbar />
-        <div className="flex flex-row flex-1">
+        <div className="flex flex-row flex-1 overflow-hidden">
           <LeftSidebar />
           <div className="flex-1">{children}</div>
+          {/* <div className="h-full w-96"></div> */}
         </div>
       </div>
     </div>

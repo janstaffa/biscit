@@ -8,12 +8,12 @@ import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast } from '../../../utils/toasts';
 export interface FriendTabProps {
   friendId: string;
-  friend: User;
+  friend: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
 }
 
 const FriendTab: React.FC<FriendTabProps> = ({
   friendId,
-  friend: { username, bio },
+  friend: { username, bio, status },
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { mutate: removeFriend } = useRemoveFriendMutation({
@@ -40,7 +40,7 @@ const FriendTab: React.FC<FriendTabProps> = ({
             <div className="flex flex-col justify-center items-start">
               <div className=" text-light font-roboto">{username}</div>
               <div className="text-light-300 w-full font-roboto text-sm truncate">
-                {bio}
+                {bio || status}
               </div>
             </div>
             <div className="flex flex-row items-center">
