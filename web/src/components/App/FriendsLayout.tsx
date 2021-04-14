@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import React, { ReactNode, useEffect, useState } from 'react';
 import { FaUserFriends } from 'react-icons/fa';
 import { currentUrl } from '../../constants';
 import ContentNav from './ContentNav';
+import NavLink from './Friends/NavLink';
 import Layout from './Layout';
 
 export interface FriendsLayoutProps {
@@ -23,18 +23,30 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
           <div className="border-r border-light-300 px-4 mr-2">
             <FaUserFriends className="text-light-300 text-2xl" />
           </div>
-          <div className="text-light-200 font-roboto mx-2 px-3 hover:bg-dark-100 rounded-sm">
-            <Link href="/app/friends/all">All</Link>
-          </div>
-          <div className="text-light-200 font-roboto mx-2 px-3 hover:bg-dark-100 rounded-sm">
-            <Link href="/app/friends/online">Online</Link>
-          </div>
-          <div className="text-light-200 font-roboto mx-2 px-3 hover:bg-dark-100 rounded-sm">
-            <Link href="/app/friends/pending">Pending</Link>
-          </div>
-          <div className="text-light-200 font-roboto mx-2 px-3 hover:bg-dark-100 rounded-sm">
-            <Link href="/app/friends/add">Add friend</Link>
-          </div>
+          <NavLink
+            href="/app/friends/all"
+            active={currentPath === '/app/friends/all'}
+          >
+            All
+          </NavLink>
+          <NavLink
+            href="/app/friends/online"
+            active={currentPath === '/app/friends/online'}
+          >
+            Online
+          </NavLink>
+          <NavLink
+            href="/app/friends/pending"
+            active={currentPath === '/app/friends/pending'}
+          >
+            Pending
+          </NavLink>
+          <NavLink
+            href="/app/friends/add"
+            active={currentPath === '/app/friends/add'}
+          >
+            Add friend
+          </NavLink>
         </div>
         <div>{children}</div>
       </ContentNav>

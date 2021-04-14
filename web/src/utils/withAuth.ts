@@ -1,6 +1,6 @@
 import cookie from 'cookie';
 import { NextPageContext } from 'next';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useIsAuthenticated } from '../../providers/AuthProvider';
 import withConditionalRedirect from './withConditionalRedirect';
 
 export default function withAuth(Component, location = '/login') {
@@ -8,7 +8,8 @@ export default function withAuth(Component, location = '/login') {
     Component,
     location,
     clientCondition: () => {
-      const { authenticated } = useAuthStore();
+      const authenticated = useIsAuthenticated();
+      console.log('client: ', authenticated);
       return !authenticated;
     },
     serverCondition: (context: NextPageContext) => {
@@ -18,7 +19,7 @@ export default function withAuth(Component, location = '/login') {
         const parsed = cookie.parse(req.headers.cookie);
         authenticated = !!parsed.uid;
       }
-
+      console.log('server: ', authenticated);
       return !authenticated;
     },
   });

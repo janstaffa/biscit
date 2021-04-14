@@ -29,6 +29,7 @@ export type DetailsType = {
 export type Friend = {
   __typename?: 'Friend';
   id: Scalars['String'];
+  key: Scalars['String'];
   userId: Scalars['String'];
   user: User;
   friendId: Scalars['String'];
@@ -39,6 +40,10 @@ export type Friend = {
 
 export type FriendAcceptInput = {
   requestId: Scalars['Float'];
+};
+
+export type FriendRemoveInput = {
+  friendId: Scalars['String'];
 };
 
 export type FriendRequest = {
@@ -77,6 +82,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   FriendRequestSend: BooleanResponse;
   FriendRequestAccept: BooleanResponse;
+  FriendRemove: BooleanResponse;
   UserRegister: BooleanResponse;
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
@@ -93,6 +99,11 @@ export type MutationFriendRequestAcceptArgs = {
 };
 
 
+export type MutationFriendRemoveArgs = {
+  options: FriendRemoveInput;
+};
+
+
 export type MutationUserRegisterArgs = {
   options: RegisterInput;
 };
@@ -104,7 +115,6 @@ export type MutationUserLoginArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  getAllUsers: Array<User>;
   me?: Maybe<User>;
 };
 
@@ -184,6 +194,23 @@ export type RegisterMutation = (
   ) }
 );
 
+export type RemoveFriendMutationVariables = Exact<{
+  options: FriendRemoveInput;
+}>;
+
+
+export type RemoveFriendMutation = (
+  { __typename?: 'Mutation' }
+  & { FriendRemove: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors?: Maybe<Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )>> }
+  ) }
+);
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -211,7 +238,7 @@ export type MeQuery = (
       )>> }
     ), friends?: Maybe<Array<(
       { __typename?: 'Friend' }
-      & Pick<Friend, 'id' | 'createdAt'>
+      & Pick<Friend, 'id' | 'key' | 'createdAt'>
       & { friend: (
         { __typename?: 'User' }
         & UserSnippetFragment
@@ -288,6 +315,24 @@ export const useRegisterMutation = <
       useGQLRequest<RegisterMutation, RegisterMutationVariables>(RegisterDocument),
       options
     );
+export const RemoveFriendDocument = `
+    mutation RemoveFriend($options: FriendRemoveInput!) {
+  FriendRemove(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useRemoveFriendMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<RemoveFriendMutation, TError, RemoveFriendMutationVariables, TContext>) => 
+    useMutation<RemoveFriendMutation, TError, RemoveFriendMutationVariables, TContext>(
+      useGQLRequest<RemoveFriendMutation, RemoveFriendMutationVariables>(RemoveFriendDocument),
+      options
+    );
 export const MeDocument = `
     query Me {
   me {
@@ -314,6 +359,7 @@ export const MeDocument = `
     }
     friends {
       id
+      key
       friend {
         ...userSnippet
       }

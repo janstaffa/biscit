@@ -3,11 +3,11 @@ import React from 'react';
 import FriendTab from '../../../../components/App/Friends/FriendTab';
 import FriendsLayout from '../../../../components/App/FriendsLayout';
 import { useMeQuery } from '../../../../generated/graphql';
+import withAuth from '../../../../utils/withAuth';
 export interface AllFriendsProps {}
 
 const AllFriends: React.FC<AllFriendsProps> = () => {
   const { data: meData } = useMeQuery();
-  console.log(meData);
   return (
     <>
       <Head>
@@ -16,15 +16,15 @@ const AllFriends: React.FC<AllFriendsProps> = () => {
       <FriendsLayout>
         <div className="p-2">
           <p className="text-light-200 text-base uppercase font-roboto px-1 py-1 border-b border-light-300">
-            All friends - 5
+            All friends - {meData?.me?.friends?.length}
           </p>
           <div>
             {meData?.me?.friends?.map((friendship) => {
               const { friend } = friendship;
               return (
                 <FriendTab
-                  username={friend.username}
-                  bio={friend.bio || friend.status}
+                  friendId={friendship.key}
+                  friend={friend}
                   key={friendship.id}
                 />
               );
@@ -36,4 +36,4 @@ const AllFriends: React.FC<AllFriendsProps> = () => {
   );
 };
 
-export default AllFriends;
+export default withAuth(AllFriends);

@@ -1,0 +1,8 @@
+mutation RemoveFriend($options: FriendRemoveInput!) {
+  FriendRemove(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

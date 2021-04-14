@@ -23,6 +23,7 @@ query Me {
     }
     friends {
       id
+      key
       friend {
         ...userSnippet
       }
