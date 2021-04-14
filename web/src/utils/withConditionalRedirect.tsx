@@ -4,9 +4,9 @@ import { isServer } from './isServer';
 
 export default function withConditionalRedirect({
   Component,
+  location,
   clientCondition,
   serverCondition,
-  location,
 }) {
   const WithConditionalRedirectWrapper = (props) => {
     const router = useRouter();

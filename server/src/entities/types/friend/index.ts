@@ -15,5 +15,5 @@ export class FriendRequestInput {
 @InputType()
 export class FriendRemoveInput {
   @Field()
-  userId: string;
+  friendId: string;
 }

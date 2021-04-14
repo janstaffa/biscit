@@ -21,15 +21,19 @@ export class Friend extends BaseEntity {
 
   @BeforeInsert()
   async generateId() {
-    this.id = await getId(Friend);
+    this.id = await getId(Friend, 'id');
   }
+
+  @Field(() => String)
+  @Column()
+  key: string;
 
   @Field(() => String)
   @Column()
   userId: string;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.friends)
+  @ManyToOne(() => User, (user) => user, { onDelete: 'CASCADE' })
   user: User;
 
   @Field(() => String)
@@ -37,7 +41,7 @@ export class Friend extends BaseEntity {
   friendId: string;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user)
+  @ManyToOne(() => User, (user) => user.friends, { onDelete: 'CASCADE' })
   friend: User;
 
   //createdAt field

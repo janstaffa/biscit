@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
+import { Popover } from 'react-tiny-popover';
+import { User, useRemoveFriendMutation } from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
+import { errorToast } from '../../../utils/toasts';
 export interface FriendTabProps {
-  username: string;
-  bio: string;
+  friendId: string;
+  friend: User;
 }
 
-const FriendTab: React.FC<FriendTabProps> = ({ username, bio }) => {
+const FriendTab: React.FC<FriendTabProps> = ({
+  friendId,
+  friend: { username, bio },
+}) => {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const { mutate: removeFriend } = useRemoveFriendMutation({
+    onSuccess: (data) => {
+      if (!data.FriendRemove.data) {
+        errorToast('Something went wrong, please try again later.');
+      }
+      queryClient.invalidateQueries('Me');
+    },
+    onError: (err) => {
+      console.error(err);
+      errorToast('Something went wrong, please try again later.');
+    },
+  });
+
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
@@ -31,10 +52,35 @@ const FriendTab: React.FC<FriendTabProps> = ({ username, bio }) => {
                 className="text-light-300 text-2xl mx-2 hover:text-light-200"
                 title="Call"
               />
-              <HiDotsVertical
-                className="text-light-300 text-2xl mx-2 hover:text-light-200"
-                title="Options"
-              />
+              <Popover
+                isOpen={isPopoverOpen}
+                positions={['left', 'bottom', 'top', 'right']}
+                onClickOutside={() => setIsPopoverOpen(false)}
+                content={
+                  <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
+                    <div className="w-32">
+                      <ul>
+                        <li
+                          className="text-red-600 font-opensans text-center py-2 hover:bg-dark-200 cursor-pointer"
+                          onClick={() => {
+                            removeFriend({ options: { friendId } });
+                          }}
+                        >
+                          Remove friend
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                }
+              >
+                <div>
+                  <HiDotsVertical
+                    className="text-light-300 text-2xl mx-2 hover:text-light-200"
+                    title="Options"
+                    onClick={() => setIsPopoverOpen(!isPopoverOpen)}
+                  />
+                </div>
+              </Popover>
             </div>
           </div>
         </div>

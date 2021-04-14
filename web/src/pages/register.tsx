@@ -4,11 +4,11 @@ import Link from 'next/link';
 import router from 'next/router';
 import React from 'react';
 import * as yup from 'yup';
+import { useAuth } from '../../providers/AuthProvider';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useRegisterMutation } from '../generated/graphql';
-import { useAuthStore } from '../stores/useAuthStore';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 import withNoAuth from '../utils/withNoAuth';
@@ -40,6 +40,8 @@ const RegisterSchema = yup.object().shape({
 });
 
 const Register: React.FC = () => {
+  const { setAuthenticated } = useAuth();
+
   const { mutate: register } = useRegisterMutation({
     onError: (err) => {
       console.error(err);
@@ -77,9 +79,8 @@ const Register: React.FC = () => {
                         }
                       } else {
                         if (data.UserRegister.data) {
-                          const { setAuthenticated } = useAuthStore.getState();
                           setAuthenticated(true);
-                          router.replace('/app');
+                          router.replace('/app/friends/all');
                         } else {
                           errorToast(
                             'Something went wrong, please try again later.'

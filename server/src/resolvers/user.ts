@@ -9,6 +9,7 @@ import {
   Query,
   Resolver,
   Root,
+  UseMiddleware,
 } from 'type-graphql';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
@@ -16,6 +17,7 @@ import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
 import { LoginInput, RegisterInput } from '../entities/types/user';
 import { User } from '../entities/User';
+import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { GQLValidationError, validateSchema } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
@@ -32,6 +34,7 @@ class FriendRequestResponse {
 @Resolver(User)
 export class UserResolver {
   @FieldResolver(() => FriendRequestResponse)
+  @UseMiddleware(isAuth)
   async friend_requests(
     @Root() user: User,
     @Ctx() { req }: ContextType
@@ -57,6 +60,7 @@ export class UserResolver {
   }
 
   @FieldResolver(() => [Friend])
+  @UseMiddleware(isAuth)
   async friends(
     @Root() user: User,
     @Ctx() { req }: ContextType
@@ -71,11 +75,6 @@ export class UserResolver {
       return friends;
     }
     return null;
-  }
-
-  @Query(() => [User])
-  async getAllUsers() {
-    return await User.find({});
   }
 
   @Query(() => User, { nullable: true })

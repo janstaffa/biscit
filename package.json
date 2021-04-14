@@ -11,7 +11,8 @@
     "url": "https://github.com/janstaffa/biscit/issues"
   },
   "scripts": {
-    "gen-preview": "cd ./puppeteer && yarn start"
+    "gen-preview": "cd ./puppeteer && yarn start",
+    "gen-preview-push": "cd ./puppeteer && yarn start-push"
   },
   "homepage": "https://github.com/janstaffa/biscit#readme",
   "devDependencies": {
