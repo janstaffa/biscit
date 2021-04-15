@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { QueryClientProvider } from 'react-query';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { AuthProvider } from '../../providers/AuthProvider';
+import { AuthProvider } from '../providers/AuthProvider';
 import { useAuthStore } from '../stores/useAuthStore';
 import '../styles/fonts.css';
 import '../styles/globals.css';

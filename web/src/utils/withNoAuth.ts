@@ -1,6 +1,6 @@
 import cookie from 'cookie';
 import { NextPageContext } from 'next';
-import { useIsAuthenticated } from '../../providers/AuthProvider';
+import { useIsAuthenticated } from '../providers/AuthProvider';
 import withConditionalRedirect from './withConditionalRedirect';
 
 export default function withNoAuth(Component, location = '/app/friends') {
