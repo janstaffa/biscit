@@ -47,7 +47,7 @@ export class User extends BaseEntity {
 
   //bio field
   @Field(() => String, { nullable: true })
-  @Column({ length: 200, nullable: true })
+  @Column({ length: 100, nullable: true })
   bio: string;
 
   //friend requests

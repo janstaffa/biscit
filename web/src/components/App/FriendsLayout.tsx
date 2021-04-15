@@ -19,7 +19,7 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
   return (
     <Layout>
       <ContentNav>
-        <div className="flex flex-row items-center h-full">
+        <div className="flex flex-row items-center h-full select-none">
           <div className="border-r border-light-300 px-4 mr-2">
             <FaUserFriends className="text-light-300 text-2xl" />
           </div>

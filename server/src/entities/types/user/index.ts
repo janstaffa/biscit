@@ -23,3 +23,9 @@ export class RegisterInput {
   @Field()
   confirmPassword: string;
 }
+
+@InputType()
+export class UpdateStatusInput {
+  @Field()
+  status: string;
+}

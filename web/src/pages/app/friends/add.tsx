@@ -3,6 +3,7 @@ import Head from 'next/head';
 import React, { useState } from 'react';
 import FriendsLayout from '../../../components/App/FriendsLayout';
 import SplashScreen from '../../../components/SplashScreen';
+import { genericErrorMessage } from '../../../constants';
 import { useSendRequestMutation } from '../../../generated/graphql';
 import { errorToast, successToast } from '../../../utils/toasts';
 import withAuth from '../../../utils/withAuth';
@@ -11,7 +12,7 @@ const AddFriend: NextPage = () => {
   const { mutate: sendRequest } = useSendRequestMutation({
     onError: (err) => {
       console.error(err);
-      errorToast('Something went wrong, please try again later.');
+      errorToast(genericErrorMessage);
     },
   });
 
@@ -64,9 +65,7 @@ const AddFriend: NextPage = () => {
                                   `Friends request sent to ${usernameInput}.`
                                 );
                               } else {
-                                errorToast(
-                                  'Something went wrong, please try again later.'
-                                );
+                                errorToast(genericErrorMessage);
                               }
                             }
                           },

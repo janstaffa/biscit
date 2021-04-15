@@ -15,7 +15,11 @@ import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
-import { LoginInput, RegisterInput } from '../entities/types/user';
+import {
+  LoginInput,
+  RegisterInput,
+  UpdateStatusInput,
+} from '../entities/types/user';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
@@ -78,6 +82,7 @@ export class UserResolver {
   }
 
   @Query(() => User, { nullable: true })
+  @UseMiddleware(isAuth)
   async me(@Ctx() { req, res }: ContextType): Promise<User | undefined> {
     const userId = req.session.userId;
     if (!userId) return undefined;
@@ -180,7 +185,6 @@ export class UserResolver {
         errors: [],
       };
     }
-    console.log(1);
     const LoginSchema = yup.object().shape({
       usernameOrEmail: yup.string().required('username or email is required'),
       password: yup.string().required('password is required'),
@@ -242,5 +246,18 @@ export class UserResolver {
       );
     }
     return false;
+  }
+
+  @Mutation(() => Boolean)
+  @UseMiddleware(isAuth)
+  async UserUpdateStatus(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: UpdateStatusInput
+  ): Promise<boolean> {
+    const userId = req.session.userId!;
+    const response = await User.update(userId, { bio: options.status });
+    if (!response.affected || response.affected === 0) return false;
+
+    return true;
   }
 }

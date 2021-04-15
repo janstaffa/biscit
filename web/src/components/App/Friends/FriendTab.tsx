@@ -3,6 +3,7 @@ import { BiMessageAltDetail } from 'react-icons/bi';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
 import { Popover } from 'react-tiny-popover';
+import { genericErrorMessage } from '../../../constants';
 import { User, useRemoveFriendMutation } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast } from '../../../utils/toasts';
@@ -19,13 +20,13 @@ const FriendTab: React.FC<FriendTabProps> = ({
   const { mutate: removeFriend } = useRemoveFriendMutation({
     onSuccess: (data) => {
       if (!data.FriendRemove.data) {
-        errorToast('Something went wrong, please try again later.');
+        errorToast(genericErrorMessage);
       }
       queryClient.invalidateQueries('Me');
     },
     onError: (err) => {
       console.error(err);
-      errorToast('Something went wrong, please try again later.');
+      errorToast(genericErrorMessage);
     },
   });
 

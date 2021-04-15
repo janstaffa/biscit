@@ -8,6 +8,7 @@ import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
+import { genericErrorMessage } from '../constants';
 import { useRegisterMutation } from '../generated/graphql';
 import { useAuth } from '../providers/AuthProvider';
 import { errorToast } from '../utils/toasts';
@@ -46,7 +47,7 @@ const Register: NextPage = () => {
   const { mutate: register } = useRegisterMutation({
     onError: (err) => {
       console.error(err);
-      errorToast('Something went wrong, please try again later.');
+      errorToast(genericErrorMessage);
     },
   });
   return (
@@ -83,9 +84,7 @@ const Register: NextPage = () => {
                           setAuthenticated(true);
                           router.replace('/app/friends/all');
                         } else {
-                          errorToast(
-                            'Something went wrong, please try again later.'
-                          );
+                          errorToast(genericErrorMessage);
                         }
                       }
                     },
