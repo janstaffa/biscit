@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaRegTimesCircle } from 'react-icons/fa';
+import { genericErrorMessage } from '../../../constants';
 import {
   FriendRequest,
   useCancelRequestMutation,
@@ -19,7 +20,7 @@ const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({
   const { mutate: cancelRequest } = useCancelRequestMutation({
     onError: (err) => {
       console.error(err);
-      errorToast('Something went wrong, please try again later.');
+      errorToast(genericErrorMessage);
     },
     onSuccess: (data) => {
       if (data.FriendRequestCancel.errors.length > 0) {
@@ -29,7 +30,7 @@ const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({
         }
       } else {
         if (!data.FriendRequestCancel.data) {
-          errorToast('Something went wrong, please try again later.');
+          errorToast(genericErrorMessage);
         } else {
           successToast('Friend request canceled.');
         }

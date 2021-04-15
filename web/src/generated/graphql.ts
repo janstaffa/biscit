@@ -83,6 +83,7 @@ export type Mutation = {
   UserRegister: BooleanResponse;
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
+  UserUpdateStatus: Scalars['Boolean'];
 };
 
 
@@ -115,6 +116,11 @@ export type MutationUserLoginArgs = {
   options: LoginInput;
 };
 
+
+export type MutationUserUpdateStatusArgs = {
+  options: UpdateStatusInput;
+};
+
 export type Query = {
   __typename?: 'Query';
   me?: Maybe<User>;
@@ -134,6 +140,10 @@ export type RequestAcceptInput = {
 
 export type RequestCancelInput = {
   requestId: Scalars['Float'];
+};
+
+export type UpdateStatusInput = {
+  status: Scalars['String'];
 };
 
 export type User = {
@@ -275,6 +285,16 @@ export type SendRequestMutation = (
       )> }
     )> }
   ) }
+);
+
+export type UpdateStatusMutationVariables = Exact<{
+  options: UpdateStatusInput;
+}>;
+
+
+export type UpdateStatusMutation = (
+  { __typename?: 'Mutation' }
+  & Pick<Mutation, 'UserUpdateStatus'>
 );
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
@@ -456,6 +476,19 @@ export const useSendRequestMutation = <
     >(options?: UseMutationOptions<SendRequestMutation, TError, SendRequestMutationVariables, TContext>) => 
     useMutation<SendRequestMutation, TError, SendRequestMutationVariables, TContext>(
       useGQLRequest<SendRequestMutation, SendRequestMutationVariables>(SendRequestDocument),
+      options
+    );
+export const UpdateStatusDocument = `
+    mutation UpdateStatus($options: UpdateStatusInput!) {
+  UserUpdateStatus(options: $options)
+}
+    `;
+export const useUpdateStatusMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<UpdateStatusMutation, TError, UpdateStatusMutationVariables, TContext>) => 
+    useMutation<UpdateStatusMutation, TError, UpdateStatusMutationVariables, TContext>(
+      useGQLRequest<UpdateStatusMutation, UpdateStatusMutationVariables>(UpdateStatusDocument),
       options
     );
 export const MeDocument = `
