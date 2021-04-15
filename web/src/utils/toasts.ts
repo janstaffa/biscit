@@ -6,5 +6,5 @@ export const errorToast = (message: string) =>
 export const successToast = (message: string) =>
   toast.success(message, {
     position: 'bottom-right',
-    className: 'bg-lime-200',
+    className: 'bg-lime-100',
   });

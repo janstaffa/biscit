@@ -7,7 +7,7 @@ import withAuth from '../../../utils/withAuth';
 export interface AllFriendsProps {}
 
 const AllFriends: React.FC<AllFriendsProps> = () => {
-  const { data: meData } = useMeQuery();
+  const { data: meData, isLoading } = useMeQuery();
   const friends = meData?.me?.friends;
   return (
     <>
@@ -15,7 +15,7 @@ const AllFriends: React.FC<AllFriendsProps> = () => {
         <title>Biscit | All friends</title>
       </Head>
       <FriendsLayout>
-        {friends && friends.length > 0 ? (
+        {!isLoading && friends && friends.length > 0 ? (
           <div className="p-2 pt-16 bg-dark-200">
             <p className="text-light-200 text-base uppercase font-roboto px-1 py-1 border-b border-light-300">
               All friends - {friends.length}

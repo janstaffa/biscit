@@ -22,7 +22,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
       </Head>
       <FriendsLayout>
         <div className="flex flex-col w-full h-full">
-          <div className="pt-12 w-full">
+          <div className="pt-12 w-full z-10">
             <div className="w-full h-48 bg-dark-200 px-10 flex flex-col justify-center items-center">
               <div className="w-full max-w-xl h-auto">
                 <p className="text-light-200 text-base uppercase font-roboto px-1 py-1">
@@ -50,6 +50,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
                   <button
                     className="bg-accent px-3 hover:bg-accent-hover rounded-r-md text-dark-200 hover:text-dark-100 font-opensans font-bold"
                     onClick={async () => {
+                      if (usernameInput.length === 0) return;
                       await sendRequest(
                         { options: { username: usernameInput } },
                         {
@@ -84,12 +85,12 @@ const AddFriend: React.FC<AddFriendProps> = () => {
               </div>
             </div>
           </div>
-          <div className="flex-grow">
-            <div className="w-full h-full absolute">
+          <div className="flex-grow relative">
+            <div className="w-full h-full flex flex-col justify-center items-center absolute z-0">
               <img
                 src="/all_splash.svg"
                 alt="Pending splash image"
-                className="w-1/3 max-w-4xl opacity-20 mx-auto mt-20"
+                className="w-1/3 max-w-4xl opacity-20"
               />
             </div>
           </div>

@@ -1,0 +1,8 @@
+mutation AcceptRequest($options: RequestAcceptInput!) {
+  FriendRequestAccept(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

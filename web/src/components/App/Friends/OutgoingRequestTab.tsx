@@ -1,17 +1,43 @@
 import React from 'react';
 import { FaRegTimesCircle } from 'react-icons/fa';
-import { FriendRequest, User } from '../../../generated/graphql';
+import {
+  FriendRequest,
+  useCancelRequestMutation,
+  User,
+} from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
+import { errorToast, successToast } from '../../../utils/toasts';
 export interface OutgoingRequestTabProps {
-  requestId: string;
   request: Pick<FriendRequest, 'id' | 'createdAt'> & {
     reciever: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
   };
 }
 
 const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({
-  requestId,
   request: { id, reciever, createdAt },
 }) => {
+  const { mutate: cancelRequest } = useCancelRequestMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast('Something went wrong, please try again later.');
+    },
+    onSuccess: (data) => {
+      if (data.FriendRequestCancel.errors.length > 0) {
+        const message = data.FriendRequestCancel.errors[0]?.details?.message;
+        if (message) {
+          errorToast(message);
+        }
+      } else {
+        if (!data.FriendRequestCancel.data) {
+          errorToast('Something went wrong, please try again later.');
+        } else {
+          successToast('Friend request canceled.');
+        }
+        queryClient.invalidateQueries('Me');
+      }
+    },
+  });
+
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
@@ -30,6 +56,9 @@ const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({
               <FaRegTimesCircle
                 className="text-red-500 text-3xl mx-2 hover:text-red-400"
                 title="Cancel"
+                onClick={async () => {
+                  await cancelRequest({ options: { requestId: id } });
+                }}
               />
             </div>
           </div>

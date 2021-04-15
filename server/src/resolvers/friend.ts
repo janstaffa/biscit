@@ -2,9 +2,9 @@ import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from 'type-graphql';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
 import {
-  FriendAcceptInput,
   FriendRemoveInput,
   FriendRequestInput,
+  RequestAcceptInput,
   RequestCancelInput,
 } from '../entities/types/friend';
 import { User } from '../entities/User';
@@ -49,7 +49,7 @@ export class FriendRequestResolver {
   @UseMiddleware(isAuth)
   async FriendRequestAccept(
     @Ctx() { req, res }: ContextType,
-    @Arg('options') options: FriendAcceptInput
+    @Arg('options') options: RequestAcceptInput
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
     const request = await FriendRequest.findOne({
@@ -82,19 +82,21 @@ export class FriendRequestResolver {
       };
     }
 
-    const key = await getId(Friend, 'key');
-    await Friend.save([
-      Friend.create({
-        key,
-        userId,
-        friendId: request.senderId,
-      }),
-      Friend.create({
-        key,
-        userId: request.senderId,
-        friendId: userId,
-      }),
-    ]);
+    if (options.value) {
+      const key = await getId(Friend, 'key');
+      await Friend.save([
+        Friend.create({
+          key,
+          userId,
+          friendId: request.senderId,
+        }),
+        Friend.create({
+          key,
+          userId: request.senderId,
+          friendId: userId,
+        }),
+      ]);
+    }
     await request.remove();
 
     return {

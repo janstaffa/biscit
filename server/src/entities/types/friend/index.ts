@@ -1,12 +1,18 @@
 import { Field, InputType } from 'type-graphql';
 
 @InputType()
-export class FriendAcceptInput {
+export class RequestAcceptInput {
+  @Field()
+  requestId: number;
+
+  @Field()
+  value: boolean;
+}
+@InputType()
+export class RequestCancelInput {
   @Field()
   requestId: number;
 }
-@InputType()
-export class RequestCancelInput extends FriendAcceptInput {}
 @InputType()
 export class FriendRequestInput {
   @Field()

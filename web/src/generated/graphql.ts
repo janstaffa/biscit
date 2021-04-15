@@ -38,10 +38,6 @@ export type Friend = {
   updatedAt: Scalars['String'];
 };
 
-export type FriendAcceptInput = {
-  requestId: Scalars['Float'];
-};
-
 export type FriendRemoveInput = {
   friendId: Scalars['String'];
 };
@@ -96,7 +92,7 @@ export type MutationFriendRequestSendArgs = {
 
 
 export type MutationFriendRequestAcceptArgs = {
-  options: FriendAcceptInput;
+  options: RequestAcceptInput;
 };
 
 
@@ -131,6 +127,11 @@ export type RegisterInput = {
   confirmPassword: Scalars['String'];
 };
 
+export type RequestAcceptInput = {
+  requestId: Scalars['Float'];
+  value: Scalars['Boolean'];
+};
+
 export type RequestCancelInput = {
   requestId: Scalars['Float'];
 };
@@ -160,6 +161,23 @@ export type ErrorSnippetFragment = (
 export type UserSnippetFragment = (
   { __typename?: 'User' }
   & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
+);
+
+export type AcceptRequestMutationVariables = Exact<{
+  options: RequestAcceptInput;
+}>;
+
+
+export type AcceptRequestMutation = (
+  { __typename?: 'Mutation' }
+  & { FriendRequestAccept: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
 );
 
 export type CancelRequestMutationVariables = Exact<{
@@ -314,6 +332,24 @@ export const UserSnippetFragmentDoc = `
   bio
 }
     `;
+export const AcceptRequestDocument = `
+    mutation AcceptRequest($options: RequestAcceptInput!) {
+  FriendRequestAccept(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useAcceptRequestMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<AcceptRequestMutation, TError, AcceptRequestMutationVariables, TContext>) => 
+    useMutation<AcceptRequestMutation, TError, AcceptRequestMutationVariables, TContext>(
+      useGQLRequest<AcceptRequestMutation, AcceptRequestMutationVariables>(AcceptRequestDocument),
+      options
+    );
 export const CancelRequestDocument = `
     mutation CancelRequest($options: RequestCancelInput!) {
   FriendRequestCancel(options: $options) {

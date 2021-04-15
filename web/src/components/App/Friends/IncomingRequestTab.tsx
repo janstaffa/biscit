@@ -1,17 +1,41 @@
 import React from 'react';
 import { FaRegCheckCircle, FaRegTimesCircle } from 'react-icons/fa';
-import { FriendRequest, User } from '../../../generated/graphql';
+import {
+  FriendRequest,
+  useAcceptRequestMutation,
+  User,
+} from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
+import { errorToast } from '../../../utils/toasts';
 export interface IncomingRequestTabProps {
-  requestId: string;
   request: Pick<FriendRequest, 'id' | 'createdAt'> & {
     sender: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
   };
 }
 
 const IncomingRequestTab: React.FC<IncomingRequestTabProps> = ({
-  requestId,
   request: { id, sender, createdAt },
 }) => {
+  const { mutate: acceptRequest } = useAcceptRequestMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast('Something went wrong, please try again later.');
+    },
+    onSuccess: (data) => {
+      if (data.FriendRequestAccept.errors.length > 0) {
+        const message = data.FriendRequestAccept.errors[0]?.details?.message;
+        if (message) {
+          errorToast(message);
+        }
+      } else {
+        if (!data.FriendRequestAccept.data) {
+          errorToast('Something went wrong, please try again later.');
+        }
+        queryClient.invalidateQueries('Me');
+      }
+    },
+  });
+
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
@@ -30,10 +54,20 @@ const IncomingRequestTab: React.FC<IncomingRequestTabProps> = ({
               <FaRegCheckCircle
                 className="text-green-500 text-3xl mx-2 hover:text-green-400"
                 title="Accept"
+                onClick={async () => {
+                  await acceptRequest({
+                    options: { requestId: id, value: true },
+                  });
+                }}
               />
               <FaRegTimesCircle
                 className="text-red-500 text-3xl mx-2 hover:text-red-400"
                 title="Decline"
+                onClick={async () => {
+                  await acceptRequest({
+                    options: { requestId: id, value: false },
+                  });
+                }}
               />
             </div>
           </div>
