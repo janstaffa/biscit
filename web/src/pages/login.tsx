@@ -1,4 +1,5 @@
 import { Form, Formik } from 'formik';
+import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import router from 'next/router';
@@ -18,7 +19,7 @@ const LoginSchema = yup.object().shape({
   password: yup.string().required('password is required'),
 });
 
-const Login: React.FC = () => {
+const Login: NextPage = () => {
   const { setAuthenticated } = useAuth();
 
   const { mutate: login } = useLoginMutation({

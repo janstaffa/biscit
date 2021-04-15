@@ -1,12 +1,13 @@
+import { NextPage } from 'next';
 import Head from 'next/head';
 import React, { useState } from 'react';
 import FriendsLayout from '../../../components/App/FriendsLayout';
+import SplashScreen from '../../../components/SplashScreen';
 import { useSendRequestMutation } from '../../../generated/graphql';
 import { errorToast, successToast } from '../../../utils/toasts';
 import withAuth from '../../../utils/withAuth';
-export interface AddFriendProps {}
 
-const AddFriend: React.FC<AddFriendProps> = () => {
+const AddFriend: NextPage = () => {
   const { mutate: sendRequest } = useSendRequestMutation({
     onError: (err) => {
       console.error(err);
@@ -29,7 +30,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
                   Add a friend
                 </p>
                 <p className="text-light-300 my-1">
-                  Type in the username of the person, you wan't to add.
+                  Type in the username of the person you wish to add.
                 </p>
                 <div className="flex flex-row">
                   <input
@@ -39,14 +40,8 @@ const AddFriend: React.FC<AddFriendProps> = () => {
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck="false"
-                    list="users_datalist"
                     onChange={(e) => setUsernameInput(e.target.value)}
                   />
-                  <datalist id="users_datalist">
-                    <option value="John" />
-                    <option value="Babel" />
-                    <option value="George" />
-                  </datalist>
                   <button
                     className="bg-accent px-3 hover:bg-accent-hover rounded-r-md text-dark-200 hover:text-dark-100 font-opensans font-bold"
                     onClick={async () => {
@@ -86,13 +81,11 @@ const AddFriend: React.FC<AddFriendProps> = () => {
             </div>
           </div>
           <div className="flex-grow relative">
-            <div className="w-full h-full flex flex-col justify-center items-center absolute z-0">
-              <img
-                src="/all_splash.svg"
-                alt="Pending splash image"
-                className="w-1/3 max-w-4xl opacity-20"
-              />
-            </div>
+            <SplashScreen
+              src="/all_splash.svg"
+              alt="Pending splash image"
+              caption="Here you can add a friend."
+            />
           </div>
         </div>
       </FriendsLayout>

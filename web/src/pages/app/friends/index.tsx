@@ -1,9 +1,9 @@
+import { NextPage } from 'next';
 import Head from 'next/head';
 import FriendsLayout from '../../../components/App/FriendsLayout';
 import withRedirect from '../../../utils/withRedirect';
-export interface AppProps {}
 
-const Friends: React.FC<AppProps> = () => {
+const Friends: NextPage = () => {
   return (
     <>
       <Head>

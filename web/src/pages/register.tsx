@@ -1,4 +1,5 @@
 import { Form, Formik } from 'formik';
+import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import router from 'next/router';
@@ -39,7 +40,7 @@ const RegisterSchema = yup.object().shape({
     }),
 });
 
-const Register: React.FC = () => {
+const Register: NextPage = () => {
   const { setAuthenticated } = useAuth();
 
   const { mutate: register } = useRegisterMutation({

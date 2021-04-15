@@ -1,13 +1,14 @@
+import { NextPage } from 'next';
 import Head from 'next/head';
 import React from 'react';
 import IncomingRequestTab from '../../../components/App/Friends/IncomingRequestTab';
 import OutgoingRequestTab from '../../../components/App/Friends/OutgoingRequestTab';
 import FriendsLayout from '../../../components/App/FriendsLayout';
+import SplashScreen from '../../../components/SplashScreen';
 import { useMeQuery } from '../../../generated/graphql';
 import withAuth from '../../../utils/withAuth';
-export interface PendingRequestsProps {}
 
-const PendingRequests: React.FC<PendingRequestsProps> = () => {
+const PendingRequests: NextPage = () => {
   const { data: meData, isLoading } = useMeQuery();
   const requests = meData?.me?.friend_requests;
 
@@ -51,13 +52,11 @@ const PendingRequests: React.FC<PendingRequestsProps> = () => {
           (!requests ||
             (requests.incoming.length === 0 &&
               requests.outcoming.length === 0)) ? (
-            <div className="w-full h-full flex flex-col justify-center items-center absolute">
-              <img
-                src="/pending_splash.svg"
-                alt="Pending splash image"
-                className="w-2/5 max-w-4xl opacity-20"
-              />
-            </div>
+            <SplashScreen
+              src="/pending_splash.svg"
+              alt="Pending splash image"
+              caption="You have no pending friend requests."
+            />
           ) : null}
         </div>
       </FriendsLayout>

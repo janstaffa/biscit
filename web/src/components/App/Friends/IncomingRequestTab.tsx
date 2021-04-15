@@ -6,7 +6,7 @@ import {
   User,
 } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
-import { errorToast } from '../../../utils/toasts';
+import { errorToast, successToast } from '../../../utils/toasts';
 export interface IncomingRequestTabProps {
   request: Pick<FriendRequest, 'id' | 'createdAt'> & {
     sender: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
@@ -30,6 +30,8 @@ const IncomingRequestTab: React.FC<IncomingRequestTabProps> = ({
       } else {
         if (!data.FriendRequestAccept.data) {
           errorToast('Something went wrong, please try again later.');
+        } else {
+          successToast('Success.');
         }
         queryClient.invalidateQueries('Me');
       }
