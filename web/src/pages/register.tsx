@@ -1,14 +1,15 @@
 import { Form, Formik } from 'formik';
+import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import router from 'next/router';
 import React from 'react';
 import * as yup from 'yup';
-import { useAuth } from '../../providers/AuthProvider';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
 import InputField from '../components/Inputs/InputField';
 import { useRegisterMutation } from '../generated/graphql';
+import { useAuth } from '../providers/AuthProvider';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
 import withNoAuth from '../utils/withNoAuth';
@@ -39,7 +40,7 @@ const RegisterSchema = yup.object().shape({
     }),
 });
 
-const Register: React.FC = () => {
+const Register: NextPage = () => {
   const { setAuthenticated } = useAuth();
 
   const { mutate: register } = useRegisterMutation({

@@ -43,7 +43,12 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
           </NavLink>
           <NavLink
             href="/app/friends/add"
-            active={currentPath === '/app/friends/add'}
+            className={
+              'border-lime-300 border-2 text-lime-200 font-bold mx-2 px-3 rounded-full cursor-pointer ml-5' +
+              (currentPath === '/app/friends/add'
+                ? ' bg-dark-50'
+                : ' hover:bg-dark-50 bg-dark-100')
+            }
           >
             Add friend
           </NavLink>
