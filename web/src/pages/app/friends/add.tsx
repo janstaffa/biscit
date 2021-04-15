@@ -54,7 +54,7 @@ const AddFriend: React.FC<AddFriendProps> = () => {
                         { options: { username: usernameInput } },
                         {
                           onSuccess: (data) => {
-                            if (data.FriendRequestSend.errors) {
+                            if (data.FriendRequestSend.errors.length > 0) {
                               const message =
                                 data.FriendRequestSend.errors[0]?.details
                                   ?.message;
@@ -63,12 +63,10 @@ const AddFriend: React.FC<AddFriendProps> = () => {
                                 errorToast(message);
                               }
                             } else {
-                              console.log(
-                                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                                data.FriendRequestSend.data
-                              );
                               if (data.FriendRequestSend.data) {
-                                successToast('Friends request sent.');
+                                successToast(
+                                  `Friends request sent to ${usernameInput}.`
+                                );
                               } else {
                                 errorToast(
                                   'Something went wrong, please try again later.'

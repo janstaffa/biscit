@@ -11,6 +11,6 @@ export class BooleanResponse {
   @Field()
   data: boolean;
 
-  @Field(() => [GQLValidationError], { nullable: true })
+  @Field(() => [GQLValidationError])
   errors: GQLValidationError[];
 }

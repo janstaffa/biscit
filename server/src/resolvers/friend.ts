@@ -5,6 +5,7 @@ import {
   FriendAcceptInput,
   FriendRemoveInput,
   FriendRequestInput,
+  RequestCancelInput,
 } from '../entities/types/friend';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
@@ -131,7 +132,40 @@ export class FriendRequestResolver {
 
     return {
       data: true,
-      errors: null,
+      errors,
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async FriendRequestCancel(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: RequestCancelInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+    const request = await FriendRequest.findOne({
+      where: { id: options.requestId, senderId: userId },
+    });
+    const errors: GQLValidationError[] = [];
+
+    if (!request) {
+      errors.push(
+        new GQLValidationError({
+          field: 'requestId',
+          value: options.requestId.toString(),
+          message: "this request doesn't exist or it wasn't sent by you",
+        })
+      );
+      return {
+        data: false,
+        errors,
+      };
+    }
+    await request.remove();
+
+    return {
+      data: true,
+      errors,
     };
   }
 }

@@ -5,7 +5,8 @@ export class FriendAcceptInput {
   @Field()
   requestId: number;
 }
-
+@InputType()
+export class RequestCancelInput extends FriendAcceptInput {}
 @InputType()
 export class FriendRequestInput {
   @Field()
