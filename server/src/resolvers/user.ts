@@ -24,10 +24,10 @@ import { BooleanResponse, ResponseType } from './types';
 
 @ObjectType()
 class FriendRequestResponse {
-  @Field(() => [FriendRequest], { nullable: true })
+  @Field(() => [FriendRequest])
   incoming: FriendRequest[];
 
-  @Field(() => [FriendRequest], { nullable: true })
+  @Field(() => [FriendRequest])
   outcoming: FriendRequest[];
 }
 
@@ -96,7 +96,7 @@ export class UserResolver {
     if (req.session.userId) {
       return {
         data: false,
-        errors: null,
+        errors: [],
       };
     }
 
@@ -177,7 +177,7 @@ export class UserResolver {
     if (req.session.userId) {
       return {
         data: true,
-        errors: null,
+        errors: [],
       };
     }
     console.log(1);
@@ -202,7 +202,7 @@ export class UserResolver {
         req.session.userId = user.id;
         return {
           data: true,
-          errors: null,
+          errors: [],
         };
       } else {
         errors.push(

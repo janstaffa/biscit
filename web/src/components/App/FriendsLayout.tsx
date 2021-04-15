@@ -48,8 +48,8 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
             Add friend
           </NavLink>
         </div>
-        <div>{children}</div>
       </ContentNav>
+      <div className="w-full h-full overflow-hidden relative">{children} </div>
     </Layout>
   );
 };

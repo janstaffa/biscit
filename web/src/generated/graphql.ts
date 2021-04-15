@@ -16,7 +16,7 @@ export type Scalars = {
 export type BooleanResponse = {
   __typename?: 'BooleanResponse';
   data: Scalars['Boolean'];
-  errors?: Maybe<Array<GqlValidationError>>;
+  errors: Array<GqlValidationError>;
 };
 
 export type DetailsType = {
@@ -36,10 +36,6 @@ export type Friend = {
   friend: User;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
-};
-
-export type FriendAcceptInput = {
-  requestId: Scalars['Float'];
 };
 
 export type FriendRemoveInput = {
@@ -63,8 +59,8 @@ export type FriendRequestInput = {
 
 export type FriendRequestResponse = {
   __typename?: 'FriendRequestResponse';
-  incoming?: Maybe<Array<FriendRequest>>;
-  outcoming?: Maybe<Array<FriendRequest>>;
+  incoming: Array<FriendRequest>;
+  outcoming: Array<FriendRequest>;
 };
 
 export type GqlValidationError = {
@@ -83,6 +79,7 @@ export type Mutation = {
   FriendRequestSend: BooleanResponse;
   FriendRequestAccept: BooleanResponse;
   FriendRemove: BooleanResponse;
+  FriendRequestCancel: BooleanResponse;
   UserRegister: BooleanResponse;
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
@@ -95,12 +92,17 @@ export type MutationFriendRequestSendArgs = {
 
 
 export type MutationFriendRequestAcceptArgs = {
-  options: FriendAcceptInput;
+  options: RequestAcceptInput;
 };
 
 
 export type MutationFriendRemoveArgs = {
   options: FriendRemoveInput;
+};
+
+
+export type MutationFriendRequestCancelArgs = {
+  options: RequestCancelInput;
 };
 
 
@@ -123,6 +125,15 @@ export type RegisterInput = {
   email: Scalars['String'];
   password: Scalars['String'];
   confirmPassword: Scalars['String'];
+};
+
+export type RequestAcceptInput = {
+  requestId: Scalars['Float'];
+  value: Scalars['Boolean'];
+};
+
+export type RequestCancelInput = {
+  requestId: Scalars['Float'];
 };
 
 export type User = {
@@ -152,6 +163,40 @@ export type UserSnippetFragment = (
   & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
 );
 
+export type AcceptRequestMutationVariables = Exact<{
+  options: RequestAcceptInput;
+}>;
+
+
+export type AcceptRequestMutation = (
+  { __typename?: 'Mutation' }
+  & { FriendRequestAccept: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
+);
+
+export type CancelRequestMutationVariables = Exact<{
+  options: RequestCancelInput;
+}>;
+
+
+export type CancelRequestMutation = (
+  { __typename?: 'Mutation' }
+  & { FriendRequestCancel: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
+);
+
 export type LoginMutationVariables = Exact<{
   options: LoginInput;
 }>;
@@ -162,10 +207,10 @@ export type LoginMutation = (
   & { UserLogin: (
     { __typename?: 'BooleanResponse' }
     & Pick<BooleanResponse, 'data'>
-    & { errors?: Maybe<Array<(
+    & { errors: Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
-    )>> }
+    )> }
   ) }
 );
 
@@ -187,10 +232,10 @@ export type RegisterMutation = (
   & { UserRegister: (
     { __typename?: 'BooleanResponse' }
     & Pick<BooleanResponse, 'data'>
-    & { errors?: Maybe<Array<(
+    & { errors: Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
-    )>> }
+    )> }
   ) }
 );
 
@@ -204,10 +249,31 @@ export type RemoveFriendMutation = (
   & { FriendRemove: (
     { __typename?: 'BooleanResponse' }
     & Pick<BooleanResponse, 'data'>
-    & { errors?: Maybe<Array<(
+    & { errors: Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
-    )>> }
+    )> }
+  ) }
+);
+
+export type SendRequestMutationVariables = Exact<{
+  options: FriendRequestInput;
+}>;
+
+
+export type SendRequestMutation = (
+  { __typename?: 'Mutation' }
+  & { FriendRequestSend: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & Pick<GqlValidationError, 'name'>
+      & { details?: Maybe<(
+        { __typename?: 'DetailsType' }
+        & Pick<DetailsType, 'field' | 'value' | 'message'>
+      )> }
+    )> }
   ) }
 );
 
@@ -221,21 +287,21 @@ export type MeQuery = (
     & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
     & { friend_requests: (
       { __typename?: 'FriendRequestResponse' }
-      & { incoming?: Maybe<Array<(
+      & { incoming: Array<(
         { __typename?: 'FriendRequest' }
         & Pick<FriendRequest, 'id' | 'createdAt'>
         & { sender: (
           { __typename?: 'User' }
           & UserSnippetFragment
         ) }
-      )>>, outcoming?: Maybe<Array<(
+      )>, outcoming: Array<(
         { __typename?: 'FriendRequest' }
         & Pick<FriendRequest, 'id' | 'createdAt'>
         & { reciever: (
           { __typename?: 'User' }
           & UserSnippetFragment
         ) }
-      )>> }
+      )> }
     ), friends?: Maybe<Array<(
       { __typename?: 'Friend' }
       & Pick<Friend, 'id' | 'key' | 'createdAt'>
@@ -266,6 +332,42 @@ export const UserSnippetFragmentDoc = `
   bio
 }
     `;
+export const AcceptRequestDocument = `
+    mutation AcceptRequest($options: RequestAcceptInput!) {
+  FriendRequestAccept(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useAcceptRequestMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<AcceptRequestMutation, TError, AcceptRequestMutationVariables, TContext>) => 
+    useMutation<AcceptRequestMutation, TError, AcceptRequestMutationVariables, TContext>(
+      useGQLRequest<AcceptRequestMutation, AcceptRequestMutationVariables>(AcceptRequestDocument),
+      options
+    );
+export const CancelRequestDocument = `
+    mutation CancelRequest($options: RequestCancelInput!) {
+  FriendRequestCancel(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useCancelRequestMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<CancelRequestMutation, TError, CancelRequestMutationVariables, TContext>) => 
+    useMutation<CancelRequestMutation, TError, CancelRequestMutationVariables, TContext>(
+      useGQLRequest<CancelRequestMutation, CancelRequestMutationVariables>(CancelRequestDocument),
+      options
+    );
 export const LoginDocument = `
     mutation Login($options: LoginInput!) {
   UserLogin(options: $options) {
@@ -331,6 +433,29 @@ export const useRemoveFriendMutation = <
     >(options?: UseMutationOptions<RemoveFriendMutation, TError, RemoveFriendMutationVariables, TContext>) => 
     useMutation<RemoveFriendMutation, TError, RemoveFriendMutationVariables, TContext>(
       useGQLRequest<RemoveFriendMutation, RemoveFriendMutationVariables>(RemoveFriendDocument),
+      options
+    );
+export const SendRequestDocument = `
+    mutation SendRequest($options: FriendRequestInput!) {
+  FriendRequestSend(options: $options) {
+    data
+    errors {
+      name
+      details {
+        field
+        value
+        message
+      }
+    }
+  }
+}
+    `;
+export const useSendRequestMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<SendRequestMutation, TError, SendRequestMutationVariables, TContext>) => 
+    useMutation<SendRequestMutation, TError, SendRequestMutationVariables, TContext>(
+      useGQLRequest<SendRequestMutation, SendRequestMutationVariables>(SendRequestDocument),
       options
     );
 export const MeDocument = `

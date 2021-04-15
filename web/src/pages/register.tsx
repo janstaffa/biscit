@@ -72,7 +72,7 @@ const Register: React.FC = () => {
                   { options: values },
                   {
                     onSuccess: (data) => {
-                      if (data.UserRegister.errors) {
+                      if (data.UserRegister.errors.length > 0) {
                         const errorMap = toErrorMap(data.UserRegister.errors);
                         if (errorMap) {
                           setErrors(errorMap);

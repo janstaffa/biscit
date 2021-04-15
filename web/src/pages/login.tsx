@@ -47,7 +47,7 @@ const Login: React.FC = () => {
                   { options: values },
                   {
                     onSuccess: (data) => {
-                      if (data.UserLogin.errors) {
+                      if (data.UserLogin.errors.length > 0) {
                         const errorMap = toErrorMap(data.UserLogin.errors);
                         if (errorMap) {
                           setErrors(errorMap);

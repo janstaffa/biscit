@@ -1,0 +1,8 @@
+mutation CancelRequest($options: RequestCancelInput!) {
+  FriendRequestCancel(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

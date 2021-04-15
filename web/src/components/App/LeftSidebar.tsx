@@ -32,11 +32,17 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
   return (
     <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
       <div className="flex-col w-full h-auto border-b-2 border-dark-50 px-10 py-5">
-        <TabButton active={currentPath === '/app/friends'} href="/app/friends">
+        <TabButton
+          active={currentPath?.includes('/app/friends')}
+          href="/app/friends"
+        >
           <FaUserFriends className="mr-4" />
           Friends
         </TabButton>
-        <TabButton active={currentPath === '/app/threads'} href="/app/threads">
+        <TabButton
+          active={currentPath?.includes('/app/threads')}
+          href="/app/threads"
+        >
           <HiUserGroup className="mr-4" />
           Threads
         </TabButton>
@@ -48,6 +54,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = () => {
             type="text"
             id="thread-search"
             className="w-full bg-dark-50 outline-none text-light-200 rounded-tl-xl rounded-bl-xl px-3"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
           />
           <div
             className="w-10 flex flex-col justify-center items-center bg-dark-50 text-light-200 rounded-tr-xl rounded-br-xl"
