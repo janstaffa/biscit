@@ -139,13 +139,13 @@ export class UserResolver {
           return new GQLValidationError({
             field: 'email',
             value: email,
-            message: 'this email is already registred, try to login',
+            message: 'This email is already registred, try to login.',
           });
         } else {
           return new GQLValidationError({
             field: 'username',
             value: username,
-            message: 'this username is taken',
+            message: 'This username is taken.',
           });
         }
       });
@@ -209,7 +209,7 @@ export class UserResolver {
           new GQLValidationError({
             field: 'password',
             value: '',
-            message: 'incorrect password',
+            message: 'Incorrect password',
           })
         );
       }
@@ -218,7 +218,7 @@ export class UserResolver {
         new GQLValidationError({
           field: 'usernameOrEmail',
           value: usernameOrEmail,
-          message: 'this account was not found',
+          message: 'This account was not found.',
         })
       );
     }

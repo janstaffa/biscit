@@ -13,6 +13,7 @@ import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
+
 @Resolver(User)
 export class FriendRequestResolver {
   @Mutation(() => BooleanResponse)
@@ -21,13 +22,48 @@ export class FriendRequestResolver {
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: FriendRequestInput
   ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
     const reciever = await User.findOne({
       where: { username: options.username },
     });
     const errors: GQLValidationError[] = [];
     if (reciever) {
+      const friend = await Friend.findOne({
+        where: { userId, friendId: reciever.id },
+      });
+      if (friend) {
+        errors.push(
+          new GQLValidationError({
+            field: 'username',
+            value: options.username,
+            message: 'You are already friends with this user.',
+          })
+        );
+        return {
+          data: false,
+          errors,
+        };
+      }
+      const request = await FriendRequest.findOne({
+        where: { senderId: userId, recieverId: reciever.id },
+      });
+
+      if (request) {
+        errors.push(
+          new GQLValidationError({
+            field: 'username',
+            value: options.username,
+            message: 'You have already send a friend request to this user.',
+          })
+        );
+        return {
+          data: false,
+          errors,
+        };
+      }
       await FriendRequest.create({
-        senderId: req.session.userId,
+        senderId: userId,
         recieverId: reciever.id,
       }).save();
     } else {
@@ -35,9 +71,13 @@ export class FriendRequestResolver {
         new GQLValidationError({
           field: 'username',
           value: options.username,
-          message: "this user doesn't exist",
+          message: "This user doesn't exist.",
         })
       );
+      return {
+        data: false,
+        errors,
+      };
     }
     return {
       data: true,
@@ -62,7 +102,7 @@ export class FriendRequestResolver {
         new GQLValidationError({
           field: 'requestId',
           value: options.requestId.toString(),
-          message: "this request doesn't exist",
+          message: "This request doesn't exist.",
         })
       );
       return {
@@ -122,7 +162,7 @@ export class FriendRequestResolver {
         new GQLValidationError({
           field: 'userId',
           value: options.friendId,
-          message: "this friendship doesn't exist",
+          message: "This friendship doesn't exist.",
         })
       );
       return {
@@ -155,7 +195,7 @@ export class FriendRequestResolver {
         new GQLValidationError({
           field: 'requestId',
           value: options.requestId.toString(),
-          message: "this request doesn't exist or it wasn't sent by you",
+          message: "This request doesn't exist or it wasn't sent by you.",
         })
       );
       return {
