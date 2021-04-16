@@ -29,5 +29,15 @@ query Me {
       }
       createdAt
     }
+    threads {
+      isAdmin
+      threadId
+      unread
+      thread {
+        isDm
+        name
+        lastActivity
+      }
+    }
   }
 }

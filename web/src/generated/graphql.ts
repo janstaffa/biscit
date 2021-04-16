@@ -11,6 +11,8 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
+  /** The javascript `Date` as string. Type represents date and time as the ISO Date string. */
+  DateTime: any;
 };
 
 export type BooleanResponse = {
@@ -18,6 +20,7 @@ export type BooleanResponse = {
   data: Scalars['Boolean'];
   errors: Array<GqlValidationError>;
 };
+
 
 export type DetailsType = {
   __typename?: 'DetailsType';
@@ -142,6 +145,31 @@ export type RequestCancelInput = {
   requestId: Scalars['Float'];
 };
 
+export type Thread = {
+  __typename?: 'Thread';
+  id: Scalars['String'];
+  isDm: Scalars['Boolean'];
+  name: Scalars['String'];
+  members: Array<ThreadMembers>;
+  lastActivity: Scalars['DateTime'];
+  createdAt: Scalars['String'];
+  updatedAt: Scalars['String'];
+};
+
+export type ThreadMembers = {
+  __typename?: 'ThreadMembers';
+  id: Scalars['String'];
+  threadId: Scalars['String'];
+  thread: Thread;
+  userId: Scalars['String'];
+  user: User;
+  isAdmin: Scalars['Boolean'];
+  unread: Scalars['Float'];
+  lastActivity: Scalars['DateTime'];
+  createdAt: Scalars['String'];
+  updatedAt: Scalars['String'];
+};
+
 export type UpdateStatusInput = {
   status: Scalars['String'];
 };
@@ -154,6 +182,7 @@ export type User = {
   status: Scalars['String'];
   bio?: Maybe<Scalars['String']>;
   friends?: Maybe<Array<Friend>>;
+  threads?: Maybe<Array<ThreadMembers>>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
@@ -328,6 +357,13 @@ export type MeQuery = (
       & { friend: (
         { __typename?: 'User' }
         & UserSnippetFragment
+      ) }
+    )>>, threads?: Maybe<Array<(
+      { __typename?: 'ThreadMembers' }
+      & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'>
+      & { thread: (
+        { __typename?: 'Thread' }
+        & Pick<Thread, 'isDm' | 'name' | 'lastActivity'>
       ) }
     )>> }
   )> }
@@ -522,6 +558,16 @@ export const MeDocument = `
         ...userSnippet
       }
       createdAt
+    }
+    threads {
+      isAdmin
+      threadId
+      unread
+      thread {
+        isDm
+        name
+        lastActivity
+      }
     }
   }
 }

@@ -1,6 +1,8 @@
 import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from 'type-graphql';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
+import { Thread } from '../entities/Thread';
+import { ThreadMembers } from '../entities/ThreadMembers';
 import {
   FriendRemoveInput,
   FriendRequestInput,
@@ -124,16 +126,31 @@ export class FriendRequestResolver {
 
     if (options.value) {
       const key = await getId(Friend, 'key');
+      const thread = await Thread.create({ isDm: true }).save();
+
       await Friend.save([
         Friend.create({
           key,
+          threadId: thread.id,
           userId,
           friendId: request.senderId,
         }),
         Friend.create({
           key,
+          threadId: thread.id,
           userId: request.senderId,
           friendId: userId,
+        }),
+      ]);
+
+      await ThreadMembers.save([
+        ThreadMembers.create({
+          threadId: thread.id,
+          userId,
+        }),
+        ThreadMembers.create({
+          threadId: thread.id,
+          userId: request.senderId,
         }),
       ]);
     }
@@ -170,7 +187,12 @@ export class FriendRequestResolver {
         errors,
       };
     }
+    const thread = await Thread.findOne({
+      where: { isDm: true, id: friend[0].threadId },
+    });
+
     await Friend.remove(friend);
+    await thread?.remove();
 
     return {
       data: true,
