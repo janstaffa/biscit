@@ -37,6 +37,7 @@ export type Friend = {
   user: User;
   friendId: Scalars['String'];
   friend: User;
+  threadId: Scalars['String'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };
@@ -126,7 +127,13 @@ export type MutationUserUpdateStatusArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  thread: ThreadResponse;
   me?: Maybe<User>;
+};
+
+
+export type QueryThreadArgs = {
+  options: ThreadQueryInput;
 };
 
 export type RegisterInput = {
@@ -168,6 +175,16 @@ export type ThreadMembers = {
   lastActivity: Scalars['DateTime'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
+};
+
+export type ThreadQueryInput = {
+  threadId: Scalars['String'];
+};
+
+export type ThreadResponse = {
+  __typename?: 'ThreadResponse';
+  data?: Maybe<Thread>;
+  errors: Array<GqlValidationError>;
 };
 
 export type UpdateStatusInput = {
@@ -363,10 +380,37 @@ export type MeQuery = (
       & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'>
       & { thread: (
         { __typename?: 'Thread' }
-        & Pick<Thread, 'isDm' | 'name' | 'lastActivity'>
+        & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
       ) }
     )>> }
   )> }
+);
+
+export type ThreadQueryVariables = Exact<{
+  options: ThreadQueryInput;
+}>;
+
+
+export type ThreadQuery = (
+  { __typename?: 'Query' }
+  & { thread: (
+    { __typename?: 'ThreadResponse' }
+    & { data?: Maybe<(
+      { __typename?: 'Thread' }
+      & Pick<Thread, 'id' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+      & { members: Array<(
+        { __typename?: 'ThreadMembers' }
+        & Pick<ThreadMembers, 'id' | 'isAdmin' | 'unread' | 'lastActivity' | 'createdAt'>
+        & { user: (
+          { __typename?: 'User' }
+          & UserSnippetFragment
+        ) }
+      )> }
+    )>, errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
 );
 
 export const ErrorSnippetFragmentDoc = `
@@ -564,9 +608,12 @@ export const MeDocument = `
       threadId
       unread
       thread {
+        id
         isDm
         name
         lastActivity
+        createdAt
+        updatedAt
       }
     }
   }
@@ -582,5 +629,44 @@ export const useMeQuery = <
     useQuery<MeQuery, TError, TData>(
       ['Me', variables],
       useGQLRequest<MeQuery, MeQueryVariables>(MeDocument).bind(null, variables),
+      options
+    );
+export const ThreadDocument = `
+    query Thread($options: ThreadQueryInput!) {
+  thread(options: $options) {
+    data {
+      id
+      name
+      lastActivity
+      createdAt
+      updatedAt
+      members {
+        id
+        isAdmin
+        unread
+        lastActivity
+        createdAt
+        user {
+          ...userSnippet
+        }
+      }
+    }
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${UserSnippetFragmentDoc}
+${ErrorSnippetFragmentDoc}`;
+export const useThreadQuery = <
+      TData = ThreadQuery,
+      TError = unknown
+    >(
+      variables: ThreadQueryVariables, 
+      options?: UseQueryOptions<ThreadQuery, TError, TData>
+    ) => 
+    useQuery<ThreadQuery, TError, TData>(
+      ['Thread', variables],
+      useGQLRequest<ThreadQuery, ThreadQueryVariables>(ThreadDocument).bind(null, variables),
       options
     );

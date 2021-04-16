@@ -1,0 +1,24 @@
+query Thread($options: ThreadQueryInput!) {
+  thread(options: $options) {
+    data {
+      id
+      name
+      lastActivity
+      createdAt
+      updatedAt
+      members {
+        id
+        isAdmin
+        unread
+        lastActivity
+        createdAt
+        user {
+          ...userSnippet
+        }
+      }
+    }
+    errors {
+      ...errorSnippet
+    }
+  }
+}

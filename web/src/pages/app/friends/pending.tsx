@@ -1,9 +1,9 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
 import React from 'react';
+import FriendsLayout from '../../../components/App/Friends/FriendsLayout';
 import IncomingRequestTab from '../../../components/App/Friends/IncomingRequestTab';
 import OutgoingRequestTab from '../../../components/App/Friends/OutgoingRequestTab';
-import FriendsLayout from '../../../components/App/FriendsLayout';
 import SplashScreen from '../../../components/SplashScreen';
 import { useMeQuery } from '../../../generated/graphql';
 import withAuth from '../../../utils/withAuth';

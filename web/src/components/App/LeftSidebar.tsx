@@ -100,8 +100,10 @@ const LeftSidebar: React.FC = () => {
                 <ThreadButton
                   username={membership.thread.name}
                   time={formatTime(membership.thread.lastActivity)}
+                  threadId={membership.threadId}
                   latestMessage="test"
                   undread={membership.unread > 0}
+                  key={membership.threadId}
                 />
               ))}
             </div>

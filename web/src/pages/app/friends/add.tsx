@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
 import React, { useState } from 'react';
-import FriendsLayout from '../../../components/App/FriendsLayout';
+import FriendsLayout from '../../../components/App/Friends/FriendsLayout';
 import SplashScreen from '../../../components/SplashScreen';
 import { genericErrorMessage } from '../../../constants';
 import { useSendRequestMutation } from '../../../generated/graphql';

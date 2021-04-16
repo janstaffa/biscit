@@ -17,7 +17,7 @@ import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
 
 @Resolver(User)
-export class FriendRequestResolver {
+export class FriendResolver {
   @Mutation(() => BooleanResponse)
   @UseMiddleware(isAuth)
   async FriendRequestSend(
