@@ -24,7 +24,7 @@ const AddFriend: NextPage = () => {
       </Head>
       <FriendsLayout>
         <div className="flex flex-col w-full h-full">
-          <div className="pt-12 w-full z-10">
+          <div className="pt-12 w-full z-0">
             <div className="w-full h-48 bg-dark-200 px-10 flex flex-col justify-center items-center">
               <div className="w-full max-w-xl h-auto">
                 <p className="text-light-200 text-base uppercase font-roboto px-1 py-1">

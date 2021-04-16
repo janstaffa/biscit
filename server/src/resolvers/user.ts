@@ -15,6 +15,7 @@ import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
+import { ThreadMembers } from '../entities/ThreadMembers';
 import {
   LoginInput,
   RegisterInput,
@@ -77,6 +78,34 @@ export class UserResolver {
       });
 
       return friends;
+    }
+    return null;
+  }
+
+  @FieldResolver(() => [ThreadMembers])
+  @UseMiddleware(isAuth)
+  async threads(
+    @Root() user: User,
+    @Ctx() { req }: ContextType
+  ): Promise<ThreadMembers[] | null> {
+    const userId = req.session.userId;
+    if (userId === user.id) {
+      let threads = await ThreadMembers.find({
+        where: { userId },
+        relations: ['thread', 'thread.members', 'thread.members.user'],
+      });
+      threads.map((thread) => {
+        let response = thread;
+        if (thread.thread.isDm) {
+          const otherUser = thread.thread.members.filter((member) => {
+            return member.user.id !== userId;
+          });
+
+          response.thread.name = otherUser[0].user.username;
+        }
+        return response;
+      });
+      return threads;
     }
     return null;
   }

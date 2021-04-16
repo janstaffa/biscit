@@ -13,6 +13,7 @@ import {
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
 import { queryClient } from '../../utils/createQueryClient';
+import { formatTime } from '../../utils/formatTime';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
 import Modal from '../modals/Modal';
@@ -95,72 +96,14 @@ const LeftSidebar: React.FC = () => {
                 maxHeight: 'calc(100% - 96px)',
               }}
             >
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
-              <ThreadButton
-                username="janstaffa"
-                time="10:00"
-                latestMessage="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                undread={true}
-              />
+              {meData?.me?.threads?.map((membership) => (
+                <ThreadButton
+                  username={membership.thread.name}
+                  time={formatTime(membership.thread.lastActivity)}
+                  latestMessage="test"
+                  undread={membership.unread > 0}
+                />
+              ))}
             </div>
           </div>
           <div className="absolute w-full h-24 bg-dark-300 bottom-0">

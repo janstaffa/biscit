@@ -12,6 +12,7 @@ import {
 import { getId } from '../utils/generateId';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
+import { ThreadMembers } from './ThreadMembers';
 
 @ObjectType()
 @Entity()
@@ -22,7 +23,7 @@ export class User extends BaseEntity {
   id!: string;
 
   @BeforeInsert()
-  async generateId() {
+  private async generateId() {
     this.id = await getId(User, 'id');
   }
 
@@ -61,6 +62,11 @@ export class User extends BaseEntity {
   @Field(() => [Friend], { nullable: true })
   @OneToMany(() => Friend, (friend) => friend.user)
   friends: Friend[];
+
+  //treads field
+  @Field(() => [ThreadMembers], { nullable: true })
+  @OneToMany(() => ThreadMembers, (thread) => thread.user)
+  threads: ThreadMembers[];
 
   //createdAt field
   @Field(() => String)

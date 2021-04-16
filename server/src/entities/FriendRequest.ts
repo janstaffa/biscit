@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -26,6 +27,7 @@ export class FriendRequest extends BaseEntity {
   //sender field
   @Field(() => User)
   @ManyToOne(() => User, (user) => user.friend_requests)
+  @JoinColumn({ name: 'senderId' })
   sender: User;
 
   //recieverId field
@@ -36,6 +38,7 @@ export class FriendRequest extends BaseEntity {
   //reciever field
   @Field(() => User)
   @ManyToOne(() => User, (user) => user.friend_requests)
+  @JoinColumn({ name: 'recieverId' })
   reciever: User;
 
   //createdAt field
