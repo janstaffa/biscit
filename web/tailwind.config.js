@@ -32,9 +32,9 @@ module.exports = {
         opensans: ['Open Sans', 'sans-serif'],
         roboto: ['Roboto', 'sans-serif'],
       },
-      backgroundImage: () => ({
-        landing: "url('/home_back.png')",
-      }),
+      fontSize: {
+        md: ['15px', '22px'],
+      },
     },
   },
   variants: {

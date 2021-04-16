@@ -1,6 +1,6 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
-import FriendsLayout from '../../../components/App/FriendsLayout';
+import FriendsLayout from '../../../components/App/Friends/FriendsLayout';
 import withRedirect from '../../../utils/withRedirect';
 
 const Friends: NextPage = () => {

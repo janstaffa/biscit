@@ -102,6 +102,7 @@ const LeftSidebar: React.FC = () => {
                   time={formatTime(membership.thread.lastActivity)}
                   latestMessage="test"
                   undread={membership.unread > 0}
+                  key={membership.threadId}
                 />
               ))}
             </div>

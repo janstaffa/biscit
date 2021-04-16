@@ -1,9 +1,9 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { FaUserFriends } from 'react-icons/fa';
-import { currentUrl } from '../../constants';
-import ContentNav from './ContentNav';
-import NavLink from './Friends/NavLink';
-import Layout from './Layout';
+import { currentUrl } from '../../../constants';
+import ContentNav from '../ContentNav';
+import Layout from '../Layout';
+import NavLink from './NavLink';
 
 export interface FriendsLayoutProps {
   children: ReactNode;
