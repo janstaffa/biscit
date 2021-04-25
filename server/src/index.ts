@@ -13,6 +13,7 @@ import { Session } from './entities/Session';
 import { FriendResolver } from './resolvers/friend';
 import { ThreadResolver } from './resolvers/thread';
 import { UserResolver } from './resolvers/user';
+import { sockets } from './sockets';
 import { ContextType } from './types';
 
 (async () => {
@@ -97,7 +98,9 @@ import { ContextType } from './types';
   apolloServer.applyMiddleware({ app, cors: false });
 
   const port = process.env.PORT || 9000;
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);
   });
+
+  sockets(server);
 })().catch((err) => console.error(err));
