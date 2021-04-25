@@ -1,6 +1,7 @@
 import WS from 'isomorphic-ws';
 import ReconnectingWebSocket, { Options } from 'reconnecting-websocket';
 import { webSocketURL } from '../constants';
+import { isServer } from './isServer';
 
 const WS_OPTIONS: Options = {
   connectionTimeout: 4000,
@@ -11,5 +12,6 @@ const WS_OPTIONS: Options = {
   minReconnectionDelay: 4000,
   maxEnqueuedMessages: Infinity,
 };
-
-export const socket = new ReconnectingWebSocket(webSocketURL, [], WS_OPTIONS);
+export const socket = !isServer()
+  ? new ReconnectingWebSocket(webSocketURL, [], WS_OPTIONS)
+  : undefined;
