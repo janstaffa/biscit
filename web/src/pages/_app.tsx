@@ -10,12 +10,15 @@ import { useAuthStore } from '../stores/useAuthStore';
 import '../styles/fonts.css';
 import '../styles/globals.css';
 import { queryClient } from '../utils/createQueryClient';
-
 toast.configure();
 
 const _App = ({ Component, pageProps, authenticated }) => {
   const { setAuthenticated } = useAuthStore();
   useEffect(() => {
+    // socket.addEventListener('error', (err) => console.error(err));
+    // socket.addEventListener('open', () => {
+    //   socket.send('hello');
+    // });
     setAuthenticated(authenticated);
   }, []);
 

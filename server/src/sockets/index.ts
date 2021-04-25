@@ -11,27 +11,30 @@ export const sockets = async (server: any) => {
 
   let count = 0;
   wss.on('connection', async (ws, req) => {
+    // console.log('someone is trying to get in!');
     count += 1;
     const rawCookies = req.headers.cookie;
     let userId;
-    if (rawCookies) {
-      const parsedCookies = cookie.parse(rawCookies);
+    if (!rawCookies) {
+      return wss.close((err) => console.error(err));
+    }
+    const parsedCookies = cookie.parse(rawCookies);
 
-      const unsignedCookies = cookieParser.signedCookies(
-        parsedCookies,
-        process.env.SESSION_SECRET as string
-      );
-      if (unsignedCookies.uid) {
-        const session = await Session.findOne({
-          where: { id: unsignedCookies.uid },
-        });
-        if (session) {
-          userId = JSON.parse(session.data).userId;
-        }
+    const unsignedCookies = cookieParser.signedCookies(
+      parsedCookies,
+      process.env.SESSION_SECRET as string
+    );
+    if (unsignedCookies.uid) {
+      const session = await Session.findOne({
+        where: { id: unsignedCookies.uid },
+      });
+      if (session) {
+        userId = JSON.parse(session.data).userId;
       }
     }
+
     if (!userId) {
-      return wss.close((err) => console.error(err));
+      wss.close((err) => console.error(err));
     }
 
     const redisClient = createClient({
