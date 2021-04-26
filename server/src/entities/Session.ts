@@ -3,12 +3,12 @@ import { SessionEntity } from 'typeorm-store';
 
 @Entity()
 export class Session extends BaseEntity implements SessionEntity {
-  @PrimaryColumn()
-  id: string;
+    @PrimaryColumn()
+    id: string;
 
-  @Column()
-  expiresAt: number;
+    @Column()
+    expiresAt: number;
 
-  @Column()
-  data: string;
+    @Column()
+    data: string;
 }

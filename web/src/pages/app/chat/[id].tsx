@@ -1,22 +1,25 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FaHashtag, FaRegSmile } from 'react-icons/fa';
 import { ImAttachment } from 'react-icons/im';
+import { SocketChatMessage } from '../../..';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import { genericErrorMessage } from '../../../constants';
 import { useThreadQuery } from '../../../generated/graphql';
+import { socket } from '../../../utils/createWSconnection';
 import { errorToast } from '../../../utils/toasts';
 
 const Chat = () => {
   const router = useRouter();
   if (!router.query.id) return router.replace('/app/friends/all');
 
+  const threadId = router.query.id as string;
   const { data } = useThreadQuery(
     {
-      options: { threadId: router.query.id as string },
+      options: { threadId },
     },
     {
       onError: (err) => {
@@ -31,6 +34,22 @@ const Chat = () => {
       },
     }
   );
+  const ws = socket.connect();
+
+  useEffect(() => {
+    ws?.addEventListener('message', (e) => {
+      const message = JSON.parse(e.data) as SocketChatMessage;
+      console.log(message);
+    });
+  }, []);
+  const testWS = () => {
+    const payload = {
+      code: 3000,
+      threadId,
+      content: 'test message',
+    } as SocketChatMessage;
+    ws?.send(JSON.stringify(payload));
+  };
 
   return (
     <>
@@ -72,7 +91,10 @@ const Chat = () => {
                 />
               </div>
               <div className="w-20 bg-dark-100 rounded-r-xl flex flex-row justify-center items-center ">
-                <FaRegSmile className="text-2xl text-light-300" />
+                <FaRegSmile
+                  className="text-2xl text-light-300"
+                  onClick={() => testWS()}
+                />
               </div>
             </div>
             <div className="w-full h-5 text-light-300 text-md mt-1 ml-1 font-roboto">

@@ -1,6 +1,6 @@
-export interface HomeNavProps {}
 import Link from 'next/link';
 import { FaGithub } from 'react-icons/fa';
+export interface HomeNavProps {}
 
 const HomeNav: React.FC<HomeNavProps> = () => {
   return (
@@ -19,14 +19,14 @@ const HomeNav: React.FC<HomeNavProps> = () => {
         <a
           href="http://janstaffa.cz"
           target="_blank"
-          className="text-light font-roboto mr-3 hover:text-accent duration-75"
+          className="text-light font-roboto mr-3 hover:text-accent duration-75" rel="noreferrer"
         >
           by janstaffa
         </a>
         <a
           href="https://github.com/janstaffa/biscit"
           target="_blank"
-          className="text-light text-3xl hover:text-light-hover duration-75"
+          className="text-light text-3xl hover:text-light-hover duration-75" rel="noreferrer"
         >
           <FaGithub />
         </a>

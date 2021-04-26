@@ -2,30 +2,30 @@ import { Field, InputType } from 'type-graphql';
 
 @InputType()
 export class LoginInput {
-  @Field()
-  usernameOrEmail: string;
+    @Field()
+    usernameOrEmail: string;
 
-  @Field()
-  password: string;
+    @Field()
+    password: string;
 }
 
 @InputType()
 export class RegisterInput {
-  @Field()
-  username: string;
+    @Field()
+    username: string;
 
-  @Field()
-  email: string;
+    @Field()
+    email: string;
 
-  @Field()
-  password: string;
+    @Field()
+    password: string;
 
-  @Field()
-  confirmPassword: string;
+    @Field()
+    confirmPassword: string;
 }
 
 @InputType()
 export class UpdateStatusInput {
-  @Field()
-  status: string;
+    @Field()
+    status: string;
 }
