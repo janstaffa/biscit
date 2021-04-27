@@ -1,0 +1,10 @@
+fragment threadMembersSnippet on ThreadMembers {
+  id
+  threadId
+  userId
+  isAdmin
+  unread
+  lastActivity
+  createdAt
+  updatedAt
+}

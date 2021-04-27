@@ -1,0 +1,11 @@
+fragment threadSnippet on Thread {
+  id
+  isDm
+  name
+  members {
+    ...threadMembersSnippet
+  }
+  lastActivity
+  createdAt
+  updatedAt
+}
