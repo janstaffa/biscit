@@ -30,7 +30,8 @@ module.exports = {
     '@typescript-eslint/no-shadow': ['error'],
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
-    camelcase: 'off'
+    camelcase: 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off'
   },
   settings: {
     'import/resolver': {

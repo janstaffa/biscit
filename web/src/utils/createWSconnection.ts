@@ -25,6 +25,7 @@ export const socket: Socket = {
     const { isAuthenticated } = useAuth();
 
     if (!isServer() && !socket.ws && isAuthenticated) {
+      console.log('create WS');
       socket.ws = new ReconnectingWebSocket(webSocketURL, [], WS_OPTIONS);
       socket.ws.addEventListener('error', (err) => {
         if (err) {

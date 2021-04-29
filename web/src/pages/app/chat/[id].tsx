@@ -3,12 +3,17 @@ import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag, FaRegSmile } from 'react-icons/fa';
 import { ImAttachment } from 'react-icons/im';
-import { IncomingSocketChatMessage, OutgoingSocketChatMessage } from '../../..';
+import {
+  IncomingLoadMessagesMessage,
+  IncomingSocketChatMessage,
+  OutgoingLoadMessagesMessage,
+  OutgoingSocketChatMessage
+} from '../../..';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import { genericErrorMessage } from '../../../constants';
-import { MessageSnippetFragment, useThreadMessagesQuery, useThreadQuery } from '../../../generated/graphql';
+import { MessageSnippetFragment, useThreadQuery } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
@@ -36,23 +41,23 @@ const Chat = () => {
       }
     }
   );
-  const { data: threadMessages } = useThreadMessagesQuery(
-    {
-      options: { threadId, limit: 30 }
-    },
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      },
-      onSuccess: (d) => {
-        if (d.ThreadMessages.errors.length > 0) {
-          console.error(d.ThreadMessages.errors);
-          errorToast('Something went wrong while loading the message feed. Please try again later.');
-        }
-      }
-    }
-  );
+  // const { data: threadMessages } = useThreadMessagesQuery(
+  //   {
+  //     options: { threadId, limit: 30 }
+  //   },
+  //   {
+  //     onError: (err) => {
+  //       console.error(err);
+  //       errorToast(genericErrorMessage);
+  //     },
+  //     onSuccess: (d) => {
+  //       if (d.ThreadMessages.errors.length > 0) {
+  //         console.error(d.ThreadMessages.errors);
+  //         errorToast('Something went wrong while loading the message feed. Please try again later.');
+  //       }
+  //     }
+  //   }
+  // );
 
   const ws = socket.connect();
 
@@ -69,42 +74,65 @@ const Chat = () => {
     if (feed) feed.scrollTop = feed.scrollHeight;
   };
 
+  // useEffect(() => {
+  //   const currentMessages = [...messages];
+
+  //   if (!threadMessages?.ThreadMessages.data) return;
+  //   const oldMessages = threadMessages.ThreadMessages.data.reverse();
+  //   oldMessages.forEach((message) => {
+  //     currentMessages.push(message);
+  //   });
+
+  //   scrollDown();
+  //   setMessages(currentMessages);
+  // }, [threadMessages]);
+
   useEffect(() => {
-    const currentMessages = [...messages];
-
-    if (!threadMessages?.ThreadMessages.data) return;
-    const oldMessages = threadMessages.ThreadMessages.data.reverse();
-    oldMessages.forEach((message) => {
-      currentMessages.push(message);
-    });
-
-    scrollDown();
-    setMessages(currentMessages);
-  }, [threadMessages]);
-
-  useEffect(() => {
-    ws?.addEventListener('message', (e) => {
-      const incoming = JSON.parse(e.data) as IncomingSocketChatMessage;
-      const currentMessages = [...messagesRef.current];
-      currentMessages.push(incoming.message);
-      setMessages(currentMessages);
-      scrollDown();
-    });
-
     if (!isServer()) {
-      const messageInput = document.getElementById('message-input');
+      console.log(ws);
+      ws &&
+        ws.addEventListener('open', () => {
+          console.log('WS open', ws.readyState, ws.OPEN);
+          // console.log('client listener added');
+          ws.addEventListener('message', (e) => {
+            console.log(e);
+            const { data: m } = e;
+            const incoming = JSON.parse(m);
+            if (incoming.code === 3000) {
+              const { message } = incoming as IncomingSocketChatMessage;
+              const currentMessages = [...messagesRef.current];
+              currentMessages.push(message as MessageSnippetFragment);
+              setMessages(currentMessages);
+              scrollDown();
+            } else if (incoming.code === 3003) {
+              const { messages: incomingMessages, hasMore } = incoming as IncomingLoadMessagesMessage;
+              console.log(incomingMessages, hasMore);
+            }
+          });
+          const messageInput = document.getElementById('message-input')!;
+          messageInput.addEventListener('keyup', (e) => {
+            if (!e.repeat && e.key === 'Enter') {
+              const payload = {
+                code: 3000,
+                threadId,
+                content: messageInputValueRef.current
+              } as OutgoingSocketChatMessage;
 
-      messageInput?.addEventListener('keyup', (e) => {
-        if (!e.repeat && e.key === 'Enter') {
+              console.log('sending 1');
+              ws.send(JSON.stringify(payload));
+            }
+          });
+
           const payload = {
-            code: 3000,
+            code: 3003,
             threadId,
-            content: messageInputValueRef.current
-          } as OutgoingSocketChatMessage;
+            limit: 30,
+            cursor: null
+          } as OutgoingLoadMessagesMessage;
 
-          ws?.send(JSON.stringify(payload));
-        }
-      });
+          console.log('Sent request for messages', payload, ws.readyState);
+          ws.send(JSON.stringify(payload));
+        });
     }
   }, []);
 
