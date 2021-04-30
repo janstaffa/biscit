@@ -90,7 +90,7 @@ export const handleMessage = async (
     if (cursor) {
       qb.andWhere('message."createdAt" < :createdAt', { createdAt: cursor });
     }
-    qb.orderBy('message."createdAt"', 'DESC').limit(realLimitPlusOne);
+    qb.orderBy('message."createdAt"', 'ASC').limit(realLimitPlusOne);
 
     const messages = (await qb.getMany()) as Message[];
 

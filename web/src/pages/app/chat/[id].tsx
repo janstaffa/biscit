@@ -14,6 +14,7 @@ import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import { genericErrorMessage } from '../../../constants';
 import { MessageSnippetFragment, useThreadQuery } from '../../../generated/graphql';
+import { useWebSocketStore } from '../../../stores/useWebSocketStore';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
@@ -46,7 +47,7 @@ const Chat = () => {
   messagesRef.current = messages;
 
   const [messageInputValue, setMessageInputValue] = useState<string>('');
-  const messageInputValueRef = useRef('');
+  const messageInputValueRef = useRef<string>('');
   messageInputValueRef.current = messageInputValue;
 
   const scrollDown = () => {
@@ -56,64 +57,68 @@ const Chat = () => {
   const ws = socket.connect();
 
   useEffect(() => {
-    if (!isServer()) {
+    if (!isServer() && ws) {
       try {
-        ws &&
-          ws.addEventListener('message', (e) => {
-            console.log(e);
-            const { data: m } = e;
-            const incoming = JSON.parse(m);
-            if (incoming.code === 3000) {
-              const { message } = incoming as IncomingSocketChatMessage;
-              const currentMessages = [...messagesRef.current];
-              currentMessages.push(message as MessageSnippetFragment);
-              setMessages(currentMessages);
-              scrollDown();
-            } else if (incoming.code === 3003) {
-              const { messages: incomingMessages, hasMore } = incoming as IncomingLoadMessagesMessage;
-              console.log(incomingMessages, hasMore);
-            } else if (incoming.code === 3005) {
-              if (incoming.value === 'ok') {
-                const payload = {
-                  code: 3003,
-                  threadId,
-                  limit: 30,
-                  cursor: null
-                } as OutgoingLoadMessagesMessage;
+        ws.addEventListener('message', (e) => {
+          console.log(e);
+          const { data: m } = e;
+          const incoming = JSON.parse(m);
+          if (incoming.code === 3000) {
+            const { message } = incoming as IncomingSocketChatMessage;
+            const currentMessages = [...messagesRef.current];
+            currentMessages.push(message as MessageSnippetFragment);
+            setMessages(currentMessages);
+            scrollDown();
+          } else if (incoming.code === 3003) {
+            const { messages: incomingMessages, hasMore } = incoming as IncomingLoadMessagesMessage;
+            const newMessages = [...messagesRef.current, ...incomingMessages];
+            setMessages(newMessages);
+          } else if (incoming.code === 3005) {
+            if (incoming.value === 'ok') {
+              useWebSocketStore.getState().setReady(true);
+              const payload = {
+                code: 3003,
+                threadId,
+                limit: 30,
+                cursor: null
+              } as OutgoingLoadMessagesMessage;
 
-                console.log('Sent request for messages', payload, ws.readyState);
-                ws.send(JSON.stringify(payload));
+              ws.send(JSON.stringify(payload));
+            }
+          }
+        });
+
+        ws.addEventListener('open', () => {
+          const messageInput = document.getElementById('message-input')!;
+          messageInput.addEventListener('keyup', (e) => {
+            if (!e.repeat && e.key === 'Enter') {
+              const value = messageInputValueRef.current;
+              if (!value || value === ' ') {
+                return;
+              }
+
+              const payload = {
+                code: 3000,
+                threadId,
+                content: value
+              } as OutgoingSocketChatMessage;
+
+              try {
+                const isReady = useWebSocketStore.getState().ready;
+                if (isReady) {
+                  ws.send(JSON.stringify(payload));
+                }
+              } catch (err) {
+                console.error(err);
               }
             }
           });
-
-        ws &&
-          ws.addEventListener('open', () => {
-            console.log('WS open', ws.readyState, ws.OPEN);
-            // console.log('client listener added');
-
-            const messageInput = document.getElementById('message-input')!;
-            messageInput.addEventListener('keyup', (e) => {
-              if (!e.repeat && e.key === 'Enter') {
-                const payload = {
-                  code: 3000,
-                  threadId,
-                  content: messageInputValueRef.current
-                } as OutgoingSocketChatMessage;
-
-                try {
-                  ws.send(JSON.stringify(payload));
-                } catch (err) {
-                  console.error('err: ', err);
-                }
-              }
-            });
-          });
+        });
       } catch (err) {
         console.error(err);
       }
     }
-  }, []);
+  });
 
   return (
     <>
