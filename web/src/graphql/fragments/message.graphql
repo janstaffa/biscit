@@ -1,0 +1,12 @@
+fragment messageSnippet on Message {
+  id
+  content
+  threadId
+  userId
+  user {
+    ...userSnippet
+  }
+  edited
+  createdAt
+  updatedAt
+}

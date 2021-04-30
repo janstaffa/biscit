@@ -11,50 +11,40 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
-import { Thread } from './Thread';
 import { User } from './User';
 
 @ObjectType()
 @Entity()
-export class ThreadMembers extends BaseEntity {
+export class Message extends BaseEntity {
   @Field(() => String)
   @PrimaryColumn()
   id!: string;
 
   @BeforeInsert()
   private async generateId() {
-    this.id = await getId(ThreadMembers, 'id');
+    this.id = await getId(Message, 'id');
   }
+
+  @Field(() => String)
+  @Column()
+  userId: string;
+
+  @Field(() => User)
+  @ManyToOne(() => User, (user) => user.messages, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Field()
   @Column()
   threadId: string;
 
-  @Field(() => Thread)
-  @ManyToOne(() => Thread, (thread) => thread.members, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'threadId' })
-  thread: Thread;
-
   @Field()
   @Column()
-  userId: string;
-
-  @Field(() => User)
-  @ManyToOne(() => User, (user) => user.threads, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
-  user: User;
+  content: string;
 
   @Field()
-  @Column({ type: 'boolean', default: false })
-  isAdmin: boolean;
-
-  @Field()
-  @Column({ default: 0 })
-  unread: number;
-
-  @Field()
-  @Column({ type: 'timestamptz', default: new Date() })
-  lastActivity: Date;
+  @Column({ default: false })
+  edited: boolean;
 
   //createdAt field
   @Field(() => String)

@@ -1,12 +1,12 @@
 import { Request as Req, Response as Res } from 'express';
 
 declare module 'express-session' {
-    interface SessionData {
-        userId: string;
-    }
+  interface SessionData {
+    userId: string;
+  }
 }
 
 export type ContextType = {
-    req: Req;
-    res: Res;
+  req: Req;
+  res: Res;
 };

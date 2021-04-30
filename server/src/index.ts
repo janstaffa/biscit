@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv-safe';
 import express from 'express';
 import session from 'express-session';
+import http from 'http';
 import path from 'path';
 import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
@@ -18,89 +19,90 @@ import { ContextType } from './types';
 dotenv.config();
 
 (async () => {
-    const conn = await createConnection({
-        type: 'postgres',
-        url: process.env.DATABASE_URL,
-        logging: false,
-        migrations: [path.join(__dirname, './migrations/*')],
-        entities: [path.join(__dirname, './entities/*')],
-        synchronize: true
-    });
-    await conn.runMigrations();
+  const conn = await createConnection({
+    type: 'postgres',
+    url: process.env.DATABASE_URL,
+    logging: false,
+    migrations: [path.join(__dirname, './migrations/*')],
+    entities: [path.join(__dirname, './entities/*')],
+    synchronize: true
+  });
+  await conn.runMigrations();
 
-    const app = express();
+  const app = express();
 
-    app.get('/', (_, res) => {
-        res.send('Hey from the server!');
-    });
+  app.get('/', (_, res) => {
+    res.send('Hey from the server!');
+  });
 
-    app.use(
-        cors({
-            origin: 'http://localhost:3000',
-            credentials: true
-        })
-    );
+  app.use(
+    cors({
+      origin: 'http://localhost:3000',
+      credentials: true
+    })
+  );
 
-    const repository = getConnection().getRepository(Session);
-    app.use(
-        session({
-            name: COOKIE_NAME,
-            secret: process.env.SESSION_SECRET || 'dsa41d65sads6ads6a1ds16dsa16d1s6ad',
-            resave: false,
-            saveUninitialized: false,
-            store: new TypeormStore({ repository }),
-            cookie: {
-                maxAge: 1000 * 3600 * 24 * 7,
-                httpOnly: true,
-                secure: __prod__,
-                sameSite: 'lax'
-            },
-            rolling: true
-        })
-    );
+  const repository = getConnection().getRepository(Session);
+  app.use(
+    session({
+      name: COOKIE_NAME,
+      secret: process.env.SESSION_SECRET || 'dsa41d65sads6ads6a1ds16dsa16d1s6ad',
+      resave: false,
+      saveUninitialized: false,
+      store: new TypeormStore({ repository }),
+      cookie: {
+        maxAge: 1000 * 3600 * 24 * 7,
+        httpOnly: true,
+        secure: __prod__,
+        sameSite: 'lax'
+      },
+      rolling: true
+    })
+  );
 
-    const apolloServer = new ApolloServer({
-        schema: await buildSchema({
-            resolvers: [UserResolver, FriendResolver, ThreadResolver],
-            validate: false
-        }),
-        context: ({ req, res }): ContextType => ({
-            req,
-            res
-        }),
-        playground: true,
-        introspection: true,
-        formatError: (error) => {
-            switch (error.message) {
-                // case 'Argument Validation Error':
-                //   return {
-                //     message: error.message,
-                //     details: error.extensions?.exception.validationErrors.map(
-                //       (err: ValidationError) => {
-                //         return {
-                //           field: err.property,
-                //           value: err.value,
-                //           constraints: err.constraints
-                //             ? Object.entries(err.constraints).map((e) => ({
-                //                 [e[0]]: e[1],
-                //               }))
-                //             : null,
-                //         };
-                //       }
-                //     ),
-                //   };
-                default:
-                    return error;
-            }
-        }
-    });
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [UserResolver, FriendResolver, ThreadResolver],
+      validate: false
+    }),
+    context: ({ req, res }): ContextType => ({
+      req,
+      res
+    }),
+    playground: true,
+    introspection: true,
+    formatError: (error) => {
+      switch (error.message) {
+        // case 'Argument Validation Error':
+        //   return {
+        //     message: error.message,
+        //     details: error.extensions?.exception.validationErrors.map(
+        //       (err: ValidationError) => {
+        //         return {
+        //           field: err.property,
+        //           value: err.value,
+        //           constraints: err.constraints
+        //             ? Object.entries(err.constraints).map((e) => ({
+        //                 [e[0]]: e[1],
+        //               }))
+        //             : null,
+        //         };
+        //       }
+        //     ),
+        //   };
+        default:
+          return error;
+      }
+    }
+  });
 
-    apolloServer.applyMiddleware({ app, cors: false });
+  apolloServer.applyMiddleware({ app, cors: false });
 
-    const port = process.env.PORT || 9000;
-    const server = app.listen(port, () => {
-        console.log(`🚀 server running on port ${port}`);
-    });
+  const port = process.env.PORT || 9000;
+  const server = http.createServer(app);
+  sockets(server);
 
-    sockets(server);
+  server.listen(port, () => {
+    console.log(`🚀 server running on port ${port}`);
+  });
 })().catch((err) => console.error(err));

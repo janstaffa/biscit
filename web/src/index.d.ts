@@ -1,10 +1,24 @@
 export interface SocketMessage {
   code: number;
-  content: any;
 }
 
-export interface SocketChatMessage extends SocketMessage {
-  content: string;
+export interface IncomingSocketChatMessage extends SocketMessage {
+  message: Message;
+}
+
+export interface OutgoingSocketChatMessage extends SocketMessage {
   threadId: string;
-  senderId: string;
+  content: string;
+}
+
+export interface OutgoingLoadMessagesMessage extends SocketMessage {
+  threadId: string;
+  threadId: string;
+  cursor: string | null;
+  limit: number;
+}
+
+export interface IncomingLoadMessagesMessage extends SocketMessage {
+  messages: Message[] | [];
+  hasMore: boolean;
 }

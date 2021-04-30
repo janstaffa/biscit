@@ -1,0 +1,10 @@
+query ThreadMessages($options: ThreadMessagesQueryInput!) {
+  ThreadMessages(options: $options) {
+    data {
+      ...messageSnippet
+    }
+    errors {
+      ...errorSnippet
+    }
+  }
+}

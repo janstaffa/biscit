@@ -1,144 +1,216 @@
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
+import http, { Server } from 'http';
+import * as net from 'net';
 import { createClient } from 'redis';
 import WebSocket from 'ws';
+import { browserOrigin } from '../constants';
+import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
 import { ThreadMembers } from '../entities/ThreadMembers';
+import { handleMessage } from './handleMessage';
 
 export interface SocketMessage {
-    code: number;
-    content: any;
+  code: number;
 }
 
 export interface SocketChatMessage extends SocketMessage {
-    content: string;
-    threadId: string;
-    senderId: string;
+  message: Message;
 }
 
-const CHAT_MESSAGE_CODE = 3000;
+export interface IncomingSocketChatMessage extends SocketMessage {
+  threadId: string;
+  content: string;
+}
 
-export const sockets = async (server: any) => {
-    const wss = new WebSocket.Server({
-        server,
-        path: '/ws'
+export interface IncomingJoinThreadMessage extends SocketMessage {
+  threadId: string;
+}
+
+export interface IncomingLoadMessagesMessage extends SocketMessage {
+  threadId: string;
+  cursor: string | null;
+  limit: number;
+}
+export interface OutgoingLoadMessagesMessage extends SocketMessage {
+  messages: Message[] | [];
+  hasMore: boolean;
+}
+
+export const LOAD_MESSAGES_CODE = 3003;
+export const JOIN_THREAD_CODE = 3002;
+export const CHAT_MESSAGE_CODE = 3000;
+export const ERROR_MESSAGE_CODE = 3001;
+export const AUTH_CODE = 3004;
+export const READY_CODE = 3005;
+
+const HEARTBEAT_INTERVAL = 10000;
+const ELAPSED_TIME = 30000;
+const THROTTLE_LIMIT = 100;
+const THROTTLE_INTERVAL = 500;
+
+export const closeConnection = (ws: WebSocket) => {
+  ws.removeAllListeners();
+  ws.terminate();
+};
+
+export const sockets = (server: Server) => {
+  const wss = new WebSocket.Server({
+    noServer: true,
+    path: '/socket',
+    maxPayload: 10 * 1024
+  });
+
+  server.on('upgrade', async (req: http.IncomingMessage, socket: net.Socket, head) => {
+    let userId: string | undefined;
+
+    try {
+      if (req.headers.origin !== browserOrigin) {
+        return socket.destroy();
+      }
+
+      const rawCookies = req.headers.cookie;
+
+      if (!rawCookies) {
+        return socket.destroy();
+      }
+      const parsedCookies = cookie.parse(rawCookies);
+
+      const unsignedCookies = cookieParser.signedCookies(parsedCookies, process.env.SESSION_SECRET as string);
+
+      if (unsignedCookies.uid) {
+        const session = await Session.findOne({
+          where: { id: unsignedCookies.uid }
+        });
+
+        if (session) {
+          userId = JSON.parse(session.data).userId;
+        }
+      }
+
+      if (!userId) {
+        return socket.destroy();
+      }
+    } catch (e) {
+      return socket.destroy();
+    }
+
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      const payload = {
+        code: AUTH_CODE,
+        value: 'authenticated'
+      };
+      ws.send(JSON.stringify(payload));
+
+      wss.emit('connection', ws, req, userId);
+    });
+  });
+
+  wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, userId: string) => {
+    console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
+
+    // redis clients setup
+    const subClient = createClient({
+      url: process.env.REDIS_URL
     });
 
-    const HEARTBEAT_INTERVAL = 10000;
+    subClient.on('error', (error) => {
+      console.error(error);
+    });
 
-    wss.on('connection', async (ws, req) => {
-        // redis clients setup
-        const subClient = createClient({
-            url: process.env.REDIS_URL
-        });
+    const pubClient = createClient({
+      url: process.env.REDIS_URL
+    });
 
-        subClient.on('error', (error) => {
-            console.error(error);
-        });
+    pubClient.on('error', (error) => {
+      console.error(error);
+    });
 
-        const pubClient = createClient({
-            url: process.env.REDIS_URL
-        });
+    const heartbeat = setInterval(() => {
+      if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
+        clearInterval(heartbeat);
+        closeConnectionAndClear();
 
-        pubClient.on('error', (error) => {
-            console.error(error);
-        });
+        return;
+      }
+      ws.ping('ping', false, (err) => {
+        if (err) {
+          console.error(err);
+          closeConnectionAndClear();
+          clearInterval(heartbeat);
+        }
+      });
+    }, HEARTBEAT_INTERVAL);
 
-        const closeConnection = () => {
-            ws.removeAllListeners();
-            subClient.removeAllListeners();
-            ws.terminate();
+    const elapsed = setTimeout(() => {
+      closeConnectionAndClear();
+    }, ELAPSED_TIME);
+
+    ws.on('pong', () => {
+      clearTimeout(elapsed);
+      elapsed.refresh();
+    });
+
+    const closeConnectionAndClear = () => {
+      closeConnection(ws);
+      subClient.removeAllListeners();
+      clearTimeout(elapsed);
+      clearInterval(heartbeat);
+    };
+
+    ws.on('close', () => {
+      closeConnectionAndClear();
+    });
+
+    try {
+      const threads = await ThreadMembers.find({ where: { userId } });
+
+      threads.map((thread) => {
+        const { threadId } = thread;
+        subClient.subscribe(threadId);
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    const payload = {
+      code: READY_CODE,
+      value: 'ok'
+    };
+    ws.send(JSON.stringify(payload));
+    //data, pub/sub clients, ws, userId
+
+    let sentMessages = 0;
+    const delayedMessages: string[] = [];
+
+    const throttle = setInterval(async () => {
+      if (delayedMessages.length > 0) {
+        await handleMessage(delayedMessages[0], ws, subClient, pubClient, userId);
+        delayedMessages.shift();
+      } else {
+        if (sentMessages > 0) sentMessages--;
+      }
+    }, THROTTLE_INTERVAL);
+
+    ws.on('message', async (data: string) => {
+      if (sentMessages >= THROTTLE_LIMIT) {
+        delayedMessages.push(data);
+
+        const payload = {
+          code: ERROR_MESSAGE_CODE,
+          message: 'Throttle limit reached. Your messages will be sent shortly after.'
         };
+        ws.send(JSON.stringify(payload));
+        return;
+      }
+      sentMessages++;
 
-        console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
-
-        const rawCookies = req.headers.cookie;
-        let userId: string | undefined;
-
-        if (!rawCookies) {
-            return closeConnection();
-        }
-        const parsedCookies = cookie.parse(rawCookies);
-
-        const unsignedCookies = cookieParser.signedCookies(parsedCookies, process.env.SESSION_SECRET as string);
-
-        if (unsignedCookies.uid) {
-            const session = await Session.findOne({
-                where: { id: unsignedCookies.uid }
-            });
-
-            if (session) {
-                userId = JSON.parse(session.data).userId;
-            }
-        }
-
-        if (!userId) {
-            return closeConnection();
-        }
-
-        ws.on('close', () => closeConnection());
-
-        // getting threads that user is in
-        const threads = await ThreadMembers.find({ where: { userId } });
-
-        threads.forEach((thread) => {
-            const { threadId } = thread;
-
-            subClient.subscribe(threadId);
-        });
-        subClient.on('subscribe', (channel, count) => console.log('user', userId, 'subscribed to cahnnel', channel));
-        console.log('USERID: ', userId, 'THREADS: ', threads);
-
-        // message transport handling
-        ws.on('message', (data: string) => {
-            console.log('INCOMING: ', data);
-            const message = JSON.parse(data) as SocketChatMessage;
-            const { code } = message;
-
-            if (code === CHAT_MESSAGE_CODE) {
-                const { content, threadId, senderId } = {
-                    ...message,
-                    senderId: userId
-                } as SocketChatMessage;
-
-                const payload: SocketChatMessage = {
-                    code: CHAT_MESSAGE_CODE,
-                    threadId,
-                    senderId,
-                    content
-                };
-
-                pubClient.publish(threadId, JSON.stringify(payload));
-            }
-        });
-
-        subClient.on('message', (channel, message) => {
-            const messageObj = JSON.parse(message) as SocketChatMessage;
-
-            const payload: SocketChatMessage = {
-                code: CHAT_MESSAGE_CODE,
-                threadId: channel,
-                senderId: messageObj.senderId,
-                content: messageObj.content
-            };
-
-            console.log(payload);
-            ws.send(JSON.stringify(payload));
-        });
-
-        const heartbeat = setInterval(() => {
-            if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
-                closeConnection();
-                clearInterval(heartbeat);
-
-                return;
-            }
-            ws.ping('ping', false, (err) => {
-                if (err) {
-                    closeConnection();
-                    clearInterval(heartbeat);
-                }
-            });
-        }, HEARTBEAT_INTERVAL);
+      await handleMessage(data, ws, subClient, pubClient, userId);
     });
+
+    subClient.on('message', (channel, message) => {
+      // const payload = JSON.parse(message) as SocketChatMessage;
+      ws.send(message);
+    });
+  });
 };

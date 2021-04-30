@@ -78,6 +78,18 @@ export type LoginInput = {
   password: Scalars['String'];
 };
 
+export type Message = {
+  __typename?: 'Message';
+  id: Scalars['String'];
+  userId: Scalars['String'];
+  user: User;
+  threadId: Scalars['String'];
+  content: Scalars['String'];
+  edited: Scalars['Boolean'];
+  createdAt: Scalars['String'];
+  updatedAt: Scalars['String'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   FriendRequestSend: BooleanResponse;
@@ -128,12 +140,18 @@ export type MutationUserUpdateStatusArgs = {
 export type Query = {
   __typename?: 'Query';
   thread: ThreadResponse;
+  ThreadMessages: ThreadMessagesResponse;
   me?: Maybe<User>;
 };
 
 
 export type QueryThreadArgs = {
   options: ThreadQueryInput;
+};
+
+
+export type QueryThreadMessagesArgs = {
+  options: ThreadMessagesQueryInput;
 };
 
 export type RegisterInput = {
@@ -156,7 +174,7 @@ export type Thread = {
   __typename?: 'Thread';
   id: Scalars['String'];
   isDm: Scalars['Boolean'];
-  name: Scalars['String'];
+  name?: Maybe<Scalars['String']>;
   members: Array<ThreadMembers>;
   lastActivity: Scalars['DateTime'];
   createdAt: Scalars['String'];
@@ -175,6 +193,18 @@ export type ThreadMembers = {
   lastActivity: Scalars['DateTime'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
+};
+
+export type ThreadMessagesQueryInput = {
+  threadId: Scalars['String'];
+  cursor?: Maybe<Scalars['String']>;
+  limit: Scalars['Float'];
+};
+
+export type ThreadMessagesResponse = {
+  __typename?: 'ThreadMessagesResponse';
+  data?: Maybe<Array<Message>>;
+  errors: Array<GqlValidationError>;
 };
 
 export type ThreadQueryInput = {
@@ -200,6 +230,7 @@ export type User = {
   bio?: Maybe<Scalars['String']>;
   friends?: Maybe<Array<Friend>>;
   threads?: Maybe<Array<ThreadMembers>>;
+  messages?: Maybe<Array<Message>>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
@@ -212,6 +243,29 @@ export type ErrorSnippetFragment = (
     { __typename?: 'DetailsType' }
     & Pick<DetailsType, 'field' | 'value' | 'message'>
   )> }
+);
+
+export type MessageSnippetFragment = (
+  { __typename?: 'Message' }
+  & Pick<Message, 'id' | 'content' | 'threadId' | 'userId' | 'edited' | 'createdAt' | 'updatedAt'>
+  & { user: (
+    { __typename?: 'User' }
+    & UserSnippetFragment
+  ) }
+);
+
+export type ThreadSnippetFragment = (
+  { __typename?: 'Thread' }
+  & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+  & { members: Array<(
+    { __typename?: 'ThreadMembers' }
+    & ThreadMembersSnippetFragment
+  )> }
+);
+
+export type ThreadMembersSnippetFragment = (
+  { __typename?: 'ThreadMembers' }
+  & Pick<ThreadMembers, 'id' | 'threadId' | 'userId' | 'isAdmin' | 'unread' | 'lastActivity' | 'createdAt' | 'updatedAt'>
 );
 
 export type UserSnippetFragment = (
@@ -413,6 +467,25 @@ export type ThreadQuery = (
   ) }
 );
 
+export type ThreadMessagesQueryVariables = Exact<{
+  options: ThreadMessagesQueryInput;
+}>;
+
+
+export type ThreadMessagesQuery = (
+  { __typename?: 'Query' }
+  & { ThreadMessages: (
+    { __typename?: 'ThreadMessagesResponse' }
+    & { data?: Maybe<Array<(
+      { __typename?: 'Message' }
+      & MessageSnippetFragment
+    )>>, errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
+);
+
 export const ErrorSnippetFragmentDoc = `
     fragment errorSnippet on GQLValidationError {
   name
@@ -432,6 +505,45 @@ export const UserSnippetFragmentDoc = `
   bio
 }
     `;
+export const MessageSnippetFragmentDoc = `
+    fragment messageSnippet on Message {
+  id
+  content
+  threadId
+  userId
+  user {
+    ...userSnippet
+  }
+  edited
+  createdAt
+  updatedAt
+}
+    ${UserSnippetFragmentDoc}`;
+export const ThreadMembersSnippetFragmentDoc = `
+    fragment threadMembersSnippet on ThreadMembers {
+  id
+  threadId
+  userId
+  isAdmin
+  unread
+  lastActivity
+  createdAt
+  updatedAt
+}
+    `;
+export const ThreadSnippetFragmentDoc = `
+    fragment threadSnippet on Thread {
+  id
+  isDm
+  name
+  members {
+    ...threadMembersSnippet
+  }
+  lastActivity
+  createdAt
+  updatedAt
+}
+    ${ThreadMembersSnippetFragmentDoc}`;
 export const AcceptRequestDocument = `
     mutation AcceptRequest($options: RequestAcceptInput!) {
   FriendRequestAccept(options: $options) {
@@ -668,5 +780,30 @@ export const useThreadQuery = <
     useQuery<ThreadQuery, TError, TData>(
       ['Thread', variables],
       useGQLRequest<ThreadQuery, ThreadQueryVariables>(ThreadDocument).bind(null, variables),
+      options
+    );
+export const ThreadMessagesDocument = `
+    query ThreadMessages($options: ThreadMessagesQueryInput!) {
+  ThreadMessages(options: $options) {
+    data {
+      ...messageSnippet
+    }
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${MessageSnippetFragmentDoc}
+${ErrorSnippetFragmentDoc}`;
+export const useThreadMessagesQuery = <
+      TData = ThreadMessagesQuery,
+      TError = unknown
+    >(
+      variables: ThreadMessagesQueryVariables, 
+      options?: UseQueryOptions<ThreadMessagesQuery, TError, TData>
+    ) => 
+    useQuery<ThreadMessagesQuery, TError, TData>(
+      ['ThreadMessages', variables],
+      useGQLRequest<ThreadMessagesQuery, ThreadMessagesQueryVariables>(ThreadMessagesDocument).bind(null, variables),
       options
     );
