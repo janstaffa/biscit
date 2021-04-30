@@ -72,7 +72,7 @@ const Chat = () => {
             } else if (incoming.code === 3003) {
               const { messages: incomingMessages, hasMore } = incoming as IncomingLoadMessagesMessage;
               console.log(incomingMessages, hasMore);
-            } else if (incoming.code === 3004) {
+            } else if (incoming.code === 3005) {
               if (incoming.value === 'ok') {
                 const payload = {
                   code: 3003,

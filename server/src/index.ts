@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv-safe';
 import express from 'express';
 import session from 'express-session';
+import http from 'http';
 import path from 'path';
 import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
@@ -98,9 +99,10 @@ dotenv.config();
   apolloServer.applyMiddleware({ app, cors: false });
 
   const port = process.env.PORT || 9000;
-  const server = app.listen(port, () => {
+  const server = http.createServer(app);
+  sockets(server);
+
+  server.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);
   });
-
-  sockets(server);
 })().catch((err) => console.error(err));
