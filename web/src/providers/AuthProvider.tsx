@@ -2,7 +2,7 @@ import React, { createContext } from 'react';
 
 const AuthContext = createContext({
   isAuthenticated: false,
-  setAuthenticated: (bool: boolean) => {},
+  setAuthenticated: (bool: boolean) => {}
 });
 
 export const AuthProvider = ({ children, authenticated }) => {
@@ -11,7 +11,7 @@ export const AuthProvider = ({ children, authenticated }) => {
     <AuthContext.Provider
       value={{
         isAuthenticated,
-        setAuthenticated,
+        setAuthenticated
       }}
     >
       {children}
@@ -19,15 +19,15 @@ export const AuthProvider = ({ children, authenticated }) => {
   );
 };
 
-export function useAuth() {
+export const useAuth = () => {
   const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
 
-export function useIsAuthenticated() {
+export const useIsAuthenticated = () => {
   const context = useAuth();
   return context.isAuthenticated;
-}
+};

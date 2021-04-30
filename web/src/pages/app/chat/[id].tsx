@@ -18,7 +18,6 @@ import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
 import withAuth from '../../../utils/withAuth';
-
 const Chat = () => {
   const router = useRouter();
   if (!router.query.id) return router.replace('/app/friends/all');
@@ -41,25 +40,6 @@ const Chat = () => {
       }
     }
   );
-  // const { data: threadMessages } = useThreadMessagesQuery(
-  //   {
-  //     options: { threadId, limit: 30 }
-  //   },
-  //   {
-  //     onError: (err) => {
-  //       console.error(err);
-  //       errorToast(genericErrorMessage);
-  //     },
-  //     onSuccess: (d) => {
-  //       if (d.ThreadMessages.errors.length > 0) {
-  //         console.error(d.ThreadMessages.errors);
-  //         errorToast('Something went wrong while loading the message feed. Please try again later.');
-  //       }
-  //     }
-  //   }
-  // );
-
-  const ws = socket.connect();
 
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
@@ -73,27 +53,12 @@ const Chat = () => {
     const feed = document.querySelector('#chat-feed');
     if (feed) feed.scrollTop = feed.scrollHeight;
   };
-
-  // useEffect(() => {
-  //   const currentMessages = [...messages];
-
-  //   if (!threadMessages?.ThreadMessages.data) return;
-  //   const oldMessages = threadMessages.ThreadMessages.data.reverse();
-  //   oldMessages.forEach((message) => {
-  //     currentMessages.push(message);
-  //   });
-
-  //   scrollDown();
-  //   setMessages(currentMessages);
-  // }, [threadMessages]);
+  const ws = socket.connect();
 
   useEffect(() => {
     if (!isServer()) {
-      console.log(ws);
-      ws &&
-        ws.addEventListener('open', () => {
-          console.log('WS open', ws.readyState, ws.OPEN);
-          // console.log('client listener added');
+      try {
+        ws &&
           ws.addEventListener('message', (e) => {
             console.log(e);
             const { data: m } = e;
@@ -107,32 +72,46 @@ const Chat = () => {
             } else if (incoming.code === 3003) {
               const { messages: incomingMessages, hasMore } = incoming as IncomingLoadMessagesMessage;
               console.log(incomingMessages, hasMore);
+            } else if (incoming.code === 3004) {
+              if (incoming.value === 'ok') {
+                const payload = {
+                  code: 3003,
+                  threadId,
+                  limit: 30,
+                  cursor: null
+                } as OutgoingLoadMessagesMessage;
+
+                console.log('Sent request for messages', payload, ws.readyState);
+                ws.send(JSON.stringify(payload));
+              }
             }
           });
-          const messageInput = document.getElementById('message-input')!;
-          messageInput.addEventListener('keyup', (e) => {
-            if (!e.repeat && e.key === 'Enter') {
-              const payload = {
-                code: 3000,
-                threadId,
-                content: messageInputValueRef.current
-              } as OutgoingSocketChatMessage;
 
-              console.log('sending 1');
-              ws.send(JSON.stringify(payload));
-            }
+        ws &&
+          ws.addEventListener('open', () => {
+            console.log('WS open', ws.readyState, ws.OPEN);
+            // console.log('client listener added');
+
+            const messageInput = document.getElementById('message-input')!;
+            messageInput.addEventListener('keyup', (e) => {
+              if (!e.repeat && e.key === 'Enter') {
+                const payload = {
+                  code: 3000,
+                  threadId,
+                  content: messageInputValueRef.current
+                } as OutgoingSocketChatMessage;
+
+                try {
+                  ws.send(JSON.stringify(payload));
+                } catch (err) {
+                  console.error('err: ', err);
+                }
+              }
+            });
           });
-
-          const payload = {
-            code: 3003,
-            threadId,
-            limit: 30,
-            cursor: null
-          } as OutgoingLoadMessagesMessage;
-
-          console.log('Sent request for messages', payload, ws.readyState);
-          ws.send(JSON.stringify(payload));
-        });
+      } catch (err) {
+        console.error(err);
+      }
     }
   }, []);
 
