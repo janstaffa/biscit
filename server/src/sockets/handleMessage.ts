@@ -88,15 +88,17 @@ export const handleMessage = async (
       .where('message."threadId" = :threadId', { threadId: threadId });
 
     if (cursor) {
-      qb.andWhere('message."createdAt" < :createdAt', { createdAt: cursor });
+      console.log('CURSOR:', cursor);
+      qb.andWhere('message."createdAt" < :cursor', { cursor: new Date(cursor) });
     }
-    qb.orderBy('message."createdAt"', 'ASC').limit(realLimitPlusOne);
+    qb.orderBy('message."createdAt"', 'DESC').limit(realLimitPlusOne);
 
     const messages = (await qb.getMany()) as Message[];
 
+    console.log(messages);
     const payload: OutgoingLoadMessagesMessage = {
       code: LOAD_MESSAGES_CODE,
-      messages: messages.slice(0, realLimit),
+      messages: messages.slice(0, realLimit).reverse(),
       hasMore: messages.length === realLimitPlusOne
     };
 

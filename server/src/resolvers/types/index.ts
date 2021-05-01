@@ -13,8 +13,8 @@ export class BooleanResponse {
   @Field()
   data: boolean;
 
-  @Field(() => [GQLValidationError])
-  errors: GQLValidationError[];
+  @Field(() => [GQLValidationError], { nullable: true })
+  errors: GQLValidationError[] | null;
 }
 
 @ObjectType()
@@ -22,8 +22,8 @@ export class ThreadResponse {
   @Field(() => Thread, { nullable: true })
   data: Thread;
 
-  @Field(() => [GQLValidationError])
-  errors: GQLValidationError[];
+  @Field(() => [GQLValidationError], { nullable: true })
+  errors: GQLValidationError[] | null;
 }
 
 @ObjectType()
@@ -31,6 +31,6 @@ export class ThreadMessagesResponse {
   @Field(() => [Message], { nullable: true })
   data: Message[];
 
-  @Field(() => [GQLValidationError])
-  errors: GQLValidationError[];
+  @Field(() => [GQLValidationError], { nullable: true })
+  errors: GQLValidationError[] | null;
 }
