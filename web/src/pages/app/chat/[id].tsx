@@ -73,6 +73,8 @@ const Chat = () => {
   };
   useEffect(() => {
     setMessages([]);
+    setMoreMessages(false);
+    setIsLoadingMessages(false);
     const ws = socket.connect();
     if (!isServer() && ws) {
       try {
@@ -189,7 +191,7 @@ const Chat = () => {
               </div>
             )}
             {messages?.map((message) => {
-              const { user, id: messageId, content } = message;
+              const { id: messageId } = message;
               return <ChatMessage message={message} key={messageId} />;
             })}
           </div>
