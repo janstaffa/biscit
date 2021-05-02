@@ -1,4 +1,4 @@
-import router from 'next/router';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
@@ -6,11 +6,7 @@ import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
 import { currentUrl, genericErrorMessage } from '../../constants';
-import {
-  useLogoutMutation,
-  useMeQuery,
-  useUpdateStatusMutation,
-} from '../../generated/graphql';
+import { useLogoutMutation, useMeQuery, useUpdateStatusMutation } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
 import { queryClient } from '../../utils/createQueryClient';
 import { formatTime } from '../../utils/formatTime';
@@ -21,6 +17,8 @@ import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 
 const LeftSidebar: React.FC = () => {
+  const router = useRouter();
+  const threadId = router.query.id as string;
   const { setAuthenticated } = useAuth();
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [statusInput, setStatusInput] = useState<string>('');
@@ -34,14 +32,14 @@ const LeftSidebar: React.FC = () => {
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
-    },
+    }
   });
 
   const { mutate: updateStatus } = useUpdateStatusMutation({
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
-    },
+    }
   });
   const { data: meData, isLoading } = useMeQuery();
 
@@ -53,17 +51,11 @@ const LeftSidebar: React.FC = () => {
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
         <div className="flex-col w-full h-auto border-b-2 border-dark-50 px-10 py-5">
-          <TabButton
-            active={currentPath?.includes('/app/friends')}
-            href="/app/friends"
-          >
+          <TabButton active={currentPath?.includes('/app/friends')} href="/app/friends">
             <FaUserFriends className="mr-4" />
             Friends
           </TabButton>
-          <TabButton
-            active={currentPath?.includes('/app/threads')}
-            href="/app/threads"
-          >
+          <TabButton active={currentPath?.includes('/app/threads')} href="/app/threads">
             <HiUserGroup className="mr-4" />
             Threads
           </TabButton>
@@ -93,19 +85,23 @@ const LeftSidebar: React.FC = () => {
             <div
               className="flex-1 h-full w-full overflow-y-scroll absolute"
               style={{
-                maxHeight: 'calc(100% - 96px)',
+                maxHeight: 'calc(100% - 96px)'
               }}
             >
-              {meData?.me?.threads?.map((membership) => (
-                <ThreadButton
-                  username={membership.thread.name}
-                  time={formatTime(membership.thread.lastActivity)}
-                  threadId={membership.threadId}
-                  latestMessage="test"
-                  undread={membership.unread > 0}
-                  key={membership.threadId}
-                />
-              ))}
+              {meData?.me?.threads?.map((membership) => {
+                console.log(membership);
+                return (
+                  <ThreadButton
+                    username={membership.thread.name as string}
+                    time={formatTime(membership.thread.lastActivity)}
+                    threadId={membership.threadId}
+                    latestMessage={membership.thread.lastMessage}
+                    undread={membership.unread > 0}
+                    active={membership.threadId === threadId}
+                    key={membership.threadId}
+                  />
+                );
+              })}
             </div>
           </div>
           <div className="absolute w-full h-24 bg-dark-300 bottom-0">
@@ -116,9 +112,7 @@ const LeftSidebar: React.FC = () => {
               <div className="w-full flex-1 px-2">
                 <div className="flex flex-row justify-between items-center">
                   <div className="flex flex-col">
-                    <div className=" text-light font-roboto">
-                      {meData?.me?.username}
-                    </div>
+                    <div className=" text-light font-roboto">{meData?.me?.username}</div>
                     <div
                       className="w-48 font-roboto text-sm truncate cursor-pointer text-light-300 hover:text-light-200"
                       onClick={() => setModalShow(true)}
@@ -140,7 +134,7 @@ const LeftSidebar: React.FC = () => {
                               } else {
                                 errorToast(genericErrorMessage);
                               }
-                            },
+                            }
                           }
                         );
                       }}
@@ -155,9 +149,7 @@ const LeftSidebar: React.FC = () => {
       </div>
       <Modal active={modalShow}>
         <div className="w-full h-10 flex flex-row justify-between">
-          <div className="text-light-300 text-lg font-roboto">
-            Change status
-          </div>
+          <div className="text-light-300 text-lg font-roboto">Change status</div>
           <div>
             <IoMdClose
               className="text-2xl text-light-300 hover:text-light cursor-pointer"
@@ -200,7 +192,7 @@ const LeftSidebar: React.FC = () => {
                       } else {
                         errorToast(genericErrorMessage);
                       }
-                    },
+                    }
                   }
                 );
               }}

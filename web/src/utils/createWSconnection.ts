@@ -23,7 +23,6 @@ export const socket: Socket = {
   ws: undefined,
   connect: () => {
     if (!isServer() && !socket.ws) {
-      console.log('============================================= create WS');
       socket.ws = new ReconnectingWebSocket(webSocketURL, undefined, WS_OPTIONS);
       socket.ws.addEventListener('error', (err) => {
         if (err) {
@@ -38,7 +37,6 @@ export const socket: Socket = {
       });
       useWebSocketStore.getState().setConnected(true);
     }
-    console.log('============================================= return WS');
     return socket.ws;
   },
   close: () => {

@@ -9,7 +9,9 @@ import {
   IncomingLoadMessagesMessage,
   IncomingSocketChatMessage,
   OutgoingLoadMessagesMessage,
-  OutgoingSocketChatMessage
+  OutgoingSocketChatMessage,
+  SocketThreadMessage,
+  TypingMessage
 } from '../../..';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
 import ContentNav from '../../../components/App/ContentNav';
@@ -26,6 +28,7 @@ const Chat = () => {
   const router = useRouter();
   if (!router.query.id) return router.replace('/app/friends/all');
   const threadId = router.query.id as string;
+
   const { data } = useThreadQuery(
     {
       options: { threadId }
@@ -52,6 +55,7 @@ const Chat = () => {
   const [messageInputValue, setMessageInputValue] = useState<string>('');
   const messageInputValueRef = useRef<string>('');
   messageInputValueRef.current = messageInputValue;
+  const [typing, setTyping] = useState<{ username: string } | null>(null);
 
   const scroll = (px = 0) => {
     const feed = document.querySelector('#chat-feed')!;
@@ -78,6 +82,7 @@ const Chat = () => {
     const ws = socket.connect();
     if (!isServer() && ws) {
       try {
+        let resetTyping;
         ws.onmessage = (e) => {
           const { data: m } = e;
           const incoming = JSON.parse(m);
@@ -100,6 +105,17 @@ const Chat = () => {
               useWebSocketStore.getState().setReady(true);
               loadMessages(ws);
             }
+          } else if (incoming.code === 3006) {
+            const { username } = incoming as TypingMessage;
+            if (resetTyping) {
+              clearTimeout(resetTyping);
+              resetTyping = null;
+            }
+            resetTyping = setTimeout(() => {
+              setTyping(null);
+            }, 2000);
+
+            setTyping({ username });
           }
         };
 
@@ -146,17 +162,27 @@ const Chat = () => {
       }
 
       return () => {
-        ws.onopen = ws.onmessage = window.onscroll = null;
+        ws.onopen = ws.onmessage = null;
       };
     }
   }, [threadId]);
 
   useEffect(() => {
     const ws = socket.connect();
+    if (ws && messageInputValueRef.current) {
+      const payload: SocketThreadMessage = {
+        code: 3006,
+        threadId
+      };
+      ws.send(JSON.stringify(payload));
+    }
+  }, [messageInputValue]);
+
+  useEffect(() => {
+    const ws = socket.connect();
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
 
     if (moreMessages) {
-      console.log('called');
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
           const cursor = messages[0].createdAt;
@@ -172,7 +198,7 @@ const Chat = () => {
   return (
     <>
       <Head>
-        <title>Biscit | Chat </title>
+        <title>Biscit | Chat - {data?.thread.data?.name} </title>
       </Head>
       <Layout>
         <ContentNav>
@@ -218,10 +244,14 @@ const Chat = () => {
               </div>
             </div>
             <div className="w-full h-5 text-light-300 text-md mt-1 ml-1 font-roboto flex flex-row items-center">
-              <span className="mr-2">
-                <BeatLoader color="#e09f3e" size={6} />
-              </span>
-              janstaffa is typing
+              {typing && (
+                <>
+                  <span className="mr-2">
+                    <BeatLoader color="#e09f3e" size={6} />
+                  </span>
+                  <span>{typing.username} is typing</span>
+                </>
+              )}
             </div>
           </div>
         </div>

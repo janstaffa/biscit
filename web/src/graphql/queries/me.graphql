@@ -34,12 +34,7 @@ query Me {
       threadId
       unread
       thread {
-        id
-        isDm
-        name
-        lastActivity
-        createdAt
-        updatedAt
+        ...threadSnippet
       }
     }
   }

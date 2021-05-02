@@ -8,31 +8,28 @@ import { browserOrigin } from '../constants';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
 import { ThreadMembers } from '../entities/ThreadMembers';
+import { User } from '../entities/User';
 import { handleMessage } from './handleMessage';
 
 export interface SocketMessage {
   code: number;
 }
-
-export interface SocketChatMessage extends SocketMessage {
+export interface SocketThreadMessage extends SocketMessage {
+  threadId: string;
+}
+export interface SocketChatMessage extends SocketThreadMessage {
   message: Message;
 }
 
-export interface IncomingSocketChatMessage extends SocketMessage {
-  threadId: string;
+export interface IncomingSocketChatMessage extends SocketThreadMessage {
   content: string;
 }
 
-export interface IncomingJoinThreadMessage extends SocketMessage {
-  threadId: string;
-}
-
-export interface IncomingLoadMessagesMessage extends SocketMessage {
-  threadId: string;
+export interface IncomingLoadMessagesMessage extends SocketThreadMessage {
   cursor: string | null;
   limit: number;
 }
-export interface OutgoingLoadMessagesMessage extends SocketMessage {
+export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {
   messages: Message[] | [];
   hasMore: boolean;
 }
@@ -40,6 +37,7 @@ export interface OutgoingLoadMessagesMessage extends SocketMessage {
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
+export const CHAT_TYPING_CODE = 3006;
 export const ERROR_MESSAGE_CODE = 3001;
 export const AUTH_CODE = 3004;
 export const READY_CODE = 3005;
@@ -109,6 +107,8 @@ export const sockets = (server: Server) => {
   wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, userId: string) => {
     console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
 
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) return closeConnection(ws);
     // redis clients setup
     const subClient = createClient({
       url: process.env.REDIS_URL
@@ -185,7 +185,7 @@ export const sockets = (server: Server) => {
 
     const throttle = setInterval(async () => {
       if (delayedMessages.length > 0) {
-        await handleMessage(delayedMessages[0], ws, subClient, pubClient, userId);
+        await handleMessage(delayedMessages[0], ws, subClient, pubClient, user);
         delayedMessages.shift();
       } else {
         if (sentMessages > 0) sentMessages--;
@@ -205,7 +205,7 @@ export const sockets = (server: Server) => {
       }
       sentMessages++;
 
-      await handleMessage(data, ws, subClient, pubClient, userId);
+      await handleMessage(data, ws, subClient, pubClient, user);
     });
 
     subClient.on('message', (channel, message) => {

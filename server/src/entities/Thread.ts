@@ -36,6 +36,9 @@ export class Thread extends BaseEntity {
   @OneToMany(() => ThreadMembers, (member) => member.thread)
   members: ThreadMembers[];
 
+  @Field(() => String, { nullable: true })
+  lastMessage: string | null;
+
   @Field()
   @Column({ type: 'timestamptz', default: new Date() })
   lastActivity: Date;

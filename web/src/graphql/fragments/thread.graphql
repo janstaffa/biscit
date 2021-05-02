@@ -2,6 +2,7 @@ fragment threadSnippet on Thread {
   id
   isDm
   name
+  lastMessage
   members {
     ...threadMembersSnippet
   }

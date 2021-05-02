@@ -1,19 +1,18 @@
 export interface SocketMessage {
   code: number;
 }
-
+export interface SocketThreadMessage extends SocketMessage {
+  threadId: string;
+}
 export interface IncomingSocketChatMessage extends SocketMessage {
   message: Message;
 }
 
-export interface OutgoingSocketChatMessage extends SocketMessage {
-  threadId: string;
+export interface OutgoingSocketChatMessage extends SocketThreadMessage {
   content: string;
 }
 
-export interface OutgoingLoadMessagesMessage extends SocketMessage {
-  threadId: string;
-  threadId: string;
+export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {
   cursor: string | null;
   limit: number;
 }
@@ -21,4 +20,8 @@ export interface OutgoingLoadMessagesMessage extends SocketMessage {
 export interface IncomingLoadMessagesMessage extends SocketMessage {
   messages: Message[] | [];
   hasMore: boolean;
+}
+
+export interface TypingMessage extends SocketThreadMessage {
+  username: string;
 }

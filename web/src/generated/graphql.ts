@@ -140,18 +140,12 @@ export type MutationUserUpdateStatusArgs = {
 export type Query = {
   __typename?: 'Query';
   thread: ThreadResponse;
-  ThreadMessages: ThreadMessagesResponse;
   me?: Maybe<User>;
 };
 
 
 export type QueryThreadArgs = {
   options: ThreadQueryInput;
-};
-
-
-export type QueryThreadMessagesArgs = {
-  options: ThreadMessagesQueryInput;
 };
 
 export type RegisterInput = {
@@ -176,6 +170,7 @@ export type Thread = {
   isDm: Scalars['Boolean'];
   name?: Maybe<Scalars['String']>;
   members: Array<ThreadMembers>;
+  lastMessage?: Maybe<Scalars['String']>;
   lastActivity: Scalars['DateTime'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
@@ -193,18 +188,6 @@ export type ThreadMembers = {
   lastActivity: Scalars['DateTime'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
-};
-
-export type ThreadMessagesQueryInput = {
-  threadId: Scalars['String'];
-  cursor?: Maybe<Scalars['String']>;
-  limit: Scalars['Float'];
-};
-
-export type ThreadMessagesResponse = {
-  __typename?: 'ThreadMessagesResponse';
-  data?: Maybe<Array<Message>>;
-  errors: Array<GqlValidationError>;
 };
 
 export type ThreadQueryInput = {
@@ -256,7 +239,7 @@ export type MessageSnippetFragment = (
 
 export type ThreadSnippetFragment = (
   { __typename?: 'Thread' }
-  & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+  & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastMessage' | 'lastActivity' | 'createdAt' | 'updatedAt'>
   & { members: Array<(
     { __typename?: 'ThreadMembers' }
     & ThreadMembersSnippetFragment
@@ -434,7 +417,7 @@ export type MeQuery = (
       & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'>
       & { thread: (
         { __typename?: 'Thread' }
-        & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+        & ThreadSnippetFragment
       ) }
     )>> }
   )> }
@@ -461,25 +444,6 @@ export type ThreadQuery = (
         ) }
       )> }
     )>, errors: Array<(
-      { __typename?: 'GQLValidationError' }
-      & ErrorSnippetFragment
-    )> }
-  ) }
-);
-
-export type ThreadMessagesQueryVariables = Exact<{
-  options: ThreadMessagesQueryInput;
-}>;
-
-
-export type ThreadMessagesQuery = (
-  { __typename?: 'Query' }
-  & { ThreadMessages: (
-    { __typename?: 'ThreadMessagesResponse' }
-    & { data?: Maybe<Array<(
-      { __typename?: 'Message' }
-      & MessageSnippetFragment
-    )>>, errors: Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
     )> }
@@ -536,6 +500,7 @@ export const ThreadSnippetFragmentDoc = `
   id
   isDm
   name
+  lastMessage
   members {
     ...threadMembersSnippet
   }
@@ -720,17 +685,13 @@ export const MeDocument = `
       threadId
       unread
       thread {
-        id
-        isDm
-        name
-        lastActivity
-        createdAt
-        updatedAt
+        ...threadSnippet
       }
     }
   }
 }
-    ${UserSnippetFragmentDoc}`;
+    ${UserSnippetFragmentDoc}
+${ThreadSnippetFragmentDoc}`;
 export const useMeQuery = <
       TData = MeQuery,
       TError = unknown
@@ -780,30 +741,5 @@ export const useThreadQuery = <
     useQuery<ThreadQuery, TError, TData>(
       ['Thread', variables],
       useGQLRequest<ThreadQuery, ThreadQueryVariables>(ThreadDocument).bind(null, variables),
-      options
-    );
-export const ThreadMessagesDocument = `
-    query ThreadMessages($options: ThreadMessagesQueryInput!) {
-  ThreadMessages(options: $options) {
-    data {
-      ...messageSnippet
-    }
-    errors {
-      ...errorSnippet
-    }
-  }
-}
-    ${MessageSnippetFragmentDoc}
-${ErrorSnippetFragmentDoc}`;
-export const useThreadMessagesQuery = <
-      TData = ThreadMessagesQuery,
-      TError = unknown
-    >(
-      variables: ThreadMessagesQueryVariables, 
-      options?: UseQueryOptions<ThreadMessagesQuery, TError, TData>
-    ) => 
-    useQuery<ThreadMessagesQuery, TError, TData>(
-      ['ThreadMessages', variables],
-      useGQLRequest<ThreadMessagesQuery, ThreadMessagesQueryVariables>(ThreadMessagesDocument).bind(null, variables),
       options
     );
