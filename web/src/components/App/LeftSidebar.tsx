@@ -89,7 +89,6 @@ const LeftSidebar: React.FC = () => {
               }}
             >
               {meData?.me?.threads?.map((membership) => {
-                console.log(membership);
                 return (
                   <ThreadButton
                     username={membership.thread.name as string}

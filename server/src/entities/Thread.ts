@@ -37,7 +37,8 @@ export class Thread extends BaseEntity {
   members: ThreadMembers[];
 
   @Field(() => String, { nullable: true })
-  lastMessage: string | null;
+  @Column({ nullable: true })
+  lastMessage: string;
 
   @Field()
   @Column({ type: 'timestamptz', default: new Date() })
