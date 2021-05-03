@@ -11,10 +11,12 @@ import {
   Root,
   UseMiddleware
 } from 'type-graphql';
+import { createQueryBuilder } from 'typeorm';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
+import { Message } from '../entities/Message';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { LoginInput, RegisterInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
@@ -77,28 +79,30 @@ export class UserResolver {
         where: { userId },
         relations: ['thread', 'thread.members', 'thread.members.user']
       });
-      threads.map(async (thread) => {
-        const response = thread;
-        if (thread.thread.isDm) {
-          const otherUser = thread.thread.members.filter((member) => {
-            return member.user.id !== userId;
-          });
+      const updatedThreads = Promise.all(
+        threads.map(async (thread) => {
+          const response = thread;
+          if (thread.thread.isDm) {
+            const otherUser = thread.thread.members.filter((member) => {
+              return member.user.id !== userId;
+            });
 
-          response.thread.name = otherUser[0].user.username;
-        }
-        // const lastMessage = await createQueryBuilder(Message, 'message')
-        //   .where('message."threadId" = :threadId', {
-        //     threadId: thread.threadId
-        //   })
-        //   .orderBy('message."createdAt"', 'DESC')
-        //   .getOne();
+            response.thread.name = otherUser[0].user.username;
+          }
+          const lastMessage = await createQueryBuilder(Message, 'message')
+            .where('message."threadId" = :threadId', {
+              threadId: thread.threadId
+            })
+            .orderBy('message."createdAt"', 'DESC')
+            .getOne();
 
-        // if (lastMessage) {
-        //   response.thread.lastMessage = lastMessage.content;
-        // }
-        return response;
-      });
-      return threads;
+          if (lastMessage) {
+            response.thread.lastMessage = lastMessage.content;
+          }
+          return response;
+        })
+      );
+      return updatedThreads;
     }
     return null;
   }

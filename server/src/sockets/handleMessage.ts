@@ -18,6 +18,7 @@ import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
+import { getId } from '../utils/generateId';
 
 export const handleMessage = async (
   data: string,
@@ -41,10 +42,15 @@ export const handleMessage = async (
   if (code === CHAT_MESSAGE_CODE) {
     const { content, threadId } = incoming as IncomingSocketChatMessage;
     try {
+      const messageId = await getId(Message, 'id');
       const newMessage = await Message.create({
+        id: messageId,
         content,
         threadId,
-        userId: user.id
+        userId: user.id,
+        edited: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
       const membership = await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
@@ -55,7 +61,7 @@ export const handleMessage = async (
       }
       newMessage.save();
 
-      await Thread.update({ id: threadId }, { lastActivity: new Date(), lastMessage: content });
+      await Thread.update({ id: threadId }, { lastActivity: new Date() });
 
       const payload: SocketChatMessage = {
         threadId,
@@ -65,6 +71,7 @@ export const handleMessage = async (
           user: senderUser
         } as Message
       };
+      console.log(payload);
 
       pubClient.publish(threadId, JSON.stringify(payload));
     } catch (e) {

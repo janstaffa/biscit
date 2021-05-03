@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import React from 'react';
 
 export interface ThreadButtonProps {
   username: string;
   time: string;
-  latestMessage: string;
+  latestMessage: string | null | undefined;
   undread: boolean;
   threadId: string;
   active?: boolean;
@@ -17,7 +18,6 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   threadId,
   active = false
 }) => {
-  console.log(latestMessage);
   return (
     <Link href={`/app/chat/${threadId}`}>
       <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>
@@ -47,4 +47,4 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   );
 };
 
-export default ThreadButton;
+export default React.memo(ThreadButton);

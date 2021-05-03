@@ -7,7 +7,7 @@ import { isServer } from './isServer';
 export const WS_OPTIONS: Options = {
   connectionTimeout: 6000,
   WebSocket: WS,
-  debug: true,
+  debug: false,
   maxReconnectionDelay: 10000,
   maxRetries: 10,
   minReconnectionDelay: 4000,
