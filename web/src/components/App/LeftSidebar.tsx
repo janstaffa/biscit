@@ -1,19 +1,25 @@
-import router from 'next/router';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
+import { IncomingSocketChatMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
 import {
+  Message,
+  ThreadMembers,
+  ThreadSnippetFragment,
   useLogoutMutation,
   useMeQuery,
-  useUpdateStatusMutation,
+  useUpdateStatusMutation
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
 import { queryClient } from '../../utils/createQueryClient';
+import { socket } from '../../utils/createWSconnection';
 import { formatTime } from '../../utils/formatTime';
+import { isServer } from '../../utils/isServer';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
 import Modal from '../modals/Modal';
@@ -21,10 +27,21 @@ import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 
 const LeftSidebar: React.FC = () => {
+  const router = useRouter();
+  const threadId = router.query.id as string;
   const { setAuthenticated } = useAuth();
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [statusInput, setStatusInput] = useState<string>('');
   const [currentPath, setCurrentPath] = useState<string>();
+  const [threadList, setThreadList] = useState<
+    Array<
+      { __typename?: 'ThreadMembers' } & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'> & {
+          thread: { __typename?: 'Thread' } & ThreadSnippetFragment;
+        }
+    >
+  >([]);
+  const threadListRef = useRef<typeof threadList>([]);
+  threadListRef.current = threadList;
 
   useEffect(() => {
     setCurrentPath(currentUrl()?.pathname);
@@ -34,36 +51,67 @@ const LeftSidebar: React.FC = () => {
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
-    },
+    }
   });
 
   const { mutate: updateStatus } = useUpdateStatusMutation({
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
-    },
+    }
   });
   const { data: meData, isLoading } = useMeQuery();
 
   useEffect(() => {
-    if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
-  }, [meData?.me?.bio]);
+    const ws = socket.connect();
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+      if (incoming.code === 3000) {
+        const { message } = incoming as IncomingSocketChatMessage;
+        // console.log(message);
+        const threads = [...threadListRef.current];
+        const thisThread = threads.find((thread) => {
+          if (thread.threadId === (message as Message).threadId) return true;
+          return false;
+        });
+        if (thisThread) {
+          threads.splice(threads.indexOf(thisThread), 1);
+          thisThread.unread++;
+          thisThread.thread.lastMessage = (message as Message).content;
+          threads.unshift(thisThread);
+          setThreadList(threads);
+        }
+      }
+    };
+    if (!isServer() && ws) {
+      try {
+        ws.addEventListener('message', handleMessage);
+      } catch (err) {
+        console.error(err);
+      }
 
+      return () => {
+        ws.removeEventListener('message', handleMessage);
+      };
+    }
+  }, [threadId]);
+
+  useEffect(() => {
+    if (!isLoading && meData && meData?.me) {
+      if (meData.me.threads) setThreadList(meData.me.threads);
+      if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
+    }
+  }, [isLoading, meData]);
   return (
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
         <div className="flex-col w-full h-auto border-b-2 border-dark-50 px-10 py-5">
-          <TabButton
-            active={currentPath?.includes('/app/friends')}
-            href="/app/friends"
-          >
+          <TabButton active={currentPath?.includes('/app/friends')} href="/app/friends">
             <FaUserFriends className="mr-4" />
             Friends
           </TabButton>
-          <TabButton
-            active={currentPath?.includes('/app/threads')}
-            href="/app/threads"
-          >
+          <TabButton active={currentPath?.includes('/app/threads')} href="/app/threads">
             <HiUserGroup className="mr-4" />
             Threads
           </TabButton>
@@ -93,19 +141,25 @@ const LeftSidebar: React.FC = () => {
             <div
               className="flex-1 h-full w-full overflow-y-scroll absolute"
               style={{
-                maxHeight: 'calc(100% - 96px)',
+                maxHeight: 'calc(100% - 96px)'
               }}
             >
-              {meData?.me?.threads?.map((membership) => (
-                <ThreadButton
-                  username={membership.thread.name}
-                  time={formatTime(membership.thread.lastActivity)}
-                  threadId={membership.threadId}
-                  latestMessage="test"
-                  undread={membership.unread > 0}
-                  key={membership.threadId}
-                />
-              ))}
+              {threadList.map((membership, i) => {
+                if (router.query.id === membership.threadId) {
+                  threadList[i].unread = 0;
+                }
+                return (
+                  <ThreadButton
+                    username={membership.thread.name as string}
+                    time={formatTime(membership.thread.lastActivity)}
+                    threadId={membership.threadId}
+                    latestMessage={membership.thread.lastMessage}
+                    unread={membership.unread > 0}
+                    active={membership.threadId === threadId}
+                    key={membership.threadId}
+                  />
+                );
+              })}
             </div>
           </div>
           <div className="absolute w-full h-24 bg-dark-300 bottom-0">
@@ -116,9 +170,7 @@ const LeftSidebar: React.FC = () => {
               <div className="w-full flex-1 px-2">
                 <div className="flex flex-row justify-between items-center">
                   <div className="flex flex-col">
-                    <div className=" text-light font-roboto">
-                      {meData?.me?.username}
-                    </div>
+                    <div className=" text-light font-roboto">{meData?.me?.username}</div>
                     <div
                       className="w-48 font-roboto text-sm truncate cursor-pointer text-light-300 hover:text-light-200"
                       onClick={() => setModalShow(true)}
@@ -140,7 +192,7 @@ const LeftSidebar: React.FC = () => {
                               } else {
                                 errorToast(genericErrorMessage);
                               }
-                            },
+                            }
                           }
                         );
                       }}
@@ -155,9 +207,7 @@ const LeftSidebar: React.FC = () => {
       </div>
       <Modal active={modalShow}>
         <div className="w-full h-10 flex flex-row justify-between">
-          <div className="text-light-300 text-lg font-roboto">
-            Change status
-          </div>
+          <div className="text-light-300 text-lg font-roboto">Change status</div>
           <div>
             <IoMdClose
               className="text-2xl text-light-300 hover:text-light cursor-pointer"
@@ -200,7 +250,7 @@ const LeftSidebar: React.FC = () => {
                       } else {
                         errorToast(genericErrorMessage);
                       }
-                    },
+                    }
                   }
                 );
               }}
@@ -214,4 +264,4 @@ const LeftSidebar: React.FC = () => {
   );
 };
 
-export default LeftSidebar;
+export default React.memo(LeftSidebar);

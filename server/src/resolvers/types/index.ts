@@ -5,7 +5,7 @@ import { GQLValidationError } from '../../utils/validateYupSchema';
 
 export interface ResponseType<T> {
   data: T | null;
-  errors: GQLValidationError[] | null;
+  errors: GQLValidationError[] | [];
 }
 
 @ObjectType()
@@ -14,7 +14,7 @@ export class BooleanResponse {
   data: boolean;
 
   @Field(() => [GQLValidationError])
-  errors: GQLValidationError[];
+  errors: GQLValidationError[] | [];
 }
 
 @ObjectType()
@@ -23,7 +23,7 @@ export class ThreadResponse {
   data: Thread;
 
   @Field(() => [GQLValidationError])
-  errors: GQLValidationError[];
+  errors: GQLValidationError[] | [];
 }
 
 @ObjectType()
@@ -32,5 +32,5 @@ export class ThreadMessagesResponse {
   data: Message[];
 
   @Field(() => [GQLValidationError])
-  errors: GQLValidationError[];
+  errors: GQLValidationError[] | [];
 }

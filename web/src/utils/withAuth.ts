@@ -21,6 +21,6 @@ export default function withAuth(Component, location = '/login') {
       }
       console.log('server: ', authenticated);
       return !authenticated;
-    },
+    }
   });
 }

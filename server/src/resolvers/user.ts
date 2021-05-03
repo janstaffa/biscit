@@ -11,10 +11,12 @@ import {
   Root,
   UseMiddleware
 } from 'type-graphql';
+import { createQueryBuilder } from 'typeorm';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
+import { Message } from '../entities/Message';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { LoginInput, RegisterInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
@@ -77,18 +79,35 @@ export class UserResolver {
         where: { userId },
         relations: ['thread', 'thread.members', 'thread.members.user']
       });
-      threads.map((thread) => {
-        const response = thread;
-        if (thread.thread.isDm) {
-          const otherUser = thread.thread.members.filter((member) => {
-            return member.user.id !== userId;
-          });
+      const updatedThreads = await Promise.all(
+        threads.map(async (thread) => {
+          const response = thread;
+          if (thread.thread.isDm) {
+            const otherUser = thread.thread.members.filter((member) => {
+              return member.user.id !== userId;
+            });
 
-          response.thread.name = otherUser[0].user.username;
-        }
-        return response;
+            response.thread.name = otherUser[0].user.username;
+          }
+          const lastMessage = await createQueryBuilder(Message, 'message')
+            .where('message."threadId" = :threadId', {
+              threadId: thread.threadId
+            })
+            .orderBy('message."createdAt"', 'DESC')
+            .getOne();
+
+          if (lastMessage) {
+            response.thread.lastMessage = lastMessage.content;
+          }
+          return response;
+        })
+      );
+      updatedThreads.sort((a, b) => {
+        if (a.thread.lastActivity < b.thread.lastActivity) return 1;
+        if (a.thread.lastActivity > b.thread.lastActivity) return -1;
+        else return 0;
       });
-      return threads;
+      return updatedThreads;
     }
     return null;
   }
@@ -135,7 +154,7 @@ export class UserResolver {
       })
     });
 
-    let errors = await validateSchema(RegisterSchema, options);
+    let errors = (await validateSchema(RegisterSchema, options)) || [];
     if (errors) return { data: false, errors };
 
     const { username, email, password } = options;
