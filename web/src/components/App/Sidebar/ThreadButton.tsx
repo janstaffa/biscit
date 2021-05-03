@@ -5,7 +5,7 @@ export interface ThreadButtonProps {
   username: string;
   time: string;
   latestMessage: string | null | undefined;
-  undread: boolean;
+  unread: boolean;
   threadId: string;
   active?: boolean;
 }
@@ -14,7 +14,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   username,
   time,
   latestMessage,
-  undread,
+  unread,
   threadId,
   active = false
 }) => {
@@ -36,7 +36,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
                   {latestMessage ? latestMessage.slice(0, 50) : 'no messages yet'}
                 </div>
                 <div className="w-8 flex flex-row justify-center items-center">
-                  {undread && <div className="w-4 h-4 bg-light rounded-full"></div>}
+                  {unread && <div className="w-4 h-4 bg-light rounded-full"></div>}
                 </div>
               </div>
             </div>

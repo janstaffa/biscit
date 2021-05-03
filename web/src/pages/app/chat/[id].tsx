@@ -24,7 +24,6 @@ const Chat: NextPage = () => {
     return null;
   }
   const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
-  console.log(threadId);
 
   const { data } = useThreadQuery(
     {
@@ -64,10 +63,22 @@ const Chat: NextPage = () => {
         limit: 30,
         cursor
       } as OutgoingLoadMessagesMessage;
+      console.log(payload);
 
       ws.send(JSON.stringify(payload));
     }
   };
+
+  const joinRoom = (ws) => {
+    console.log('I ran');
+    const payload = {
+      code: 3002,
+      threadId
+    };
+    ws.send(JSON.stringify(payload));
+  };
+
+  const { ready: isReady, setReady } = useWebSocketStore();
   useEffect(() => {
     setMessages([]);
     setMoreMessages(false);
@@ -94,22 +105,20 @@ const Chat: NextPage = () => {
             scroll(prevMessagesLength === 0 ? 0 : incomingMessages.length * 84);
           } else if (incoming.code === 3005) {
             if (incoming.value === 'ok') {
-              useWebSocketStore.getState().setReady(true);
+              setReady(true);
               loadMessages(ws);
+              joinRoom(ws);
             }
           }
         };
 
-        if (useWebSocketStore.getState().ready) {
+        if (isReady) {
           loadMessages(ws);
+          joinRoom(ws);
         }
       } catch (err) {
         console.error(err);
       }
-
-      return () => {
-        ws.onmessage = null;
-      };
     }
   }, [threadId]);
 
@@ -124,11 +133,11 @@ const Chat: NextPage = () => {
           loadMessages(ws, cursor);
         }
       };
+      return () => {
+        feed.onscroll = null;
+      };
     }
-    return () => {
-      feed.onscroll = null;
-    };
-  }, [moreMessages]);
+  }, [moreMessages, messages]);
 
   return (
     <>

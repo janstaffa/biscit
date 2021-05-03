@@ -1,15 +1,25 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
+import { IncomingSocketChatMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
-import { useLogoutMutation, useMeQuery, useUpdateStatusMutation } from '../../generated/graphql';
+import {
+  Message,
+  ThreadMembers,
+  ThreadSnippetFragment,
+  useLogoutMutation,
+  useMeQuery,
+  useUpdateStatusMutation
+} from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
 import { queryClient } from '../../utils/createQueryClient';
+import { socket } from '../../utils/createWSconnection';
 import { formatTime } from '../../utils/formatTime';
+import { isServer } from '../../utils/isServer';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
 import Modal from '../modals/Modal';
@@ -23,6 +33,15 @@ const LeftSidebar: React.FC = () => {
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [statusInput, setStatusInput] = useState<string>('');
   const [currentPath, setCurrentPath] = useState<string>();
+  const [threadList, setThreadList] = useState<
+    Array<
+      { __typename?: 'ThreadMembers' } & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'> & {
+          thread: { __typename?: 'Thread' } & ThreadSnippetFragment;
+        }
+    >
+  >([]);
+  const threadListRef = useRef<typeof threadList>([]);
+  threadListRef.current = threadList;
 
   useEffect(() => {
     setCurrentPath(currentUrl()?.pathname);
@@ -44,9 +63,46 @@ const LeftSidebar: React.FC = () => {
   const { data: meData, isLoading } = useMeQuery();
 
   useEffect(() => {
-    if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
-  }, [meData?.me?.bio]);
+    const ws = socket.connect();
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+      if (incoming.code === 3000) {
+        const { message } = incoming as IncomingSocketChatMessage;
+        // console.log(message);
+        const threads = [...threadListRef.current];
+        const thisThread = threads.find((thread) => {
+          if (thread.threadId === (message as Message).threadId) return true;
+          return false;
+        });
+        if (thisThread) {
+          threads.splice(threads.indexOf(thisThread), 1);
+          thisThread.unread++;
+          thisThread.thread.lastMessage = (message as Message).content;
+          threads.unshift(thisThread);
+          setThreadList(threads);
+        }
+      }
+    };
+    if (!isServer() && ws) {
+      try {
+        ws.addEventListener('message', handleMessage);
+      } catch (err) {
+        console.error(err);
+      }
 
+      return () => {
+        ws.removeEventListener('message', handleMessage);
+      };
+    }
+  }, [threadId]);
+
+  useEffect(() => {
+    if (!isLoading && meData && meData?.me) {
+      if (meData.me.threads) setThreadList(meData.me.threads);
+      if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
+    }
+  }, [isLoading, meData]);
   return (
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
@@ -88,14 +144,17 @@ const LeftSidebar: React.FC = () => {
                 maxHeight: 'calc(100% - 96px)'
               }}
             >
-              {meData?.me?.threads?.map((membership) => {
+              {threadList.map((membership, i) => {
+                if (router.query.id === membership.threadId) {
+                  threadList[i].unread = 0;
+                }
                 return (
                   <ThreadButton
                     username={membership.thread.name as string}
                     time={formatTime(membership.thread.lastActivity)}
                     threadId={membership.threadId}
                     latestMessage={membership.thread.lastMessage}
-                    undread={membership.unread > 0}
+                    unread={membership.unread > 0}
                     active={membership.threadId === threadId}
                     key={membership.threadId}
                   />
@@ -205,4 +264,4 @@ const LeftSidebar: React.FC = () => {
   );
 };
 
-export default LeftSidebar;
+export default React.memo(LeftSidebar);

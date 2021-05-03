@@ -79,9 +79,10 @@ export const handleMessage = async (
     }
   } else if (code === JOIN_THREAD_CODE) {
     const { threadId } = incoming as SocketThreadMessage;
+
     try {
-      const membership = await ThreadMembers.findOne({ where: { threadId, userId: user.id }, relations: ['thread'] });
-      if (!membership) {
+      const membership = await ThreadMembers.update({ threadId, userId: user.id }, { unread: 0 });
+      if (!membership.affected || membership.affected !== 1) {
         const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this thread' };
         ws.send(JSON.stringify(payload));
         return;
@@ -121,7 +122,6 @@ export const handleMessage = async (
         messages: messages.slice(0, realLimit).reverse(),
         hasMore: messages.length === realLimitPlusOne
       };
-
       ws.send(JSON.stringify(payload));
     } catch (e) {
       console.error(e);

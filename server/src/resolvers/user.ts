@@ -79,7 +79,7 @@ export class UserResolver {
         where: { userId },
         relations: ['thread', 'thread.members', 'thread.members.user']
       });
-      const updatedThreads = Promise.all(
+      const updatedThreads = await Promise.all(
         threads.map(async (thread) => {
           const response = thread;
           if (thread.thread.isDm) {
@@ -102,6 +102,11 @@ export class UserResolver {
           return response;
         })
       );
+      updatedThreads.sort((a, b) => {
+        if (a.thread.lastActivity < b.thread.lastActivity) return 1;
+        if (a.thread.lastActivity > b.thread.lastActivity) return -1;
+        else return 0;
+      });
       return updatedThreads;
     }
     return null;
