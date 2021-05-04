@@ -90,13 +90,21 @@ const Chat: NextPage = () => {
           const { data: m } = e;
           const incoming = JSON.parse(m);
           if (incoming.code === 3000) {
-            const { message } = incoming as IncomingSocketChatMessage;
+            const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
+            if (incomingThreadId !== threadId) return;
+
             const currentMessages = [...messagesRef.current];
             currentMessages.push(message as MessageSnippetFragment);
             setMessages(currentMessages);
             scroll();
           } else if (incoming.code === 3003) {
-            const { messages: incomingMessages, hasMore } = incoming as IncomingLoadMessagesMessage;
+            const {
+              messages: incomingMessages,
+              hasMore,
+              threadId: incomingThreadId
+            } = incoming as IncomingLoadMessagesMessage;
+            if (incomingThreadId !== threadId) return;
+
             const prevMessagesLength = messagesRef.current.length;
             const newMessages = [...incomingMessages, ...messagesRef.current];
             setMessages(newMessages);

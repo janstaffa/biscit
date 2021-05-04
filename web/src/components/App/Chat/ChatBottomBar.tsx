@@ -30,7 +30,9 @@ const ChatBottomBar: React.FC = () => {
         const { data: m } = e;
         const incoming = JSON.parse(m);
         if (incoming.code === 3006) {
-          const { username } = incoming as TypingMessage;
+          const { username, threadId: incomingThreadId } = incoming as TypingMessage;
+          if (incomingThreadId !== threadId) return;
+
           if (resetTyping) {
             clearTimeout(resetTyping);
             resetTyping = null;

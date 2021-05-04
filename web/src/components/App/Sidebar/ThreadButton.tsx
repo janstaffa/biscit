@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TypingMessage } from '../../..';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
@@ -21,13 +21,13 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   threadId,
   active = false
 }) => {
-  const [displayMessage, setDisplayMessage] = useState<string | null | undefined>(null);
+  const [displayMessage, setDisplayMessage] = useState<string | null | undefined>(
+    latestMessage && latestMessage.slice(0, 50)
+  );
+  const displayMessageRef = useRef<string | null | undefined>();
+  displayMessageRef.current = displayMessage;
 
   useEffect(() => {
-    if (latestMessage) {
-      setDisplayMessage(latestMessage.slice(0, 50));
-    }
-
     const ws = socket.connect();
 
     let resetTyping;
@@ -44,7 +44,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
             resetTyping = null;
           }
           resetTyping = setTimeout(() => {
-            setDisplayMessage(latestMessage);
+            setDisplayMessage(displayMessageRef.current);
           }, 2000);
         }
       }
@@ -61,6 +61,10 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
       };
     }
   }, []);
+
+  useEffect(() => {
+    setDisplayMessage(latestMessage);
+  }, [latestMessage]);
   return (
     <Link href={`/app/chat/${threadId}`}>
       <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>

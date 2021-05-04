@@ -4,7 +4,7 @@ export interface SocketMessage {
 export interface SocketThreadMessage extends SocketMessage {
   threadId: string;
 }
-export interface IncomingSocketChatMessage extends SocketMessage {
+export interface IncomingSocketChatMessage extends SocketThreadMessage {
   message: Message;
 }
 
@@ -17,7 +17,7 @@ export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {
   limit: number;
 }
 
-export interface IncomingLoadMessagesMessage extends SocketMessage {
+export interface IncomingLoadMessagesMessage extends SocketThreadMessage {
   messages: Message[] | [];
   hasMore: boolean;
 }

@@ -71,7 +71,6 @@ export const handleMessage = async (
           user: senderUser
         } as Message
       };
-      console.log(payload);
 
       pubClient.publish(threadId, JSON.stringify(payload));
     } catch (e) {
