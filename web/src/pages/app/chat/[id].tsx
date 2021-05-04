@@ -51,7 +51,9 @@ const Chat: NextPage = () => {
 
   const scroll = (px = 0) => {
     const feed = document.querySelector('#chat-feed')!;
-    feed.scrollTop = px === 0 ? feed.scrollHeight : px;
+    if (feed) {
+      feed.scrollTop = px === 0 ? feed.scrollHeight : px;
+    }
   };
 
   const loadMessages = (ws, cursor: string | null = null) => {
@@ -70,7 +72,6 @@ const Chat: NextPage = () => {
   };
 
   const joinRoom = (ws) => {
-    console.log('I ran');
     const payload = {
       code: 3002,
       threadId
@@ -78,51 +79,61 @@ const Chat: NextPage = () => {
     ws.send(JSON.stringify(payload));
   };
 
-  const { ready: isReady, setReady } = useWebSocketStore();
   useEffect(() => {
+    const { ready: isReady, setReady } = useWebSocketStore.getState();
+
     setMessages([]);
     setMoreMessages(false);
     setIsLoadingMessages(false);
-    const ws = socket.connect();
-    if (!isServer() && ws) {
-      try {
-        ws.onmessage = (e) => {
-          const { data: m } = e;
-          const incoming = JSON.parse(m);
-          if (incoming.code === 3000) {
-            const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
-            if (incomingThreadId !== threadId) return;
+    let ws = socket.connect();
 
-            const currentMessages = [...messagesRef.current];
-            currentMessages.push(message as MessageSnippetFragment);
-            setMessages(currentMessages);
-            scroll();
-          } else if (incoming.code === 3003) {
-            const {
-              messages: incomingMessages,
-              hasMore,
-              threadId: incomingThreadId
-            } = incoming as IncomingLoadMessagesMessage;
-            if (incomingThreadId !== threadId) return;
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+      if (incoming.code === 3000) {
+        const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
+        if (incomingThreadId !== threadId) return;
 
-            const prevMessagesLength = messagesRef.current.length;
-            const newMessages = [...incomingMessages, ...messagesRef.current];
-            setMessages(newMessages);
-            setMoreMessages(hasMore);
-            setIsLoadingMessages(false);
-            scroll(prevMessagesLength === 0 ? 0 : incomingMessages.length * 84);
-          } else if (incoming.code === 3005) {
-            if (incoming.value === 'ok') {
-              setReady(true);
-              loadMessages(ws);
-              joinRoom(ws);
-            }
-          }
-        };
+        const currentMessages = [...messagesRef.current];
+        currentMessages.push(message as MessageSnippetFragment);
+        setMessages(currentMessages);
+        scroll();
+      } else if (incoming.code === 3003) {
+        const {
+          messages: incomingMessages,
+          hasMore,
+          threadId: incomingThreadId
+        } = incoming as IncomingLoadMessagesMessage;
+        if (incomingThreadId !== threadId) return;
 
-        if (isReady) {
+        const prevMessagesLength = messagesRef.current.length;
+        const newMessages = [...incomingMessages, ...messagesRef.current];
+        setMessages(newMessages);
+        setMoreMessages(hasMore);
+        setIsLoadingMessages(false);
+        scroll(prevMessagesLength === 0 ? 0 : incomingMessages.length * 84);
+      } else if (incoming.code === 3005) {
+        if (incoming.value === 'ok') {
+          setReady(true);
           loadMessages(ws);
           joinRoom(ws);
+        }
+      }
+    };
+    if (!isServer()) {
+      try {
+        if (!isReady) {
+          ws = socket.restart();
+        }
+        if (ws) {
+          ws.onmessage = (e) => {
+            handleMessage(e);
+          };
+
+          if (isReady) {
+            loadMessages(ws);
+            joinRoom(ws);
+          }
         }
       } catch (err) {
         console.error(err);

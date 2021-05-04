@@ -139,4 +139,4 @@ const ChatBottomBar: React.FC = () => {
   );
 };
 
-export default ChatBottomBar;
+export default React.memo(ChatBottomBar);

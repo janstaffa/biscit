@@ -17,6 +17,7 @@ interface Socket {
   ws: ReconnectingWebSocket | undefined;
   connect: () => ReconnectingWebSocket | undefined;
   close: () => boolean;
+  restart: () => ReconnectingWebSocket | undefined;
 }
 
 export const socket: Socket = {
@@ -46,5 +47,10 @@ export const socket: Socket = {
       return true;
     }
     return false;
+  },
+  restart: () => {
+    if (socket.close()) {
+      return socket.connect();
+    }
   }
 };

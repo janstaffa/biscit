@@ -21,11 +21,10 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   threadId,
   active = false
 }) => {
-  const [displayMessage, setDisplayMessage] = useState<string | null | undefined>(
-    latestMessage && latestMessage.slice(0, 50)
-  );
-  const displayMessageRef = useRef<string | null | undefined>();
-  displayMessageRef.current = displayMessage;
+  const [displayMessage, setDisplayMessage] = useState<string | null | undefined>();
+  const [currentLatestMessage, setCurrentLatestMessage] = useState<string | null | undefined>();
+  const currentDisplayMessageRef = useRef<string | null | undefined>();
+  currentDisplayMessageRef.current = currentLatestMessage;
 
   useEffect(() => {
     const ws = socket.connect();
@@ -44,7 +43,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
             resetTyping = null;
           }
           resetTyping = setTimeout(() => {
-            setDisplayMessage(displayMessageRef.current);
+            setDisplayMessage(currentDisplayMessageRef.current);
           }, 2000);
         }
       }
@@ -64,6 +63,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
 
   useEffect(() => {
     setDisplayMessage(latestMessage);
+    setCurrentLatestMessage(latestMessage);
   }, [latestMessage]);
   return (
     <Link href={`/app/chat/${threadId}`}>
@@ -94,4 +94,4 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   );
 };
 
-export default React.memo(ThreadButton);
+export default ThreadButton;
