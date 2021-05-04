@@ -22,6 +22,7 @@ const ChatBottomBar: React.FC = () => {
   messageInputValueRef.current = messageInputValue;
 
   useEffect(() => {
+    setMessageInputValue('');
     const ws = socket.connect();
     if (!isServer() && ws) {
       let resetTyping;
