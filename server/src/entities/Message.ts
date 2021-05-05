@@ -11,6 +11,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { Thread } from './Thread';
 import { User } from './User';
 
 @ObjectType()
@@ -37,6 +38,10 @@ export class Message extends BaseEntity {
   @Field()
   @Column()
   threadId: string;
+
+  @ManyToOne(() => Thread, (thread) => thread.messages, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'threadId' })
+  thread: Thread;
 
   @Field()
   @Column()

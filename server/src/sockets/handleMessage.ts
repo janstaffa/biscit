@@ -92,7 +92,6 @@ export const handleMessage = async (
     }
   } else if (code === LOAD_MESSAGES_CODE) {
     const { threadId, cursor, limit } = incoming as IncomingLoadMessagesMessage;
-
     try {
       const membership = await ThreadMembers.findOne({ where: { threadId, userId: user.id }, relations: ['thread'] });
       if (!membership) {

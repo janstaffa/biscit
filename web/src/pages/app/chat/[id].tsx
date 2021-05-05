@@ -5,13 +5,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import ClipLoader from 'react-spinners/ClipLoader';
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import { IncomingLoadMessagesMessage, IncomingSocketChatMessage, OutgoingLoadMessagesMessage } from '../../..';
+import { IncomingSocketChatMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import { genericErrorMessage } from '../../../constants';
-import { MessageSnippetFragment, useThreadQuery } from '../../../generated/graphql';
+import {
+  MessageSnippetFragment,
+  ThreadMessagesResponse,
+  useThreadMessagesQuery,
+  useThreadQuery
+} from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
@@ -43,6 +48,20 @@ const Chat: NextPage = () => {
     }
   );
 
+  const [cursor, setCursor] = useState<string | null>(null);
+  const { data: incomingThreadMessages, refetch: refetchThreadMessages } = useThreadMessagesQuery(
+    {
+      options: { threadId, limit: 30, cursor }
+    },
+    {
+      onError: (err) => {
+        console.error(err);
+        errorToast(genericErrorMessage);
+      },
+      cacheTime: 0
+    }
+  );
+
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
   messagesRef.current = messages;
@@ -54,19 +73,13 @@ const Chat: NextPage = () => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (!feed) return;
 
+    console.log(feed.scrollTop, feed.scrollHeight);
     feed.scrollTop = px === 0 ? feed.scrollHeight : px;
+    console.log(feed.scrollTop, feed.scrollHeight);
   };
 
-  const loadMessages = (ws: ReconnectingWebSocket, cursor: string | null = null) => {
-    setIsLoadingMessages(true);
-    const payload = {
-      code: 3003,
-      threadId,
-      limit: 30,
-      cursor
-    } as OutgoingLoadMessagesMessage;
-
-    ws.send(JSON.stringify(payload));
+  const loadMessages = () => {
+    refetchThreadMessages();
   };
 
   const joinRoom = (ws: ReconnectingWebSocket) => {
@@ -78,11 +91,13 @@ const Chat: NextPage = () => {
   };
 
   useEffect(() => {
+    const ws = socket.connect();
+    if (isServer() || !ws) return;
+
     setMessages([]);
     setMoreMessages(false);
     setIsLoadingMessages(false);
-    const ws = socket.connect();
-    if (isServer() || !ws) return;
+    loadMessages();
 
     const handleMessage = (e) => {
       const { data: m } = e;
@@ -95,25 +110,10 @@ const Chat: NextPage = () => {
         currentMessages.push(message as MessageSnippetFragment);
         setMessages(currentMessages);
         scroll();
-      } else if (incoming.code === 3003) {
-        const {
-          messages: incomingMessages,
-          hasMore,
-          threadId: incomingThreadId
-        } = incoming as IncomingLoadMessagesMessage;
-        if (incomingThreadId !== threadId) return;
-
-        const prevMessagesLength = messagesRef.current.length;
-        const newMessages = [...incomingMessages, ...messagesRef.current];
-        setMessages(newMessages);
-        setMoreMessages(hasMore);
-        setIsLoadingMessages(false);
-        scroll(prevMessagesLength === 0 ? 0 : incomingMessages.length * 84);
       }
     };
     const handleOpen = () => {
       joinRoom(ws);
-      loadMessages(ws);
     };
     try {
       ws.addEventListener('message', handleMessage);
@@ -134,15 +134,39 @@ const Chat: NextPage = () => {
   }, [threadId]);
 
   useEffect(() => {
-    const ws = socket.connect();
-    const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
-    if (!feed || !ws) return;
+    console.log('incomingThreadMessages CHANGE', incomingThreadMessages);
+    setIsLoadingMessages(true);
+    if (!incomingThreadMessages?.messages) return;
+    const { data: incomingMessages, hasMore, errors } = incomingThreadMessages.messages as ThreadMessagesResponse;
 
+    if (errors.length > 0) {
+      errors.forEach((err) => {
+        if (err.details?.message) {
+          errorToast(err.details.message);
+        }
+      });
+      router.replace('/app/friends/all');
+      return;
+    }
+    if (incomingMessages) {
+      const prevMessagesLength = messagesRef.current.length;
+      const newMessages = [...incomingMessages, ...messagesRef.current];
+      console.log('setting messages state', newMessages);
+      setMessages(newMessages);
+      setMoreMessages(hasMore);
+      setIsLoadingMessages(false);
+
+      scroll(prevMessagesLength === 0 ? 0 : incomingMessages.length * 84);
+    }
+  }, [incomingThreadMessages]);
+
+  useEffect(() => {
+    const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (moreMessages) {
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
-          const cursor = messages[0].createdAt;
-          loadMessages(ws, cursor);
+          setCursor(messages[0].createdAt);
+          loadMessages();
         }
       };
       return () => {

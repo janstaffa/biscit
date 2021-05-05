@@ -66,7 +66,6 @@ export class User extends BaseEntity {
   @OneToMany(() => ThreadMembers, (thread) => thread.user)
   threads: ThreadMembers[];
 
-  @Field(() => [Message], { nullable: true })
   @OneToMany(() => Message, (message) => message.user)
   messages: Message[];
 

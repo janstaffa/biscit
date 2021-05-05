@@ -2,13 +2,12 @@ import { Arg, Ctx, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { ThreadQueryInput } from '../entities/types/thread';
-import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { ResponseType, ThreadResponse } from './types';
 
-@Resolver(User)
+@Resolver(Thread)
 export class ThreadResolver {
   @Query(() => ThreadResponse)
   @UseMiddleware(isAuth)
