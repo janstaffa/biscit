@@ -28,8 +28,9 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
 
   useEffect(() => {
     const ws = socket.connect();
+    if (isServer() || !ws) return;
 
-    let resetTyping;
+    let resetTyping: NodeJS.Timeout | null;
     const handleMessage = (e) => {
       const { data: m } = e;
       const incoming = JSON.parse(m);
@@ -48,23 +49,22 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
         }
       }
     };
-    if (!isServer() && ws) {
-      try {
-        ws.addEventListener('message', handleMessage);
-      } catch (err) {
-        console.error(err);
-      }
-
-      return () => {
-        ws.removeEventListener('message', handleMessage);
-      };
+    try {
+      ws.addEventListener('message', handleMessage);
+    } catch (err) {
+      console.error(err);
     }
+
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+    };
   }, []);
 
   useEffect(() => {
     setDisplayMessage(latestMessage);
     setCurrentLatestMessage(latestMessage);
   }, [latestMessage]);
+
   return (
     <Link href={`/app/chat/${threadId}`}>
       <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>

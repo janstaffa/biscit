@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import ClipLoader from 'react-spinners/ClipLoader';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 import { IncomingLoadMessagesMessage, IncomingSocketChatMessage, OutgoingLoadMessagesMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
@@ -11,7 +12,6 @@ import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import { genericErrorMessage } from '../../../constants';
 import { MessageSnippetFragment, useThreadQuery } from '../../../generated/graphql';
-import { useWebSocketStore } from '../../../stores/useWebSocketStore';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
@@ -46,32 +46,30 @@ const Chat: NextPage = () => {
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
   messagesRef.current = messages;
+
   const [moreMessages, setMoreMessages] = useState<boolean>(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
 
   const scroll = (px = 0) => {
-    const feed = document.querySelector('#chat-feed')!;
-    if (feed) {
-      feed.scrollTop = px === 0 ? feed.scrollHeight : px;
-    }
+    const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+    if (!feed) return;
+
+    feed.scrollTop = px === 0 ? feed.scrollHeight : px;
   };
 
-  const loadMessages = (ws, cursor: string | null = null) => {
-    if (ws) {
-      setIsLoadingMessages(true);
-      const payload = {
-        code: 3003,
-        threadId,
-        limit: 30,
-        cursor
-      } as OutgoingLoadMessagesMessage;
-      console.log(payload);
+  const loadMessages = (ws: ReconnectingWebSocket, cursor: string | null = null) => {
+    setIsLoadingMessages(true);
+    const payload = {
+      code: 3003,
+      threadId,
+      limit: 30,
+      cursor
+    } as OutgoingLoadMessagesMessage;
 
-      ws.send(JSON.stringify(payload));
-    }
+    ws.send(JSON.stringify(payload));
   };
 
-  const joinRoom = (ws) => {
+  const joinRoom = (ws: ReconnectingWebSocket) => {
     const payload = {
       code: 3002,
       threadId
@@ -80,12 +78,11 @@ const Chat: NextPage = () => {
   };
 
   useEffect(() => {
-    const { ready: isReady, setReady } = useWebSocketStore.getState();
-
     setMessages([]);
     setMoreMessages(false);
     setIsLoadingMessages(false);
-    let ws = socket.connect();
+    const ws = socket.connect();
+    if (isServer() || !ws) return;
 
     const handleMessage = (e) => {
       const { data: m } = e;
@@ -112,38 +109,34 @@ const Chat: NextPage = () => {
         setMoreMessages(hasMore);
         setIsLoadingMessages(false);
         scroll(prevMessagesLength === 0 ? 0 : incomingMessages.length * 84);
-      } else if (incoming.code === 3005) {
-        if (incoming.value === 'ok') {
-          setReady(true);
-          loadMessages(ws);
-          joinRoom(ws);
-        }
       }
     };
-    if (!isServer()) {
-      try {
-        if (!isReady) {
-          ws = socket.restart();
-        }
-        if (ws) {
-          ws.onmessage = (e) => {
-            handleMessage(e);
-          };
-
-          if (isReady) {
-            loadMessages(ws);
-            joinRoom(ws);
-          }
-        }
-      } catch (err) {
-        console.error(err);
+    const handleOpen = () => {
+      joinRoom(ws);
+      loadMessages(ws);
+    };
+    try {
+      ws.addEventListener('message', handleMessage);
+      ws.addEventListener('open', handleOpen);
+      if (ws.readyState === ws.OPEN) {
+        handleOpen();
       }
+    } catch (err) {
+      console.error(err);
     }
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+      ws.removeEventListener('open', handleOpen);
+      setMessages([]);
+      setMoreMessages(false);
+      setIsLoadingMessages(false);
+    };
   }, [threadId]);
 
   useEffect(() => {
     const ws = socket.connect();
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+    if (!feed || !ws) return;
 
     if (moreMessages) {
       feed.onscroll = () => {

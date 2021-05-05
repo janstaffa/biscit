@@ -7,7 +7,7 @@ export interface WebSocketStoreType extends State {
 }
 export const useWebSocketStore = create<WebSocketStoreType>((set) => ({
   connected: false,
-  ready: false,
+  ready: true,
   setConnected: (bool) =>
     set(() => {
       return { connected: bool };
