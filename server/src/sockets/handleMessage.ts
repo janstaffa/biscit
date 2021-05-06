@@ -71,7 +71,6 @@ export const handleMessage = async (
           user: senderUser
         } as Message
       };
-      console.log(payload);
 
       pubClient.publish(threadId, JSON.stringify(payload));
     } catch (e) {
@@ -93,7 +92,6 @@ export const handleMessage = async (
     }
   } else if (code === LOAD_MESSAGES_CODE) {
     const { threadId, cursor, limit } = incoming as IncomingLoadMessagesMessage;
-
     try {
       const membership = await ThreadMembers.findOne({ where: { threadId, userId: user.id }, relations: ['thread'] });
       if (!membership) {

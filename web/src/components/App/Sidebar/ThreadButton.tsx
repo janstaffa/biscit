@@ -1,5 +1,8 @@
 import Link from 'next/link';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { TypingMessage } from '../../..';
+import { socket } from '../../../utils/createWSconnection';
+import { isServer } from '../../../utils/isServer';
 
 export interface ThreadButtonProps {
   username: string;
@@ -18,6 +21,50 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   threadId,
   active = false
 }) => {
+  const [displayMessage, setDisplayMessage] = useState<string | null | undefined>();
+  const [currentLatestMessage, setCurrentLatestMessage] = useState<string | null | undefined>();
+  const currentDisplayMessageRef = useRef<string | null | undefined>();
+  currentDisplayMessageRef.current = currentLatestMessage;
+
+  useEffect(() => {
+    const ws = socket.connect();
+    if (isServer() || !ws) return;
+
+    let resetTyping: NodeJS.Timeout | null;
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+
+      if (incoming.code === 3006) {
+        const { username: incomingUsername, threadId: incomingThreadId } = incoming as TypingMessage;
+        if (incomingThreadId === threadId) {
+          setDisplayMessage(`${incomingUsername} is typing...`);
+          if (resetTyping) {
+            clearTimeout(resetTyping);
+            resetTyping = null;
+          }
+          resetTyping = setTimeout(() => {
+            setDisplayMessage(currentDisplayMessageRef.current);
+          }, 2000);
+        }
+      }
+    };
+    try {
+      ws.addEventListener('message', handleMessage);
+    } catch (err) {
+      console.error(err);
+    }
+
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    setDisplayMessage(latestMessage);
+    setCurrentLatestMessage(latestMessage);
+  }, [latestMessage]);
+
   return (
     <Link href={`/app/chat/${threadId}`}>
       <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>
@@ -33,7 +80,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
               </div>
               <div className=" w-full flex flex-row justify-between">
                 <div className="text-light-300 w-48 font-roboto text-sm truncate">
-                  {latestMessage ? latestMessage.slice(0, 50) : 'no messages yet'}
+                  {displayMessage || 'no messages yet'}
                 </div>
                 <div className="w-8 flex flex-row justify-center items-center">
                   {unread && <div className="w-4 h-4 bg-light rounded-full"></div>}
@@ -47,4 +94,4 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   );
 };
 
-export default React.memo(ThreadButton);
+export default ThreadButton;

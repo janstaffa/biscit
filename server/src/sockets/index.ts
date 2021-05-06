@@ -2,7 +2,7 @@ import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import http, { Server } from 'http';
 import * as net from 'net';
-import { createClient } from 'redis';
+import { createClient, RedisClient } from 'redis';
 import WebSocket from 'ws';
 import { browserOrigin } from '../constants';
 import { Message } from '../entities/Message';
@@ -92,6 +92,8 @@ export const sockets = (server: Server) => {
     } catch (e) {
       return socket.destroy();
     }
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) return socket.destroy();
 
     wss.handleUpgrade(req, socket, head, (ws) => {
       const payload = {
@@ -100,117 +102,109 @@ export const sockets = (server: Server) => {
       };
       ws.send(JSON.stringify(payload));
 
-      wss.emit('connection', ws, req, userId);
+      const subClient = createClient({
+        url: process.env.REDIS_URL
+      });
+
+      subClient.on('error', (error) => {
+        console.error(error);
+      });
+
+      const pubClient = createClient({
+        url: process.env.REDIS_URL
+      });
+
+      pubClient.on('error', (error) => {
+        console.error(error);
+      });
+
+      wss.emit('connection', ws, req, user, subClient, pubClient);
     });
   });
 
-  wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, userId: string) => {
-    console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
+  wss.on(
+    'connection',
+    async (ws: WebSocket, req: http.IncomingMessage, user: User, subClient: RedisClient, pubClient: RedisClient) => {
+      console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
 
-    const user = await User.findOne({ where: { id: userId } });
-    if (!user) return closeConnection(ws);
-    // redis clients setup
-    const subClient = createClient({
-      url: process.env.REDIS_URL
-    });
-
-    subClient.on('error', (error) => {
-      console.error(error);
-    });
-
-    const pubClient = createClient({
-      url: process.env.REDIS_URL
-    });
-
-    pubClient.on('error', (error) => {
-      console.error(error);
-    });
-
-    const heartbeat = setInterval(() => {
-      if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
-        clearInterval(heartbeat);
-        closeConnectionAndClear();
-
-        return;
-      }
-      ws.ping('ping', false, (err) => {
-        if (err) {
-          console.error(err);
-          closeConnectionAndClear();
+      const heartbeat = setInterval(() => {
+        if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
           clearInterval(heartbeat);
+          closeConnectionAndClear();
+
+          return;
         }
+        ws.ping('ping', false, (err) => {
+          if (err) {
+            console.error(err);
+            closeConnectionAndClear();
+            clearInterval(heartbeat);
+          }
+        });
+      }, HEARTBEAT_INTERVAL);
+
+      const elapsed = setTimeout(() => {
+        closeConnectionAndClear();
+      }, ELAPSED_TIME);
+
+      const closeConnectionAndClear = () => {
+        closeConnection(ws);
+        subClient.removeAllListeners();
+        clearTimeout(elapsed);
+        clearInterval(heartbeat);
+      };
+
+      let sentMessages = 0;
+      const delayedMessages: string[] = [];
+
+      const throttle = setInterval(async () => {
+        if (delayedMessages.length > 0) {
+          await handleMessage(delayedMessages[0], ws, subClient, pubClient, user);
+          delayedMessages.shift();
+        } else {
+          if (sentMessages > 0) sentMessages--;
+        }
+      }, THROTTLE_INTERVAL);
+
+      ws.on('message', async (data: string) => {
+        if (sentMessages >= THROTTLE_LIMIT) {
+          delayedMessages.push(data);
+
+          const payload = {
+            code: ERROR_MESSAGE_CODE,
+            message: 'Throttle limit reached. Your messages will be sent shortly after.'
+          };
+          ws.send(JSON.stringify(payload));
+          return;
+        }
+        sentMessages++;
+
+        await handleMessage(data, ws, subClient, pubClient, user);
       });
-    }, HEARTBEAT_INTERVAL);
 
-    const elapsed = setTimeout(() => {
-      closeConnectionAndClear();
-    }, ELAPSED_TIME);
-
-    ws.on('pong', () => {
-      clearTimeout(elapsed);
-      elapsed.refresh();
-    });
-
-    const closeConnectionAndClear = () => {
-      closeConnection(ws);
-      subClient.removeAllListeners();
-      clearTimeout(elapsed);
-      clearInterval(heartbeat);
-    };
-
-    ws.on('close', () => {
-      closeConnectionAndClear();
-    });
-
-    try {
-      const threads = await ThreadMembers.find({ where: { userId } });
-
-      threads.map((thread) => {
-        const { threadId } = thread;
-        subClient.subscribe(threadId);
+      ws.on('pong', () => {
+        clearTimeout(elapsed);
+        elapsed.refresh();
       });
-    } catch (e) {
-      console.error(e);
+
+      ws.on('close', () => {
+        closeConnectionAndClear();
+      });
+
+      try {
+        const threads = await ThreadMembers.find({ where: { userId: user.id } });
+
+        threads.map((thread) => {
+          const { threadId } = thread;
+          subClient.subscribe(threadId);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+
+      subClient.on('message', (channel, message) => {
+        ws.send(message);
+      });
     }
-
-    const payload = {
-      code: READY_CODE,
-      value: 'ok'
-    };
-    ws.send(JSON.stringify(payload));
-    //data, pub/sub clients, ws, userId
-
-    let sentMessages = 0;
-    const delayedMessages: string[] = [];
-
-    const throttle = setInterval(async () => {
-      if (delayedMessages.length > 0) {
-        await handleMessage(delayedMessages[0], ws, subClient, pubClient, user);
-        delayedMessages.shift();
-      } else {
-        if (sentMessages > 0) sentMessages--;
-      }
-    }, THROTTLE_INTERVAL);
-
-    ws.on('message', async (data: string) => {
-      if (sentMessages >= THROTTLE_LIMIT) {
-        delayedMessages.push(data);
-
-        const payload = {
-          code: ERROR_MESSAGE_CODE,
-          message: 'Throttle limit reached. Your messages will be sent shortly after.'
-        };
-        ws.send(JSON.stringify(payload));
-        return;
-      }
-      sentMessages++;
-
-      await handleMessage(data, ws, subClient, pubClient, user);
-    });
-
-    subClient.on('message', (channel, message) => {
-      // const payload = JSON.parse(message) as SocketChatMessage;
-      ws.send(message);
-    });
-  });
+  );
 };

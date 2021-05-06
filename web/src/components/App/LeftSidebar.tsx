@@ -77,8 +77,11 @@ const LeftSidebar: React.FC = () => {
         });
         if (thisThread) {
           threads.splice(threads.indexOf(thisThread), 1);
-          thisThread.unread++;
+          if (thisThread.threadId !== router.query.id) {
+            thisThread.unread++;
+          }
           thisThread.thread.lastMessage = (message as Message).content;
+          thisThread.thread.lastActivity = (message as Message).createdAt;
           threads.unshift(thisThread);
           setThreadList(threads);
         }

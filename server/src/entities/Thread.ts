@@ -10,6 +10,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { Message } from './Message';
 import { ThreadMembers } from './ThreadMembers';
 
 @ObjectType()
@@ -35,6 +36,9 @@ export class Thread extends BaseEntity {
   @Field(() => [ThreadMembers])
   @OneToMany(() => ThreadMembers, (member) => member.thread)
   members: ThreadMembers[];
+
+  @OneToMany(() => Message, (message) => message.thread)
+  messages: Message[];
 
   @Field(() => String, { nullable: true })
   lastMessage: string;

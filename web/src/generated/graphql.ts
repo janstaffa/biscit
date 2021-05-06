@@ -131,8 +131,13 @@ export type MutationUserUpdateStatusArgs = {
 
 export type Query = {
   __typename?: 'Query';
+  messages: ThreadMessagesResponse;
   thread: ThreadResponse;
   me?: Maybe<User>;
+};
+
+export type QueryMessagesArgs = {
+  options: ThreadMessagesQueryInput;
 };
 
 export type QueryThreadArgs = {
@@ -181,6 +186,19 @@ export type ThreadMembers = {
   updatedAt: Scalars['String'];
 };
 
+export type ThreadMessagesQueryInput = {
+  threadId: Scalars['String'];
+  cursor?: Maybe<Scalars['String']>;
+  limit: Scalars['Float'];
+};
+
+export type ThreadMessagesResponse = {
+  __typename?: 'ThreadMessagesResponse';
+  data?: Maybe<Array<Message>>;
+  hasMore: Scalars['Boolean'];
+  errors: Array<GqlValidationError>;
+};
+
 export type ThreadQueryInput = {
   threadId: Scalars['String'];
 };
@@ -204,7 +222,6 @@ export type User = {
   bio?: Maybe<Scalars['String']>;
   friends?: Maybe<Array<Friend>>;
   threads?: Maybe<Array<ThreadMembers>>;
-  messages?: Maybe<Array<Message>>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
@@ -338,6 +355,17 @@ export type MeQuery = { __typename?: 'Query' } & {
         >;
       }
   >;
+};
+
+export type ThreadMessagesQueryVariables = Exact<{
+  options: ThreadMessagesQueryInput;
+}>;
+
+export type ThreadMessagesQuery = { __typename?: 'Query' } & {
+  messages: { __typename?: 'ThreadMessagesResponse' } & Pick<ThreadMessagesResponse, 'hasMore'> & {
+      data?: Maybe<Array<{ __typename?: 'Message' } & MessageSnippetFragment>>;
+      errors: Array<{ __typename?: 'GQLValidationError' } & ErrorSnippetFragment>;
+    };
 };
 
 export type ThreadQueryVariables = Exact<{
@@ -601,6 +629,29 @@ export const useMeQuery = <TData = MeQuery, TError = unknown>(
   useQuery<MeQuery, TError, TData>(
     ['Me', variables],
     useGQLRequest<MeQuery, MeQueryVariables>(MeDocument).bind(null, variables),
+    options
+  );
+export const ThreadMessagesDocument = `
+    query ThreadMessages($options: ThreadMessagesQueryInput!) {
+  messages(options: $options) {
+    data {
+      ...messageSnippet
+    }
+    hasMore
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${MessageSnippetFragmentDoc}
+${ErrorSnippetFragmentDoc}`;
+export const useThreadMessagesQuery = <TData = ThreadMessagesQuery, TError = unknown>(
+  variables: ThreadMessagesQueryVariables,
+  options?: UseQueryOptions<ThreadMessagesQuery, TError, TData>
+) =>
+  useQuery<ThreadMessagesQuery, TError, TData>(
+    ['ThreadMessages', variables],
+    useGQLRequest<ThreadMessagesQuery, ThreadMessagesQueryVariables>(ThreadMessagesDocument).bind(null, variables),
     options
   );
 export const ThreadDocument = `

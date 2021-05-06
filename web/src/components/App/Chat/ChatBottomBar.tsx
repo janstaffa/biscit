@@ -4,7 +4,6 @@ import { FaRegSmile } from 'react-icons/fa';
 import { ImAttachment } from 'react-icons/im';
 import { BeatLoader } from 'react-spinners';
 import { OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
-import { useWebSocketStore } from '../../../stores/useWebSocketStore';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 
@@ -16,80 +15,84 @@ const ChatBottomBar: React.FC = () => {
   }
   const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
 
+  const threadIdRef = useRef<string>();
+  threadIdRef.current = threadId;
   const [typing, setTyping] = useState<{ username: string } | null>(null);
   const [messageInputValue, setMessageInputValue] = useState<string>('');
   const messageInputValueRef = useRef<string>('');
   messageInputValueRef.current = messageInputValue;
 
   useEffect(() => {
+    setMessageInputValue('');
     const ws = socket.connect();
-    if (!isServer() && ws) {
-      let resetTyping;
-      const handleMessage = (e) => {
-        const { data: m } = e;
-        const incoming = JSON.parse(m);
-        if (incoming.code === 3006) {
-          const { username } = incoming as TypingMessage;
-          if (resetTyping) {
-            clearTimeout(resetTyping);
-            resetTyping = null;
-          }
-          resetTyping = setTimeout(() => {
-            setTyping(null);
-          }, 2000);
+    if (isServer() || !ws) return;
 
-          setTyping({ username });
+    let resetTyping: NodeJS.Timeout | null;
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+      if (incoming.code === 3006) {
+        const { username, threadId: incomingThreadId } = incoming as TypingMessage;
+        if (incomingThreadId !== threadId) return;
+
+        if (resetTyping) {
+          clearTimeout(resetTyping);
+          resetTyping = null;
         }
-      };
-      const handleInput = () => {
-        const messageInput = document.getElementById('message-input')! as HTMLInputElement;
-        messageInput.addEventListener('keyup', (e) => {
-          if (!e.repeat && e.key === 'Enter') {
-            const value = messageInputValueRef.current;
-            if (!value || value === ' ') {
-              return;
-            }
-            const urlArr = window.location.pathname.split('/');
+        resetTyping = setTimeout(() => {
+          setTyping(null);
+        }, 2000);
 
-            const payload = {
-              code: 3000,
-              threadId: urlArr[urlArr.length - 1],
-              content: value
-            } as OutgoingSocketChatMessage;
-            try {
-              const isReady = useWebSocketStore.getState().ready;
-              if (isReady) {
-                ws.send(JSON.stringify(payload));
-                setMessageInputValue('');
-                messageInput.focus();
-              }
-            } catch (err) {
-              console.error(err);
-            }
-          }
-        });
-      };
-      try {
-        ws.addEventListener('message', handleMessage);
-
-        if (!useWebSocketStore.getState().ready) {
-          ws.addEventListener('open', handleInput);
-        } else {
-          handleInput();
-        }
-      } catch (err) {
-        console.error(err);
+        setTyping({ username });
       }
+    };
+    const handleEnterListener = () => {
+      const messageInput = document.getElementById('message-input')! as HTMLInputElement;
+      if (!messageInput) return;
 
-      return () => {
-        ws.removeEventListener('message', handleMessage);
-        ws.removeEventListener('open', handleInput);
-      };
+      messageInput.addEventListener('keyup', (e) => {
+        if (!e.repeat && e.key === 'Enter') {
+          const value = messageInputValueRef.current;
+          if (!value || !/\S/.test(value)) {
+            return;
+          }
+          const payload = {
+            code: 3000,
+            threadId: threadIdRef.current,
+            content: value
+          } as OutgoingSocketChatMessage;
+          try {
+            if (ws.readyState === ws.OPEN) {
+              ws.send(JSON.stringify(payload));
+              setMessageInputValue('');
+              messageInput.focus();
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      });
+    };
+    try {
+      ws.addEventListener('message', handleMessage);
+
+      ws.addEventListener('open', handleEnterListener);
+      if (ws.readyState === ws.OPEN) {
+        handleEnterListener();
+      }
+    } catch (err) {
+      console.error(err);
     }
+
+    return () => {
+      ws.removeEventListener('message', handleMessage);
+      ws.removeEventListener('open', handleEnterListener);
+    };
   }, [threadId]);
 
   useEffect(() => {
     const ws = socket.connect();
+
     if (ws && messageInputValueRef.current) {
       const payload: SocketThreadMessage = {
         code: 3006,
@@ -136,4 +139,4 @@ const ChatBottomBar: React.FC = () => {
   );
 };
 
-export default ChatBottomBar;
+export default React.memo(ChatBottomBar);

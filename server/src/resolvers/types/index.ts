@@ -7,6 +7,11 @@ export interface ResponseType<T> {
   data: T | null;
   errors: GQLValidationError[] | [];
 }
+export interface ThreadMessagesResponseType {
+  data: Message[] | null;
+  hasMore: boolean;
+  errors: GQLValidationError[] | [];
+}
 
 @ObjectType()
 export class BooleanResponse {
@@ -30,6 +35,9 @@ export class ThreadResponse {
 export class ThreadMessagesResponse {
   @Field(() => [Message], { nullable: true })
   data: Message[];
+
+  @Field(() => Boolean)
+  hasMore: boolean;
 
   @Field(() => [GQLValidationError])
   errors: GQLValidationError[] | [];
