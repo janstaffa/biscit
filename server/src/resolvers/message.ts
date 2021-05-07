@@ -1,13 +1,17 @@
-import { Arg, Ctx, Query, Resolver, UseMiddleware } from 'type-graphql';
+import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
 import { Message } from '../entities/Message';
 import { ThreadMembers } from '../entities/ThreadMembers';
-import { ThreadMessagesQueryInput } from '../entities/types/message';
+import {
+  DeleteMessageMutationInput,
+  ThreadMessagesQueryInput,
+  UpdateMessageMutationInput
+} from '../entities/types/message';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { GQLValidationError } from '../utils/validateYupSchema';
-import { ThreadMessagesResponse, ThreadMessagesResponseType } from './types';
+import { BooleanResponse, ResponseType, ThreadMessagesResponse, ThreadMessagesResponseType } from './types';
 
 @Resolver(User)
 export class MessageResolver {
@@ -57,6 +61,76 @@ export class MessageResolver {
     return {
       data: messages.slice(0, realLimit).reverse(),
       hasMore: messages.length === realLimitPlusOne,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async DeleteMessage(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: DeleteMessageMutationInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const message = await Message.findOne({
+      where: { userId, id: options.messageId }
+    });
+    const errors: GQLValidationError[] = [];
+
+    if (!message) {
+      errors.push(
+        new GQLValidationError({
+          field: 'messageId',
+          value: options.messageId,
+          message: "This message wasn't sent by you."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    await Message.remove(message);
+
+    return {
+      data: true,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async UpdateMessage(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: UpdateMessageMutationInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const message = await Message.update(
+      { userId, id: options.messageId },
+      { content: options.newContent, edited: true }
+    );
+    console.log('message:', message);
+    const errors: GQLValidationError[] = [];
+
+    if (message.affected !== 1) {
+      errors.push(
+        new GQLValidationError({
+          field: 'messageId',
+          value: options.messageId,
+          message: "This message wasn't sent by you."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    return {
+      data: true,
       errors
     };
   }

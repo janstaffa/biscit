@@ -1,0 +1,8 @@
+mutation UpdateMessage($options: UpdateMessageMutationInput!) {
+  UpdateMessage(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
