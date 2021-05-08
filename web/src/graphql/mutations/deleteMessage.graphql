@@ -1,0 +1,8 @@
+mutation DeleteMessage($options: DeleteMessageMutationInput!) {
+  DeleteMessage(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

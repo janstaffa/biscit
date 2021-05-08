@@ -1,7 +1,7 @@
 import { Field, InputType } from 'type-graphql';
 
 @InputType()
-export class ThreadQueryInput {
+export class ThreadInput {
   @Field()
   threadId: string;
 }

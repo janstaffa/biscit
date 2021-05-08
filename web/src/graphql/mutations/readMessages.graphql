@@ -1,0 +1,8 @@
+mutation ReadMessages($options: ThreadInput!) {
+  ReadMessages(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

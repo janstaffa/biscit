@@ -11,3 +11,18 @@ export class ThreadMessagesQueryInput {
   @Field()
   limit: number;
 }
+
+@InputType()
+export class DeleteMessageMutationInput {
+  @Field()
+  messageId: string;
+}
+
+@InputType()
+export class UpdateMessageMutationInput {
+  @Field()
+  messageId: string;
+
+  @Field()
+  newContent: string;
+}

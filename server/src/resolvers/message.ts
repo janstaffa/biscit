@@ -1,13 +1,27 @@
-import { Arg, Ctx, Query, Resolver, UseMiddleware } from 'type-graphql';
-import { createQueryBuilder } from 'typeorm';
+import { createClient } from 'redis';
+import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
+import { createQueryBuilder, getRepository } from 'typeorm';
 import { Message } from '../entities/Message';
 import { ThreadMembers } from '../entities/ThreadMembers';
-import { ThreadMessagesQueryInput } from '../entities/types/message';
+import {
+  DeleteMessageMutationInput,
+  ThreadMessagesQueryInput,
+  UpdateMessageMutationInput
+} from '../entities/types/message';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
+import { DELETE_MESSAGE_CODE, UPDATE_MESSAGE_CODE } from '../sockets';
 import { ContextType } from '../types';
 import { GQLValidationError } from '../utils/validateYupSchema';
-import { ThreadMessagesResponse, ThreadMessagesResponseType } from './types';
+import { BooleanResponse, ResponseType, ThreadMessagesResponse, ThreadMessagesResponseType } from './types';
+
+const pubClient = createClient({
+  url: process.env.REDIS_URL
+});
+
+pubClient.on('error', (error) => {
+  console.error(error);
+});
 
 @Resolver(User)
 export class MessageResolver {
@@ -57,6 +71,100 @@ export class MessageResolver {
     return {
       data: messages.slice(0, realLimit).reverse(),
       hasMore: messages.length === realLimitPlusOne,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async DeleteMessage(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: DeleteMessageMutationInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const message = await Message.findOne({
+      where: { userId, id: options.messageId }
+    });
+    const errors: GQLValidationError[] = [];
+
+    if (!message) {
+      errors.push(
+        new GQLValidationError({
+          field: 'messageId',
+          value: options.messageId,
+          message: "This message wasn't sent by you."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    await Message.remove(message);
+
+    const payload = {
+      code: DELETE_MESSAGE_CODE,
+      threadId: message.threadId,
+      messageId: options.messageId
+    };
+    console.log(1, message);
+    pubClient.publish(message.threadId, JSON.stringify(payload));
+    return {
+      data: true,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async UpdateMessage(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: UpdateMessageMutationInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const message = await getRepository(Message)
+      .createQueryBuilder()
+      .update({
+        content: options.newContent,
+        edited: true
+      })
+      .where('id = :id AND "userId" = :userId', { id: options.messageId, userId })
+      .returning('*')
+      .updateEntity(true)
+      .execute();
+
+    const errors: GQLValidationError[] = [];
+
+    if (message.affected !== 1) {
+      errors.push(
+        new GQLValidationError({
+          field: 'messageId',
+          value: options.messageId,
+          message: "This message wasn't sent by you."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    const rawMessage = message.raw[0];
+
+    const payload = {
+      code: UPDATE_MESSAGE_CODE,
+      threadId: rawMessage.threadId,
+      messageId: options.messageId,
+      newContent: options.newContent
+    };
+    console.log(2, message);
+    pubClient.publish(rawMessage.threadId, JSON.stringify(payload));
+
+    return {
+      data: true,
       errors
     };
   }
