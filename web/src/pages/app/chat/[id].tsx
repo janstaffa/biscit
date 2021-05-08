@@ -104,6 +104,7 @@ const Chat: NextPage = () => {
     if (isServer() || !ws) return;
 
     setMessages([]);
+    messagesRef.current = [];
     setMoreMessages(false);
     setIsLoadingMessages(false);
     setCursor(null);
@@ -179,6 +180,7 @@ const Chat: NextPage = () => {
       setIsLoadingMessages(false);
       queryClient.refetchQueries({ queryKey: `ThreadMessages-${threadId}}` });
       setMessages([]);
+      messagesRef.current = [];
     };
   }, []);
   useEffect(() => {
