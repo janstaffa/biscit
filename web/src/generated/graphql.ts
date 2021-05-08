@@ -102,6 +102,7 @@ export type Mutation = {
   FriendRequestCancel: BooleanResponse;
   DeleteMessage: BooleanResponse;
   UpdateMessage: BooleanResponse;
+  ReadMessages: BooleanResponse;
   UserRegister: BooleanResponse;
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
@@ -139,6 +140,11 @@ export type MutationUpdateMessageArgs = {
 };
 
 
+export type MutationReadMessagesArgs = {
+  options: ThreadInput;
+};
+
+
 export type MutationUserRegisterArgs = {
   options: RegisterInput;
 };
@@ -167,7 +173,7 @@ export type QueryMessagesArgs = {
 
 
 export type QueryThreadArgs = {
-  options: ThreadQueryInput;
+  options: ThreadInput;
 };
 
 export type RegisterInput = {
@@ -198,6 +204,10 @@ export type Thread = {
   updatedAt: Scalars['String'];
 };
 
+export type ThreadInput = {
+  threadId: Scalars['String'];
+};
+
 export type ThreadMembers = {
   __typename?: 'ThreadMembers';
   id: Scalars['String'];
@@ -223,10 +233,6 @@ export type ThreadMessagesResponse = {
   data?: Maybe<Array<Message>>;
   hasMore: Scalars['Boolean'];
   errors: Array<GqlValidationError>;
-};
-
-export type ThreadQueryInput = {
-  threadId: Scalars['String'];
 };
 
 export type ThreadResponse = {
@@ -369,6 +375,23 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 export type LogoutMutation = (
   { __typename?: 'Mutation' }
   & Pick<Mutation, 'UserLogout'>
+);
+
+export type ReadMessagesMutationVariables = Exact<{
+  options: ThreadInput;
+}>;
+
+
+export type ReadMessagesMutation = (
+  { __typename?: 'Mutation' }
+  & { ReadMessages: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
 );
 
 export type RegisterMutationVariables = Exact<{
@@ -517,7 +540,7 @@ export type ThreadMessagesQuery = (
 );
 
 export type ThreadQueryVariables = Exact<{
-  options: ThreadQueryInput;
+  options: ThreadInput;
 }>;
 
 
@@ -685,6 +708,24 @@ export const useLogoutMutation = <
     >(options?: UseMutationOptions<LogoutMutation, TError, LogoutMutationVariables, TContext>) => 
     useMutation<LogoutMutation, TError, LogoutMutationVariables, TContext>(
       useGQLRequest<LogoutMutation, LogoutMutationVariables>(LogoutDocument),
+      options
+    );
+export const ReadMessagesDocument = `
+    mutation ReadMessages($options: ThreadInput!) {
+  ReadMessages(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useReadMessagesMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<ReadMessagesMutation, TError, ReadMessagesMutationVariables, TContext>) => 
+    useMutation<ReadMessagesMutation, TError, ReadMessagesMutationVariables, TContext>(
+      useGQLRequest<ReadMessagesMutation, ReadMessagesMutationVariables>(ReadMessagesDocument),
       options
     );
 export const RegisterDocument = `
@@ -860,7 +901,7 @@ export const useThreadMessagesQuery = <
       options
     );
 export const ThreadDocument = `
-    query Thread($options: ThreadQueryInput!) {
+    query Thread($options: ThreadInput!) {
   thread(options: $options) {
     data {
       id

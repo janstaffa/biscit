@@ -1,4 +1,4 @@
-query Thread($options: ThreadQueryInput!) {
+query Thread($options: ThreadInput!) {
   thread(options: $options) {
     data {
       id

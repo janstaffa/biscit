@@ -1,20 +1,17 @@
-import { Arg, Ctx, Query, Resolver, UseMiddleware } from 'type-graphql';
+import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
-import { ThreadQueryInput } from '../entities/types/thread';
+import { ThreadInput } from '../entities/types/thread';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { GQLValidationError } from '../utils/validateYupSchema';
-import { ResponseType, ThreadResponse } from './types';
+import { BooleanResponse, ResponseType, ThreadResponse } from './types';
 
 @Resolver(Thread)
 export class ThreadResolver {
   @Query(() => ThreadResponse)
   @UseMiddleware(isAuth)
-  async thread(
-    @Ctx() { req, res }: ContextType,
-    @Arg('options') options: ThreadQueryInput
-  ): Promise<ResponseType<Thread>> {
+  async thread(@Ctx() { req, res }: ContextType, @Arg('options') options: ThreadInput): Promise<ResponseType<Thread>> {
     const userId = req.session.userId;
     const thread = await Thread.findOne({
       where: { id: options.threadId },
@@ -67,50 +64,34 @@ export class ThreadResolver {
     };
   }
 
-  // @Query(() => ThreadMessagesResponse)
-  // @UseMiddleware(isAuth)
-  // async ThreadMessages(
-  //   @Ctx() { req, res }: ContextType,
-  //   @Arg('options') options: ThreadMessagesQueryInput
-  // ): Promise<ResponseType<Message[]>> {
-  //   const userId = req.session.userId;
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async ReadMessages(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: ThreadInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
 
-  //   const errors: GQLValidationError[] = [];
-  //   const membership = await ThreadMembers.findOne({
-  //     where: { threadId: options.threadId, userId }
-  //   });
+    const membership = await ThreadMembers.update({ threadId: options.threadId, userId }, { unread: 0 });
+    const errors: GQLValidationError[] = [];
 
-  //   if (!membership) {
-  //     errors.push(
-  //       new GQLValidationError({
-  //         field: 'threadId',
-  //         value: options.threadId,
-  //         message: "You aren't a member of this thread."
-  //       })
-  //     );
-  //     return {
-  //       data: null,
-  //       errors
-  //     };
-  //   }
+    if (!membership.affected || membership.affected !== 1) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "You aren't a member of this thread."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
 
-  //   const realLimit = Math.min(50, options.limit);
-  //   const realLimitPlusOne = realLimit + 1;
-
-  //   const qb = createQueryBuilder(Message, 'message')
-  //     .leftJoinAndSelect('message.user', 'user')
-  //     .where('message."threadId" = :threadId', { threadId: options.threadId });
-
-  //   if (options.cursor) {
-  //     qb.andWhere('message."createdAt" < :createdAt', { createdAt: options.cursor });
-  //   }
-  //   qb.orderBy('message."createdAt"', 'DESC').limit(options.limit);
-
-  //   const messages = (await qb.getMany()) as Message[];
-
-  //   return {
-  //     data: messages,
-  //     errors
-  //   };
-  // }
+    return {
+      data: true,
+      errors
+    };
+  }
 }

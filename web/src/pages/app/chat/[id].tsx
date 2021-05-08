@@ -200,7 +200,6 @@ const Chat: NextPage = () => {
       const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
       const feedMessages = feed.querySelectorAll('.message');
       const lastMessageEl = feedMessages[0];
-      console.log(lastMessageEl);
       if (lastMessageEl) {
         lastMessageEl.scrollIntoView();
       }

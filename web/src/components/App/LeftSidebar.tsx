@@ -13,6 +13,7 @@ import {
   ThreadSnippetFragment,
   useLogoutMutation,
   useMeQuery,
+  useReadMessagesMutation,
   useUpdateStatusMutation
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
@@ -60,6 +61,13 @@ const LeftSidebar: React.FC = () => {
       errorToast(genericErrorMessage);
     }
   });
+
+  const { mutate: readMessages } = useReadMessagesMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
   const { data: meData, isLoading } = useMeQuery();
 
   useEffect(() => {
@@ -69,7 +77,7 @@ const LeftSidebar: React.FC = () => {
       const incoming = JSON.parse(m);
       if (incoming.code === 3000) {
         const { message } = incoming as IncomingSocketChatMessage;
-        // console.log(message);
+
         const threads = [...threadListRef.current];
         const thisThread = threads.find((thread) => {
           if (thread.threadId === (message as Message).threadId) return true;
@@ -79,6 +87,8 @@ const LeftSidebar: React.FC = () => {
           threads.splice(threads.indexOf(thisThread), 1);
           if (thisThread.threadId !== router.query.id) {
             thisThread.unread++;
+          } else {
+            readMessages({ options: { threadId: router.query.id } });
           }
           thisThread.thread.lastMessage = (message as Message).content;
           thisThread.thread.lastActivity = (message as Message).createdAt;
