@@ -1,6 +1,10 @@
 export const formatTime = (time: string) => {
-  const date = new Date(parseInt(time));
+  let date = new Date(time);
+  if (Number.isNaN(Date.parse(time))) {
+    date = new Date(parseInt(time));
+  }
   const today = new Date();
+  console.log('TIME:', time, today, date);
 
   if (date.getDate() !== today.getDate()) {
     if (date.getFullYear() !== today.getFullYear()) {
