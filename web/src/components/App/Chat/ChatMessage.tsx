@@ -67,7 +67,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   }, [message]);
   return (
     <div
-      className="w-full h-auto my-2.5 flex flex-row hover:shadow-lg"
+      className="message w-full h-auto my-2.5 flex flex-row hover:shadow-lg"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => {
         setIsHovering(false);

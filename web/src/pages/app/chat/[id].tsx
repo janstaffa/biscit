@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import { useQuery } from 'react-query';
-import ClipLoader from 'react-spinners/ClipLoader';
+import { ClipLoader } from 'react-spinners';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
@@ -20,6 +20,7 @@ import {
   ThreadMessagesResponse,
   useThreadQuery
 } from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
@@ -83,9 +84,7 @@ const Chat: NextPage = () => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (!feed) return;
 
-    console.log(feed.scrollTop, feed.scrollHeight, feed);
     feed.scrollTop = px === 0 ? feed.scrollHeight : px;
-    console.log(feed.scrollTop, feed.scrollHeight);
   };
 
   const loadMessages = () => {
@@ -168,15 +167,20 @@ const Chat: NextPage = () => {
     } catch (err) {
       console.error(err);
     }
-    return () => {
+    return function () {
       ws.removeEventListener('message', handleMessage);
       ws.removeEventListener('open', handleOpen);
-      setMessages([]);
-      setMoreMessages(false);
-      setIsLoadingMessages(false);
     };
   }, [threadId]);
 
+  useEffect(() => {
+    return function cleanup() {
+      setMoreMessages(false);
+      setIsLoadingMessages(false);
+      queryClient.refetchQueries({ queryKey: `ThreadMessages-${threadId}}` });
+      setMessages([]);
+    };
+  }, []);
   useEffect(() => {
     setIsLoadingMessages(true);
     if (!incomingThreadMessages?.messages) return;
@@ -193,15 +197,25 @@ const Chat: NextPage = () => {
     }
     if (incomingMessages) {
       const newMessages = [...incomingMessages, ...messagesRef.current];
+      const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+      const feedMessages = feed.querySelectorAll('.message');
+      const lastMessageEl = feedMessages[0];
+      console.log(lastMessageEl);
+      if (lastMessageEl) {
+        lastMessageEl.scrollIntoView();
+      }
       setMessages(newMessages);
       setMoreMessages(hasMore);
       setIsLoadingMessages(false);
-      scroll(incomingMessages.length <= messagesLimit ? 0 : incomingMessages.length * 84);
     }
   }, [incomingThreadMessages]);
 
   useEffect(() => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+
+    if (messages.length <= messagesLimit) {
+      scroll(0);
+    }
 
     if (moreMessages) {
       feed.onscroll = () => {
