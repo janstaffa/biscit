@@ -6,7 +6,7 @@ import { FaHashtag } from 'react-icons/fa';
 import { useQuery } from 'react-query';
 import ClipLoader from 'react-spinners/ClipLoader';
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import { IncomingSocketChatMessage } from '../../..';
+import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
 import ContentNav from '../../../components/App/ContentNav';
@@ -120,7 +120,40 @@ const Chat: NextPage = () => {
         const currentMessages = [...messagesRef.current];
         currentMessages.push(message as MessageSnippetFragment);
         setMessages(currentMessages);
-        scroll();
+        scroll(0);
+      } else if (incoming.code === 3007) {
+        const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
+        if (incomingThreadId !== threadId) return;
+
+        const currentMessages = [...messagesRef.current];
+        const thisMessage = currentMessages.find((message) => {
+          if (message.id === messageId) return true;
+          return false;
+        });
+
+        if (thisMessage && currentMessages.includes(thisMessage)) {
+          currentMessages.splice(currentMessages.indexOf(thisMessage), 1);
+          setMessages(currentMessages);
+        }
+      } else if (incoming.code === 3008) {
+        const { messageId, threadId: incomingThreadId, newContent } = incoming as IncomingUpdateMessage;
+        if (incomingThreadId !== threadId) return;
+
+        const currentMessages = [...messagesRef.current];
+        const thisMessage = currentMessages.find((message) => {
+          if (message.id === messageId) return true;
+          return false;
+        });
+
+        if (thisMessage && currentMessages.includes(thisMessage)) {
+          const idx = currentMessages.indexOf(thisMessage);
+          currentMessages.splice(idx, 1, {
+            ...thisMessage,
+            content: newContent
+          });
+
+          setMessages(currentMessages);
+        }
       }
     };
     const handleOpen = () => {
@@ -145,7 +178,6 @@ const Chat: NextPage = () => {
   }, [threadId]);
 
   useEffect(() => {
-    console.log('incomingThreadMessages CHANGE', incomingThreadMessages);
     setIsLoadingMessages(true);
     if (!incomingThreadMessages?.messages) return;
     const { data: incomingMessages, hasMore, errors } = incomingThreadMessages.messages as ThreadMessagesResponse;
@@ -160,33 +192,18 @@ const Chat: NextPage = () => {
       return;
     }
     if (incomingMessages) {
-      console.log('incmonigMessages', incomingMessages);
-      const prevMessagesLength = messagesRef.current.length;
-      console.log('currentMessages', messagesRef.current);
       const newMessages = [...incomingMessages, ...messagesRef.current];
-      console.log('setting messages state', newMessages);
       setMessages(newMessages);
       setMoreMessages(hasMore);
       setIsLoadingMessages(false);
-
-      console.log('prev scroll');
-      console.log('after scroll');
+      scroll(incomingMessages.length <= messagesLimit ? 0 : incomingMessages.length * 84);
     }
   }, [incomingThreadMessages]);
 
   useEffect(() => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+
     if (moreMessages) {
-      if (messages.length <= messagesLimit) {
-        scroll(0);
-      } else {
-        const remainder = messages.length % messagesLimit;
-        if (remainder === 0) {
-          scroll(messagesLimit * 84);
-        } else {
-          scroll(remainder * 84);
-        }
-      }
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
           setCursor(messages[0].createdAt);
@@ -198,10 +215,6 @@ const Chat: NextPage = () => {
       };
     }
   }, [moreMessages, messages]);
-
-  useEffect(() => {
-    console.log('isLoading change', isLoadingMessages);
-  }, [isLoadingMessages]);
   return (
     <>
       <Head>

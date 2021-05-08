@@ -17,7 +17,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       if (!data.UpdateMessage.data) {
         errorToast(genericErrorMessage);
       }
-      // queryClient.invalidateQueries('Me');
     },
     onError: (err) => {
       console.error(err);
@@ -29,7 +28,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       if (!data.DeleteMessage.data) {
         errorToast(genericErrorMessage);
       }
-      // queryClient.invalidateQueries('Me');
     },
     onError: (err) => {
       console.error(err);
@@ -41,13 +39,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [updateFieldValue, setUpdateFieldValue] = useState<string>(message.content);
+  const [messageContent, setMessageContent] = useState<string>(message.content);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (updateFieldValue.length > 0) {
+      if (updateFieldValue && /\S/.test(updateFieldValue)) {
         updateMessage({ options: { messageId: message.id, newContent: updateFieldValue } });
         setIsEditing(false);
+        setMessageContent(updateFieldValue);
       } else {
         deleteMessage({ options: { messageId: message.id } });
       }
@@ -61,6 +61,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       }
     });
   }, []);
+
+  useEffect(() => {
+    setMessageContent(message.content);
+  }, [message]);
   return (
     <div
       className="w-full h-auto my-2.5 flex flex-row hover:shadow-lg"
@@ -103,7 +107,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               (isEditing ? ' bg-dark-200 p-2' : ' bg-dark-100')
             }
           >
-            {updateFieldValue}
+            {messageContent}
           </div>
         )}
       </div>
@@ -157,4 +161,4 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   );
 };
 
-export default React.memo(ChatMessage);
+export default ChatMessage;

@@ -25,3 +25,11 @@ export interface IncomingLoadMessagesMessage extends SocketThreadMessage {
 export interface TypingMessage extends SocketThreadMessage {
   username: string;
 }
+
+export interface IncomingDeleteMessage extends SocketThreadMessage {
+  messageId: string;
+}
+export interface IncomingUpdateMessage extends SocketThreadMessage {
+  messageId: string;
+  newContent: string;
+}
