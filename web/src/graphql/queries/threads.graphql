@@ -1,0 +1,10 @@
+query Threads {
+  threads {
+    isAdmin
+    threadId
+    unread
+    thread {
+      ...threadSnippet
+    }
+  }
+}

@@ -62,7 +62,7 @@ export class User extends BaseEntity {
   friends: Friend[];
 
   //treads field
-  @Field(() => [ThreadMembers], { nullable: true })
+  // @Field(() => [ThreadMembers], { nullable: true })
   @OneToMany(() => ThreadMembers, (thread) => thread.user)
   threads: ThreadMembers[];
 

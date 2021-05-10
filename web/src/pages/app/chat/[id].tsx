@@ -262,26 +262,27 @@ const Chat: NextPage = () => {
               const date = new Date(parseInt(message.createdAt));
               const now = new Date();
 
-              console.log(datesAreSameDay(date, now));
               if (datesAreSameDay(date, now)) {
                 const prevMessage = messages[i - 1];
-                const prevDate = new Date(parseInt(prevMessage.createdAt));
+                if (prevMessage) {
+                  const prevDate = new Date(parseInt(prevMessage.createdAt));
 
-                if (!datesAreSameDay(prevDate, now)) {
-                  return (
-                    <>
-                      <div className="text-center my-4" key={i}>
-                        <hr className="bg-dark-50 h-px border-none" />
-                        <div
-                          className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
-                          style={{ marginTop: '-10px' }}
-                        >
-                          today
+                  if (!datesAreSameDay(prevDate, now)) {
+                    return (
+                      <div key={messageId}>
+                        <div className="text-center my-4">
+                          <hr className="bg-dark-50 h-px border-none" />
+                          <div
+                            className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
+                            style={{ marginTop: '-10px' }}
+                          >
+                            today
+                          </div>
                         </div>
+                        <ChatMessage message={message} myId={meData?.me?.id} />
                       </div>
-                      <ChatMessage message={message} myId={meData?.me?.id} key={messageId} />
-                    </>
-                  );
+                    );
+                  }
                 }
               }
               return <ChatMessage message={message} myId={meData?.me?.id} key={messageId} />;

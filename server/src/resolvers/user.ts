@@ -70,11 +70,11 @@ export class UserResolver {
     return null;
   }
 
-  @FieldResolver(() => [ThreadMembers])
+  @Query(() => [ThreadMembers])
   @UseMiddleware(isAuth)
-  async threads(@Root() user: User, @Ctx() { req }: ContextType): Promise<ThreadMembers[] | null> {
+  async threads(@Ctx() { req }: ContextType): Promise<ThreadMembers[] | null> {
     const userId = req.session.userId;
-    if (userId === user.id) {
+    if (userId === req.session.userId) {
       const threads = await ThreadMembers.find({
         where: { userId },
         relations: ['thread', 'thread.members', 'thread.members.user']

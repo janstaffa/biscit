@@ -119,8 +119,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId }) => {
       >
         <Popover
           isOpen={isHovering ? isPopoverOpen : false}
-          positions={['left', 'bottom', 'top', 'right']}
+          positions={['bottom', 'left', 'top', 'right']}
           onClickOutside={() => setIsPopoverOpen(false)}
+          containerStyle={{ paddingRight: '50px' }}
           content={
             <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
               <div className="w-48">

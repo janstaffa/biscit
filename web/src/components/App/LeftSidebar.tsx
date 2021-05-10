@@ -14,6 +14,7 @@ import {
   useLogoutMutation,
   useMeQuery,
   useReadMessagesMutation,
+  useThreadsQuery,
   useUpdateStatusMutation
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
@@ -36,8 +37,12 @@ const LeftSidebar: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<string>();
   const [threadList, setThreadList] = useState<
     Array<
-      { __typename?: 'ThreadMembers' } & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'> & {
-          thread: { __typename?: 'Thread' } & ThreadSnippetFragment;
+      {
+        __typename?: 'ThreadMembers';
+      } & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'> & {
+          thread: {
+            __typename?: 'Thread';
+          } & ThreadSnippetFragment;
         }
     >
   >([]);
@@ -70,6 +75,15 @@ const LeftSidebar: React.FC = () => {
   });
   const { data: meData, isLoading } = useMeQuery();
 
+  const { data: loadedThreads } = useThreadsQuery(
+    {},
+    {
+      onError: (err) => {
+        console.error(err);
+        errorToast(genericErrorMessage);
+      }
+    }
+  );
   useEffect(() => {
     const ws = socket.connect();
     const handleMessage = (e) => {
@@ -98,9 +112,8 @@ const LeftSidebar: React.FC = () => {
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
         threadListRef.current.forEach((thread) => {
-          console.log(thread.thread.lastMessage?.id, messageId);
           if (thread.thread.lastMessage?.id === messageId) {
-            queryClient.invalidateQueries('Me');
+            queryClient.invalidateQueries('Threads');
           }
         });
       } else if (incoming.code === 3008) {
@@ -139,10 +152,10 @@ const LeftSidebar: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && meData && meData?.me) {
-      if (meData.me.threads) setThreadList(meData.me.threads);
+      if (loadedThreads) setThreadList(loadedThreads.threads);
       if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
     }
-  }, [isLoading, meData]);
+  }, [isLoading, meData, loadedThreads]);
   return (
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">

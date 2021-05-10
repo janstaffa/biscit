@@ -163,6 +163,7 @@ export type Query = {
   __typename?: 'Query';
   messages: ThreadMessagesResponse;
   thread: ThreadResponse;
+  threads: Array<ThreadMembers>;
   me?: Maybe<User>;
 };
 
@@ -258,7 +259,6 @@ export type User = {
   status: Scalars['String'];
   bio?: Maybe<Scalars['String']>;
   friends?: Maybe<Array<Friend>>;
-  threads?: Maybe<Array<ThreadMembers>>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
@@ -511,13 +511,6 @@ export type MeQuery = (
         { __typename?: 'User' }
         & UserSnippetFragment
       ) }
-    )>>, threads?: Maybe<Array<(
-      { __typename?: 'ThreadMembers' }
-      & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'>
-      & { thread: (
-        { __typename?: 'Thread' }
-        & ThreadSnippetFragment
-      ) }
     )>> }
   )> }
 );
@@ -567,6 +560,21 @@ export type ThreadQuery = (
       & ErrorSnippetFragment
     )> }
   ) }
+);
+
+export type ThreadsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ThreadsQuery = (
+  { __typename?: 'Query' }
+  & { threads: Array<(
+    { __typename?: 'ThreadMembers' }
+    & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'>
+    & { thread: (
+      { __typename?: 'Thread' }
+      & ThreadSnippetFragment
+    ) }
+  )> }
 );
 
 export const ErrorSnippetFragmentDoc = `
@@ -860,18 +868,9 @@ export const MeDocument = `
       }
       createdAt
     }
-    threads {
-      isAdmin
-      threadId
-      unread
-      thread {
-        ...threadSnippet
-      }
-    }
   }
 }
-    ${UserSnippetFragmentDoc}
-${ThreadSnippetFragmentDoc}`;
+    ${UserSnippetFragmentDoc}`;
 export const useMeQuery = <
       TData = MeQuery,
       TError = unknown
@@ -947,5 +946,29 @@ export const useThreadQuery = <
     useQuery<ThreadQuery, TError, TData>(
       ['Thread', variables],
       useGQLRequest<ThreadQuery, ThreadQueryVariables>(ThreadDocument).bind(null, variables),
+      options
+    );
+export const ThreadsDocument = `
+    query Threads {
+  threads {
+    isAdmin
+    threadId
+    unread
+    thread {
+      ...threadSnippet
+    }
+  }
+}
+    ${ThreadSnippetFragmentDoc}`;
+export const useThreadsQuery = <
+      TData = ThreadsQuery,
+      TError = unknown
+    >(
+      variables?: ThreadsQueryVariables, 
+      options?: UseQueryOptions<ThreadsQuery, TError, TData>
+    ) => 
+    useQuery<ThreadsQuery, TError, TData>(
+      ['Threads', variables],
+      useGQLRequest<ThreadsQuery, ThreadsQueryVariables>(ThreadsDocument).bind(null, variables),
       options
     );
