@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import { TypingMessage } from '../../..';
+import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 
 export interface ThreadButtonProps {
   username: string;
   time: string;
-  latestMessage: string | null | undefined;
+  latestMessage: MessageSnippetFragment | undefined | null;
   unread: boolean;
   threadId: string;
   active?: boolean;
@@ -61,8 +62,10 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   }, []);
 
   useEffect(() => {
-    setDisplayMessage(latestMessage);
-    setCurrentLatestMessage(latestMessage);
+    if (latestMessage) {
+      setDisplayMessage(latestMessage.content);
+      setCurrentLatestMessage(latestMessage.content);
+    }
   }, [latestMessage]);
 
   return (

@@ -198,7 +198,7 @@ export type Thread = {
   isDm: Scalars['Boolean'];
   name?: Maybe<Scalars['String']>;
   members: Array<ThreadMembers>;
-  lastMessage?: Maybe<Scalars['String']>;
+  lastMessage?: Maybe<Message>;
   lastActivity: Scalars['DateTime'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
@@ -278,14 +278,17 @@ export type MessageSnippetFragment = (
   & Pick<Message, 'id' | 'content' | 'threadId' | 'userId' | 'edited' | 'createdAt' | 'updatedAt'>
   & { user: (
     { __typename?: 'User' }
-    & UserSnippetFragment
+    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
   ) }
 );
 
 export type ThreadSnippetFragment = (
   { __typename?: 'Thread' }
-  & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastMessage' | 'lastActivity' | 'createdAt' | 'updatedAt'>
-  & { members: Array<(
+  & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+  & { lastMessage?: Maybe<(
+    { __typename?: 'Message' }
+    & MessageSnippetFragment
+  )>, members: Array<(
     { __typename?: 'ThreadMembers' }
     & ThreadMembersSnippetFragment
   )> }
@@ -576,15 +579,6 @@ export const ErrorSnippetFragmentDoc = `
   }
 }
     `;
-export const UserSnippetFragmentDoc = `
-    fragment userSnippet on User {
-  id
-  username
-  email
-  status
-  bio
-}
-    `;
 export const MessageSnippetFragmentDoc = `
     fragment messageSnippet on Message {
   id
@@ -592,13 +586,17 @@ export const MessageSnippetFragmentDoc = `
   threadId
   userId
   user {
-    ...userSnippet
+    id
+    username
+    email
+    status
+    bio
   }
   edited
   createdAt
   updatedAt
 }
-    ${UserSnippetFragmentDoc}`;
+    `;
 export const ThreadMembersSnippetFragmentDoc = `
     fragment threadMembersSnippet on ThreadMembers {
   id
@@ -616,7 +614,9 @@ export const ThreadSnippetFragmentDoc = `
   id
   isDm
   name
-  lastMessage
+  lastMessage {
+    ...messageSnippet
+  }
   members {
     ...threadMembersSnippet
   }
@@ -624,7 +624,17 @@ export const ThreadSnippetFragmentDoc = `
   createdAt
   updatedAt
 }
-    ${ThreadMembersSnippetFragmentDoc}`;
+    ${MessageSnippetFragmentDoc}
+${ThreadMembersSnippetFragmentDoc}`;
+export const UserSnippetFragmentDoc = `
+    fragment userSnippet on User {
+  id
+  username
+  email
+  status
+  bio
+}
+    `;
 export const AcceptRequestDocument = `
     mutation AcceptRequest($options: RequestAcceptInput!) {
   FriendRequestAccept(options: $options) {

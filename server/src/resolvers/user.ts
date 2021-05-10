@@ -90,6 +90,7 @@ export class UserResolver {
             response.thread.name = otherUser[0].user.username;
           }
           const lastMessage = await createQueryBuilder(Message, 'message')
+            .leftJoinAndSelect('message.user', 'user')
             .where('message."threadId" = :threadId', {
               threadId: thread.threadId
             })
@@ -97,7 +98,7 @@ export class UserResolver {
             .getOne();
 
           if (lastMessage) {
-            response.thread.lastMessage = lastMessage.content;
+            response.thread.lastMessage = lastMessage;
           }
           return response;
         })

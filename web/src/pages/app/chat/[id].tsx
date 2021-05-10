@@ -270,7 +270,7 @@ const Chat: NextPage = () => {
                 if (!datesAreSameDay(prevDate, now)) {
                   return (
                     <>
-                      <div className="text-center my-4">
+                      <div className="text-center my-4" key={i}>
                         <hr className="bg-dark-50 h-px border-none" />
                         <div
                           className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"

@@ -5,7 +5,7 @@ import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
-import { IncomingSocketChatMessage } from '../..';
+import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
 import {
   Message,
@@ -90,13 +90,40 @@ const LeftSidebar: React.FC = () => {
           } else {
             readMessages({ options: { threadId: router.query.id } });
           }
-          thisThread.thread.lastMessage = (message as Message).content;
+          thisThread.thread.lastMessage = message as Message;
           thisThread.thread.lastActivity = (message as Message).createdAt;
           threads.unshift(thisThread);
           setThreadList(threads);
         }
+      } else if (incoming.code === 3007) {
+        const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
+        threadListRef.current.forEach((thread) => {
+          console.log(thread.thread.lastMessage?.id, messageId);
+          if (thread.thread.lastMessage?.id === messageId) {
+            queryClient.invalidateQueries('Me');
+          }
+        });
+      } else if (incoming.code === 3008) {
+        const { messageId, threadId: incomingThreadId, newContent } = incoming as IncomingUpdateMessage;
+        const newThreadList = threadListRef.current.map((thread) => {
+          if (thread.thread.lastMessage?.id === messageId) {
+            return {
+              ...thread,
+              thread: {
+                ...thread.thread,
+                lastMessage: {
+                  ...thread.thread.lastMessage,
+                  content: newContent
+                }
+              }
+            };
+          }
+          return thread;
+        });
+        setThreadList(newThreadList);
       }
     };
+
     if (!isServer() && ws) {
       try {
         ws.addEventListener('message', handleMessage);
