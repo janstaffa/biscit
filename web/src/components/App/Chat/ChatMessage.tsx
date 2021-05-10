@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { GoReply } from 'react-icons/go';
 import { HiDotsVertical } from 'react-icons/hi';
+import { IoMdRefresh } from 'react-icons/io';
 import { MdEdit } from 'react-icons/md';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { Popover } from 'react-tiny-popover';
@@ -9,9 +11,10 @@ import { formatTime } from '../../../utils/formatTime';
 import { errorToast } from '../../../utils/toasts';
 export interface ChatMessageProps {
   message: MessageSnippetFragment;
+  myId: string | undefined;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -39,7 +42,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [updateFieldValue, setUpdateFieldValue] = useState<string>(message.content);
-  const [messageContent, setMessageContent] = useState<string>(message.content);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
@@ -47,7 +49,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       if (updateFieldValue && /\S/.test(updateFieldValue)) {
         updateMessage({ options: { messageId: message.id, newContent: updateFieldValue } });
         setIsEditing(false);
-        setMessageContent(updateFieldValue);
       } else {
         deleteMessage({ options: { messageId: message.id } });
       }
@@ -62,9 +63,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     });
   }, []);
 
-  useEffect(() => {
-    setMessageContent(message.content);
-  }, [message]);
+  useEffect(() => {}, [message]);
   return (
     <div
       className="message w-full h-auto my-2.5 flex flex-row hover:shadow-lg"
@@ -83,6 +82,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           <div className="text-light-300 font-roboto text-sm flex flex-col justify-center ml-2">
             {formatTime(message.createdAt)}
           </div>
+          {message.edited && (
+            <div className="text-light-400 font-roboto text-xs flex flex-col justify-center ml-1">(edited)</div>
+          )}
         </div>
         {isEditing ? (
           <textarea
@@ -107,7 +109,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               (isEditing ? ' bg-dark-200 p-2' : ' bg-dark-100')
             }
           >
-            {messageContent}
+            {message.content}
           </div>
         )}
       </div>
@@ -121,27 +123,49 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           onClickOutside={() => setIsPopoverOpen(false)}
           content={
             <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
-              <div className="w-32">
+              <div className="w-48">
                 <ul>
-                  <li
-                    className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
-                    onClick={() => {
-                      setIsPopoverOpen(false);
-                      deleteMessage({ options: { messageId: message.id } });
-                    }}
-                  >
-                    <RiDeleteBin6Line size={20} style={{ marginRight: '5px' }} />
-                    Delete
+                  <li className="text-light-300 text-sm font-opensans text-left px-2 py-1 flex flex-row items-center">
+                    Sent {formatTime(message.createdAt, { fullDate: true })}
                   </li>
-                  <li
-                    className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
-                    onClick={() => {
-                      setIsPopoverOpen(false);
-                      setIsEditing(true);
-                    }}
-                  >
-                    <MdEdit size={20} style={{ marginRight: '5px' }} />
-                    Edit
+                  {message.edited && (
+                    <li className="text-light-300 text-sm font-opensans text-left px-2 py-1 flex flex-row items-center">
+                      Edited {formatTime(message.updatedAt, { fullDate: true })}
+                    </li>
+                  )}
+                  <hr className="bg-dark-50 h-px border-none mt-1" />
+                  {message.userId === myId && (
+                    <>
+                      <li
+                        className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                        onClick={() => {
+                          setIsPopoverOpen(false);
+                          deleteMessage({ options: { messageId: message.id } });
+                        }}
+                      >
+                        <RiDeleteBin6Line size={20} style={{ marginRight: '5px' }} />
+                        Delete
+                      </li>
+                      <li
+                        className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                        onClick={() => {
+                          setIsPopoverOpen(false);
+                          setIsEditing(true);
+                        }}
+                      >
+                        <MdEdit size={20} style={{ marginRight: '5px' }} />
+                        Edit
+                      </li>
+                      <hr className="bg-dark-50 h-px border-none" />
+                    </>
+                  )}
+                  <li className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center">
+                    <GoReply size={20} style={{ marginRight: '5px' }} />
+                    Reply
+                  </li>
+                  <li className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center">
+                    <IoMdRefresh size={20} style={{ marginRight: '5px' }} />
+                    Resend
                   </li>
                 </ul>
               </div>

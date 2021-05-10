@@ -18,10 +18,12 @@ import {
   ThreadMessagesQuery,
   ThreadMessagesQueryVariables,
   ThreadMessagesResponse,
+  useMeQuery,
   useThreadQuery
 } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
+import { datesAreSameDay } from '../../../utils/datesAreSameDay';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
 import { useGQLRequest } from '../../../utils/useGQLRequest';
@@ -36,6 +38,7 @@ const Chat: NextPage = () => {
   }
   const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
 
+  const { data: meData } = useMeQuery();
   const { data } = useThreadQuery(
     {
       options: { threadId }
@@ -149,7 +152,9 @@ const Chat: NextPage = () => {
           const idx = currentMessages.indexOf(thisMessage);
           currentMessages.splice(idx, 1, {
             ...thisMessage,
-            content: newContent
+            content: newContent,
+            edited: true,
+            updatedAt: new Date().toISOString()
           });
 
           setMessages(currentMessages);
@@ -202,9 +207,10 @@ const Chat: NextPage = () => {
       const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
       const feedMessages = feed.querySelectorAll('.message');
       const lastMessageEl = feedMessages[0];
-      if (lastMessageEl) {
+      if (newMessages.length > 30 && lastMessageEl) {
         lastMessageEl.scrollIntoView();
       }
+
       setMessages(newMessages);
       setMoreMessages(hasMore);
       setIsLoadingMessages(false);
@@ -251,9 +257,34 @@ const Chat: NextPage = () => {
                 <ClipLoader color="#e09f3e" size={30} />{' '}
               </div>
             )}
-            {messages?.map((message) => {
+            {messages?.map((message, i) => {
               const { id: messageId } = message;
-              return <ChatMessage message={message} key={messageId} />;
+              const date = new Date(parseInt(message.createdAt));
+              const now = new Date();
+
+              console.log(datesAreSameDay(date, now));
+              if (datesAreSameDay(date, now)) {
+                const prevMessage = messages[i - 1];
+                const prevDate = new Date(parseInt(prevMessage.createdAt));
+
+                if (!datesAreSameDay(prevDate, now)) {
+                  return (
+                    <>
+                      <div className="text-center my-4">
+                        <hr className="bg-dark-50 h-px border-none" />
+                        <div
+                          className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
+                          style={{ marginTop: '-10px' }}
+                        >
+                          today
+                        </div>
+                      </div>
+                      <ChatMessage message={message} myId={meData?.me?.id} key={messageId} />
+                    </>
+                  );
+                }
+              }
+              return <ChatMessage message={message} myId={meData?.me?.id} key={messageId} />;
             })}
           </div>
           <ChatBottomBar />
