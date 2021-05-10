@@ -12,9 +12,10 @@ import { errorToast } from '../../../utils/toasts';
 export interface ChatMessageProps {
   message: MessageSnippetFragment;
   myId: string | undefined;
+  resendCall: () => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -164,7 +165,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId }) => {
                     <GoReply size={20} style={{ marginRight: '5px' }} />
                     Reply
                   </li>
-                  <li className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center">
+                  <li
+                    className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                    onClick={() => resendCall()}
+                  >
                     <IoMdRefresh size={20} style={{ marginRight: '5px' }} />
                     Resend
                   </li>

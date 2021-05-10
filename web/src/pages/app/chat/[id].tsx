@@ -3,14 +3,23 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
+import { IoMdClose } from 'react-icons/io';
 import { useQuery } from 'react-query';
 import { ClipLoader } from 'react-spinners';
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
+import {
+  IncomingDeleteMessage,
+  IncomingSocketChatMessage,
+  IncomingUpdateMessage,
+  OutgoingSocketChatMessage
+} from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatMessage from '../../../components/App/Chat/ChatMessage';
+import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
+import SubmitButton from '../../../components/Buttons/SubmitButton';
+import Modal from '../../../components/modals/Modal';
 import { genericErrorMessage } from '../../../constants';
 import {
   MessageSnippetFragment,
@@ -19,7 +28,8 @@ import {
   ThreadMessagesQueryVariables,
   ThreadMessagesResponse,
   useMeQuery,
-  useThreadQuery
+  useThreadQuery,
+  useThreadsQuery
 } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
@@ -33,7 +43,9 @@ const messagesLimit = 30;
 const Chat: NextPage = () => {
   const router = useRouter();
   if (!router.query.id) {
-    router.replace('/app/friends/all');
+    if (!isServer()) {
+      router.replace('/app/friends/all');
+    }
     return null;
   }
   const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
@@ -76,6 +88,16 @@ const Chat: NextPage = () => {
     }
   );
 
+  const { data: loadedThreads } = useThreadsQuery(
+    {},
+    {
+      onError: (err) => {
+        console.error(err);
+        errorToast(genericErrorMessage);
+      }
+    }
+  );
+
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
   messagesRef.current = messages;
@@ -83,6 +105,7 @@ const Chat: NextPage = () => {
   const [moreMessages, setMoreMessages] = useState<boolean>(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
 
+  const [modalShow, setModalShow] = useState<boolean>(false);
   const scroll = (px = 0) => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (!feed) return;
@@ -179,6 +202,26 @@ const Chat: NextPage = () => {
     };
   }, [threadId]);
 
+  const [resendMessage, setResendMessage] = useState<MessageSnippetFragment | null>(null);
+  const [resendThreads, setResendThreads] = useState<string[]>([]);
+  const handleResendCall = (message: MessageSnippetFragment) => {
+    setModalShow(true);
+    setResendMessage(message);
+  };
+  const handleResend = () => {
+    const ws = socket.connect();
+    resendThreads.forEach((resendThread) => {
+      const payload = {
+        code: 3000,
+        threadId: resendThread,
+        content: resendMessage?.content,
+        resended: true
+      } as OutgoingSocketChatMessage;
+      ws?.send(JSON.stringify(payload));
+    });
+    setModalShow(false);
+  };
+
   useEffect(() => {
     return function cleanup() {
       setMoreMessages(false);
@@ -236,6 +279,7 @@ const Chat: NextPage = () => {
       };
     }
   }, [moreMessages, messages]);
+
   return (
     <>
       <Head>
@@ -279,18 +323,83 @@ const Chat: NextPage = () => {
                             today
                           </div>
                         </div>
-                        <ChatMessage message={message} myId={meData?.me?.id} />
+                        <ChatMessage
+                          message={message}
+                          myId={meData?.me?.id}
+                          resendCall={() => handleResendCall(message)}
+                        />
                       </div>
                     );
                   }
                 }
               }
-              return <ChatMessage message={message} myId={meData?.me?.id} key={messageId} />;
+              return (
+                <ChatMessage
+                  message={message}
+                  myId={meData?.me?.id}
+                  key={messageId}
+                  resendCall={() => handleResendCall(message)}
+                />
+              );
             })}
           </div>
           <ChatBottomBar />
         </div>
       </Layout>
+      <Modal active={modalShow}>
+        <div className="w-full h-10 flex flex-row justify-between">
+          <div className="text-light-300 text-lg font-roboto">Resend message</div>
+          <div>
+            <IoMdClose
+              className="text-2xl text-light-300 hover:text-light cursor-pointer"
+              onClick={() => {
+                setModalShow(false);
+                setResendThreads([]);
+                setResendMessage(null);
+              }}
+            />
+          </div>
+        </div>
+        <div className="w-full flex-grow relative">
+          <p className="text-light-300 font-opensans text-md mb-3">Select all threds to send this message to.</p>
+          <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
+            {loadedThreads?.threads.map(({ thread }, i) => {
+              return (
+                <ThreadListItem
+                  thread={thread}
+                  key={thread.id}
+                  onChecked={(checked) => {
+                    if (checked) {
+                      setResendThreads([...resendThreads, thread.id]);
+                      return;
+                    }
+                    const currentResendThreads = [...resendThreads];
+                    const newResendThreads = currentResendThreads.filter((resendThread) => {
+                      if (resendThread === thread.id) return false;
+                      return true;
+                    });
+                    setResendThreads(newResendThreads);
+                  }}
+                />
+              );
+            })}
+          </ul>
+
+          <div className="w-full flex flex-row justify-end mt-6">
+            <button
+              className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
+              onClick={() => {
+                setModalShow(false);
+                setResendThreads([]);
+                setResendMessage(null);
+              }}
+            >
+              Cancel
+            </button>
+            <SubmitButton onClick={() => handleResend()}>Send</SubmitButton>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };

@@ -30,7 +30,8 @@ import ThreadButton from './Sidebar/ThreadButton';
 
 const LeftSidebar: React.FC = () => {
   const router = useRouter();
-  const threadId = router.query.id as string;
+  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
+
   const { setAuthenticated } = useAuth();
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [statusInput, setStatusInput] = useState<string>('');
@@ -99,10 +100,10 @@ const LeftSidebar: React.FC = () => {
         });
         if (thisThread) {
           threads.splice(threads.indexOf(thisThread), 1);
-          if (thisThread.threadId !== router.query.id) {
+          if (thisThread.threadId !== threadId && (message as Message).userId !== meData?.me?.id) {
             thisThread.unread++;
           } else {
-            readMessages({ options: { threadId: router.query.id } });
+            readMessages({ options: { threadId: threadId } });
           }
           thisThread.thread.lastMessage = message as Message;
           thisThread.thread.lastActivity = (message as Message).createdAt;
@@ -203,7 +204,7 @@ const LeftSidebar: React.FC = () => {
                 }
                 return (
                   <ThreadButton
-                    username={membership.thread.name as string}
+                    name={membership.thread.name as string}
                     time={formatTime(membership.thread.lastActivity)}
                     threadId={membership.threadId}
                     latestMessage={membership.thread.lastMessage}

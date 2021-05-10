@@ -7,6 +7,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryColumn,
   UpdateDateColumn
 } from 'typeorm';
@@ -50,6 +51,23 @@ export class Message extends BaseEntity {
   @Field()
   @Column({ default: false })
   edited: boolean;
+
+  @Field()
+  @Column({ nullable: true })
+  replyingToId: string;
+
+  @Field(() => Message, { nullable: true })
+  @ManyToOne(() => Message, (message) => message.replies)
+  @JoinColumn({ name: 'replyingToId' })
+  replyingTo: Message;
+
+  @Field(() => [Message], { nullable: true })
+  @OneToMany(() => Message, (message) => message.replyingTo, { nullable: true })
+  replies: Message[];
+
+  @Field()
+  @Column({ default: false })
+  resended: boolean;
 
   //createdAt field
   @Field(() => String)
