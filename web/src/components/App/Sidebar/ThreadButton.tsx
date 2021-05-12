@@ -1,26 +1,20 @@
 import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import { TypingMessage } from '../../..';
+import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 
 export interface ThreadButtonProps {
-  username: string;
+  name: string;
   time: string;
-  latestMessage: string | null | undefined;
+  latestMessage: MessageSnippetFragment | undefined | null;
   unread: boolean;
   threadId: string;
   active?: boolean;
 }
 
-const ThreadButton: React.FC<ThreadButtonProps> = ({
-  username,
-  time,
-  latestMessage,
-  unread,
-  threadId,
-  active = false
-}) => {
+const ThreadButton: React.FC<ThreadButtonProps> = ({ name, time, latestMessage, unread, threadId, active = false }) => {
   const [displayMessage, setDisplayMessage] = useState<string | null | undefined>();
   const [currentLatestMessage, setCurrentLatestMessage] = useState<string | null | undefined>();
   const currentDisplayMessageRef = useRef<string | null | undefined>();
@@ -61,8 +55,10 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
   }, []);
 
   useEffect(() => {
-    setDisplayMessage(latestMessage);
-    setCurrentLatestMessage(latestMessage);
+    if (latestMessage) {
+      setDisplayMessage(latestMessage.content);
+      setCurrentLatestMessage(latestMessage.content);
+    }
   }, [latestMessage]);
 
   return (
@@ -75,7 +71,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">
-                <div className=" text-light font-roboto">{username}</div>
+                <div className=" text-light font-roboto">{name}</div>
                 <div className=" text-light-200 text-sm font-roboto">{time}</div>
               </div>
               <div className=" w-full flex flex-row justify-between">

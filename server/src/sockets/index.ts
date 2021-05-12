@@ -204,7 +204,14 @@ export const sockets = (server: Server) => {
         console.error(e);
       }
 
-      subClient.on('message', (channel, message) => {
+      subClient.on('message', async (channel, message) => {
+        const parsed = JSON.parse(message);
+        if (parsed.code === 3000) {
+          const { message, threadId } = parsed as SocketChatMessage;
+          if (message.userId !== user.id) {
+            await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+          }
+        }
         ws.send(message);
       });
     }

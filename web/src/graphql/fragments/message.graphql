@@ -4,7 +4,11 @@ fragment messageSnippet on Message {
   threadId
   userId
   user {
-    ...userSnippet
+    id
+    username
+    email
+    status
+    bio
   }
   edited
   createdAt

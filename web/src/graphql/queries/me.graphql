@@ -29,13 +29,5 @@ query Me {
       }
       createdAt
     }
-    threads {
-      isAdmin
-      threadId
-      unread
-      thread {
-        ...threadSnippet
-      }
-    }
   }
 }

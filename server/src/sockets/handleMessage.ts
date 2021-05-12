@@ -49,8 +49,8 @@ export const handleMessage = async (
         updatedAt: new Date()
       });
 
-      const membership = await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
-      if (!membership.affected || membership.affected !== 1) {
+      const membership = await ThreadMembers.findOne({ where: { userId: user.id, threadId } });
+      if (!membership) {
         const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this thread' };
         ws.send(JSON.stringify(payload));
         return;

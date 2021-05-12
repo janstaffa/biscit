@@ -70,11 +70,11 @@ export class UserResolver {
     return null;
   }
 
-  @FieldResolver(() => [ThreadMembers])
+  @Query(() => [ThreadMembers])
   @UseMiddleware(isAuth)
-  async threads(@Root() user: User, @Ctx() { req }: ContextType): Promise<ThreadMembers[] | null> {
+  async threads(@Ctx() { req }: ContextType): Promise<ThreadMembers[] | null> {
     const userId = req.session.userId;
-    if (userId === user.id) {
+    if (userId === req.session.userId) {
       const threads = await ThreadMembers.find({
         where: { userId },
         relations: ['thread', 'thread.members', 'thread.members.user']
@@ -90,6 +90,7 @@ export class UserResolver {
             response.thread.name = otherUser[0].user.username;
           }
           const lastMessage = await createQueryBuilder(Message, 'message')
+            .leftJoinAndSelect('message.user', 'user')
             .where('message."threadId" = :threadId', {
               threadId: thread.threadId
             })
@@ -97,7 +98,7 @@ export class UserResolver {
             .getOne();
 
           if (lastMessage) {
-            response.thread.lastMessage = lastMessage.content;
+            response.thread.lastMessage = lastMessage;
           }
           return response;
         })

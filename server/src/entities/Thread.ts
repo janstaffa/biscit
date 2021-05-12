@@ -40,8 +40,8 @@ export class Thread extends BaseEntity {
   @OneToMany(() => Message, (message) => message.thread)
   messages: Message[];
 
-  @Field(() => String, { nullable: true })
-  lastMessage: string;
+  @Field(() => Message, { nullable: true })
+  lastMessage: Message;
 
   @Field()
   @Column({ type: 'timestamptz', default: new Date() })

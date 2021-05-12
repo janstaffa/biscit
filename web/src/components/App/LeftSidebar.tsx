@@ -5,7 +5,7 @@ import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
-import { IncomingSocketChatMessage } from '../..';
+import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
 import {
   Message,
@@ -14,6 +14,7 @@ import {
   useLogoutMutation,
   useMeQuery,
   useReadMessagesMutation,
+  useThreadsQuery,
   useUpdateStatusMutation
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
@@ -29,15 +30,20 @@ import ThreadButton from './Sidebar/ThreadButton';
 
 const LeftSidebar: React.FC = () => {
   const router = useRouter();
-  const threadId = router.query.id as string;
+  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
+
   const { setAuthenticated } = useAuth();
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [statusInput, setStatusInput] = useState<string>('');
   const [currentPath, setCurrentPath] = useState<string>();
   const [threadList, setThreadList] = useState<
     Array<
-      { __typename?: 'ThreadMembers' } & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'> & {
-          thread: { __typename?: 'Thread' } & ThreadSnippetFragment;
+      {
+        __typename?: 'ThreadMembers';
+      } & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'> & {
+          thread: {
+            __typename?: 'Thread';
+          } & ThreadSnippetFragment;
         }
     >
   >([]);
@@ -70,6 +76,15 @@ const LeftSidebar: React.FC = () => {
   });
   const { data: meData, isLoading } = useMeQuery();
 
+  const { data: loadedThreads } = useThreadsQuery(
+    {},
+    {
+      onError: (err) => {
+        console.error(err);
+        errorToast(genericErrorMessage);
+      }
+    }
+  );
   useEffect(() => {
     const ws = socket.connect();
     const handleMessage = (e) => {
@@ -85,18 +100,44 @@ const LeftSidebar: React.FC = () => {
         });
         if (thisThread) {
           threads.splice(threads.indexOf(thisThread), 1);
-          if (thisThread.threadId !== router.query.id) {
+          if (thisThread.threadId !== threadId && (message as Message).userId !== meData?.me?.id) {
             thisThread.unread++;
           } else {
-            readMessages({ options: { threadId: router.query.id } });
+            readMessages({ options: { threadId: threadId } });
           }
-          thisThread.thread.lastMessage = (message as Message).content;
+          thisThread.thread.lastMessage = message as Message;
           thisThread.thread.lastActivity = (message as Message).createdAt;
           threads.unshift(thisThread);
           setThreadList(threads);
         }
+      } else if (incoming.code === 3007) {
+        const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
+        threadListRef.current.forEach((thread) => {
+          if (thread.thread.lastMessage?.id === messageId) {
+            queryClient.invalidateQueries('Threads');
+          }
+        });
+      } else if (incoming.code === 3008) {
+        const { messageId, threadId: incomingThreadId, newContent } = incoming as IncomingUpdateMessage;
+        const newThreadList = threadListRef.current.map((thread) => {
+          if (thread.thread.lastMessage?.id === messageId) {
+            return {
+              ...thread,
+              thread: {
+                ...thread.thread,
+                lastMessage: {
+                  ...thread.thread.lastMessage,
+                  content: newContent
+                }
+              }
+            };
+          }
+          return thread;
+        });
+        setThreadList(newThreadList);
       }
     };
+
     if (!isServer() && ws) {
       try {
         ws.addEventListener('message', handleMessage);
@@ -112,10 +153,10 @@ const LeftSidebar: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && meData && meData?.me) {
-      if (meData.me.threads) setThreadList(meData.me.threads);
+      if (loadedThreads) setThreadList(loadedThreads.threads);
       if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
     }
-  }, [isLoading, meData]);
+  }, [isLoading, meData, loadedThreads]);
   return (
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
@@ -163,7 +204,7 @@ const LeftSidebar: React.FC = () => {
                 }
                 return (
                   <ThreadButton
-                    username={membership.thread.name as string}
+                    name={membership.thread.name as string}
                     time={formatTime(membership.thread.lastActivity)}
                     threadId={membership.threadId}
                     latestMessage={membership.thread.lastMessage}
