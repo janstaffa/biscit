@@ -69,6 +69,7 @@ const Chat: NextPage = () => {
     }
   );
 
+  const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
   const {
     data: incomingThreadMessages,
     refetch: refetchThreadMessages,
@@ -76,8 +77,7 @@ const Chat: NextPage = () => {
     fetchNextPage
   } = useInfiniteQuery<ThreadMessagesQuery>(
     `ThreadMessages-${threadId}`,
-    ({ pageParam }) => {
-      console.log('PP', pageParam);
+    ({ pageParam = null }) => {
       const vars = {
         options: {
           threadId,
@@ -102,7 +102,7 @@ const Chat: NextPage = () => {
       enabled: false
     }
   );
-
+  incomingThreadMessagesRef.current = incomingThreadMessages;
   const { data: loadedThreads } = useThreadsQuery(
     {},
     {
@@ -150,7 +150,7 @@ const Chat: NextPage = () => {
     setIsLoadingMessages(false);
 
     if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
-      refetchThreadMessages();
+      fetchNextPage({ pageParam: null });
     }
 
     const handleMessage = (e) => {
@@ -213,6 +213,7 @@ const Chat: NextPage = () => {
       joinRoom(ws);
     };
     try {
+      scroll(0);
       ws.addEventListener('message', handleMessage);
       ws.addEventListener('open', handleOpen);
       if (ws.readyState === ws.OPEN) {
@@ -257,10 +258,24 @@ const Chat: NextPage = () => {
     };
   }, []);
   useEffect(() => {
-    console.log('FETCHING NEW MESSAGES', threadId);
+    console.log('INCOMING: ', incomingThreadMessages, queryClient.getQueryState(`ThreadMessages-${threadId}`));
     setIsLoadingMessages(true);
     if (!incomingThreadMessages?.pages) return;
+    // const reverseThreadMessages = incomingThreadMessages.pages.reverse();
+    if (messagesRef.current.length === 0) {
+      console.log('SETTING');
+      const { data: incomingMessages, hasMore, errors } = incomingThreadMessages.pages[0]
+        .messages as ThreadMessagesResponse;
+
+      if (incomingMessages) {
+        setMessages(incomingMessages);
+        setMoreMessages(hasMore);
+        setIsLoadingMessages(false);
+      }
+      return;
+    }
     incomingThreadMessages.pages.forEach((page) => {
+      console.log('CURRENT PAGE:', page, incomingThreadMessages);
       if (page.messages) {
         const { data: incomingMessages, hasMore, errors } = page.messages as ThreadMessagesResponse;
 
@@ -270,7 +285,6 @@ const Chat: NextPage = () => {
               errorToast(err.details.message);
             }
           });
-          router.replace('/app/friends/all');
           return;
         }
         if (incomingMessages) {
@@ -278,26 +292,20 @@ const Chat: NextPage = () => {
             if (incomingMessages.indexOf(message as Message) === -1) return true;
             return false;
           });
-
           const newMessages = [...incomingMessages, ...tempMessages];
-
           const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
           const feedMessages = feed.querySelectorAll('.message');
           const lastMessageEl = feedMessages[0];
 
-          const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
-            `ThreadMessages-${threadId}`
-          );
-          if (
-            newMessages.length > 30 &&
-            lastMessageEl &&
-            pages?.pages[0].messages.data &&
-            pages.pages[0].messages.data.length <= 30
-          ) {
+          if (newMessages.length > messagesLimit && lastMessageEl && !(incomingMessages.length > messagesLimit)) {
             lastMessageEl.scrollIntoView();
           }
 
           setMessages(newMessages);
+
+          if (incomingMessages.length > messagesLimit) {
+            scroll(0);
+          }
 
           setMoreMessages(hasMore);
           setIsLoadingMessages(false);
@@ -307,17 +315,37 @@ const Chat: NextPage = () => {
   }, [incomingThreadMessages]);
 
   useEffect(() => {
-    console.log('MESSAGES STATE CHANGE');
-    const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
-
-    if (messagesRef.current.length <= messagesLimit) {
+    const firstPageMessages = incomingThreadMessages?.pages[0].messages.data;
+    if (
+      messages.length <= messagesLimit ||
+      (messages.length < messagesLimit && firstPageMessages && firstPageMessages?.length > messagesLimit)
+    ) {
       scroll(0);
     }
+  }, [messages]);
 
+  useEffect(() => {
+    const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (moreMessages) {
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
-          fetchNextPage({ pageParam: messagesRef.current[0].createdAt });
+          const cursor = messagesRef.current[0].createdAt;
+          if (incomingThreadMessagesRef.current?.pageParams.find((p) => p === cursor)) {
+            incomingThreadMessagesRef.current.pages.splice(
+              incomingThreadMessagesRef.current.pageParams.indexOf(cursor),
+              1
+            );
+            incomingThreadMessagesRef.current.pageParams.splice(
+              incomingThreadMessagesRef.current.pageParams.indexOf(cursor),
+              1
+            );
+            const newData = {
+              pages: incomingThreadMessagesRef.current.pages,
+              pageParams: incomingThreadMessagesRef.current.pageParams
+            };
+            queryClient.setQueryData(`ThreadMessages-${threadId}`, newData);
+          }
+          fetchNextPage({ pageParam: cursor });
         }
       };
       return () => {
