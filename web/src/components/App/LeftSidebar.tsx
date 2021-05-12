@@ -8,6 +8,7 @@ import { MdSettings } from 'react-icons/md';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
 import {
+  MeQuery,
   Message,
   ThreadMembers,
   ThreadSnippetFragment,
@@ -75,7 +76,8 @@ const LeftSidebar: React.FC = () => {
     }
   });
   const { data: meData, isLoading } = useMeQuery();
-
+  const meDataRef = useRef<MeQuery | undefined>();
+  meDataRef.current = meData;
   const { data: loadedThreads } = useThreadsQuery(
     {},
     {
@@ -85,6 +87,7 @@ const LeftSidebar: React.FC = () => {
       }
     }
   );
+
   useEffect(() => {
     const ws = socket.connect();
     const handleMessage = (e) => {
@@ -100,15 +103,16 @@ const LeftSidebar: React.FC = () => {
         });
         if (thisThread) {
           threads.splice(threads.indexOf(thisThread), 1);
-          if (thisThread.threadId !== threadId && (message as Message).userId !== meData?.me?.id) {
+          if (thisThread.threadId !== threadId && (message as Message).userId !== meDataRef.current?.me?.id) {
             thisThread.unread++;
-          } else {
-            readMessages({ options: { threadId: threadId } });
           }
           thisThread.thread.lastMessage = message as Message;
           thisThread.thread.lastActivity = (message as Message).createdAt;
           threads.unshift(thisThread);
           setThreadList(threads);
+        }
+        if ((message as Message).userId === meData?.me?.id) {
+          readMessages({ options: { threadId: threadId } });
         }
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;

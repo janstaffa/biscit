@@ -249,7 +249,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
   };
 
   return (
-    <div className="flex-grow px-3 py-1 mt-12 overflow-y-scroll" id="chat-feed">
+    <div className="flex-grow px-3 py-1 mt-12 overflow-y-scroll relative" id="chat-feed">
       {isLoadingMessages && (
         <div className="w-full h-10 text-center text-light-300 text-lg font-roboto">
           <ClipLoader color="#e09f3e" size={30} />{' '}

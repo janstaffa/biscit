@@ -109,6 +109,7 @@ const Chat: NextPage = () => {
           </div>
         </div>
         <div className="w-full flex-grow relative">
+          <p className="text-light-200 font-opensans text-sm mb-3 italic">{resendMessage?.content}</p>
           <p className="text-light-300 font-opensans text-md mb-3">Select all threds to send this message to.</p>
           <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
             {loadedThreads?.threads.map(({ thread }, i) => {
