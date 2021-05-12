@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
-import { useQuery } from 'react-query';
+import { useInfiniteQuery } from 'react-query';
 import { ClipLoader } from 'react-spinners';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import {
@@ -22,6 +22,7 @@ import SubmitButton from '../../../components/Buttons/SubmitButton';
 import Modal from '../../../components/modals/Modal';
 import { genericErrorMessage } from '../../../constants';
 import {
+  Message,
   MessageSnippetFragment,
   ThreadMessagesDocument,
   ThreadMessagesQuery,
@@ -31,12 +32,12 @@ import {
   useThreadQuery,
   useThreadsQuery
 } from '../../../generated/graphql';
+import { graphqlClient } from '../../../utils/createGQLClient';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
 import { datesAreSameDay } from '../../../utils/datesAreSameDay';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
-import { useGQLRequest } from '../../../utils/useGQLRequest';
 import withAuth from '../../../utils/withAuth';
 
 const messagesLimit = 30;
@@ -77,14 +78,38 @@ const Chat: NextPage = () => {
       cursor
     }
   } as ThreadMessagesQueryVariables;
-  const { data: incomingThreadMessages, refetch: refetchThreadMessages } = useQuery<ThreadMessagesQuery>(
-    [`ThreadMessages-${threadId}`, variables],
-    useGQLRequest<ThreadMessagesQuery, ThreadMessagesQueryVariables>(ThreadMessagesDocument).bind(null, variables),
+
+  const {
+    data: incomingThreadMessages,
+    refetch: refetchThreadMessages,
+    status,
+    fetchNextPage
+  } = useInfiniteQuery<ThreadMessagesQuery>(
+    `ThreadMessages-${threadId}`,
+    ({ pageParam }) => {
+      console.log('PP', pageParam);
+      const vars = {
+        options: {
+          threadId,
+          cursor: pageParam,
+          limit: messagesLimit
+        }
+      };
+      return graphqlClient.request(ThreadMessagesDocument, vars);
+    },
     {
       onError: (err) => {
         console.error(err);
         errorToast(genericErrorMessage);
-      }
+      },
+      // getNextPageParam: (lastPage, pages) => {
+      //   if (lastPage?.messages?.data) {
+      //     console.log(lastPage, pages);
+      //     return lastPage.messages.data[0].createdAt;
+      //   }
+      //   return null;
+      // },
+      enabled: false
     }
   );
 
@@ -98,6 +123,9 @@ const Chat: NextPage = () => {
     }
   );
 
+  useEffect(() => {
+    console.log('STATUS', status);
+  }, [status]);
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
   messagesRef.current = messages;
@@ -114,10 +142,15 @@ const Chat: NextPage = () => {
   };
 
   const loadMessages = () => {
-    refetchThreadMessages();
+    console.log('LOAD MESSAGES');
+    if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
+      console.log('DATAS NOT IN CACHE');
+      refetchThreadMessages();
+    }
   };
 
   const joinRoom = (ws: ReconnectingWebSocket) => {
+    console.log('JOIN ROOK');
     const payload = {
       code: 3002,
       threadId
@@ -126,6 +159,7 @@ const Chat: NextPage = () => {
   };
 
   useEffect(() => {
+    console.log('MAIN USE EFFECT');
     const ws = socket.connect();
     if (isServer() || !ws) return;
 
@@ -145,6 +179,26 @@ const Chat: NextPage = () => {
 
         const currentMessages = [...messagesRef.current];
         currentMessages.push(message as MessageSnippetFragment);
+
+        const oldData: ThreadMessagesQuery | undefined = queryClient.getQueryData([
+          `ThreadMessages-${threadId}`,
+          variables
+        ]);
+        if (oldData) {
+          const oldMessages = oldData.messages.data;
+          if (oldMessages) {
+            oldMessages.push(message);
+          }
+          const newData: ThreadMessagesQuery = {
+            __typename: oldData.__typename,
+            messages: {
+              ...oldData.messages,
+              data: oldMessages
+            }
+          };
+
+          queryClient.setQueryData(`ThreadMessages-${threadId}`, newData);
+        }
         setMessages(currentMessages);
         scroll(0);
       } else if (incoming.code === 3007) {
@@ -196,7 +250,8 @@ const Chat: NextPage = () => {
     } catch (err) {
       console.error(err);
     }
-    return function () {
+    return () => {
+      console.log(queryClient.getQueryCache());
       ws.removeEventListener('message', handleMessage);
       ws.removeEventListener('open', handleOpen);
     };
@@ -226,59 +281,78 @@ const Chat: NextPage = () => {
     return function cleanup() {
       setMoreMessages(false);
       setIsLoadingMessages(false);
-      queryClient.refetchQueries({ queryKey: `ThreadMessages-${threadId}}` });
       setMessages([]);
       messagesRef.current = [];
     };
   }, []);
   useEffect(() => {
+    console.log('FETCHING NEW MESSAGES', threadId);
     setIsLoadingMessages(true);
-    if (!incomingThreadMessages?.messages) return;
-    const { data: incomingMessages, hasMore, errors } = incomingThreadMessages.messages as ThreadMessagesResponse;
+    if (!incomingThreadMessages?.pages) return;
+    incomingThreadMessages.pages.forEach((page) => {
+      if (page.messages) {
+        const { data: incomingMessages, hasMore, errors } = page.messages as ThreadMessagesResponse;
 
-    if (errors.length > 0) {
-      errors.forEach((err) => {
-        if (err.details?.message) {
-          errorToast(err.details.message);
+        if (errors.length > 0) {
+          errors.forEach((err) => {
+            if (err.details?.message) {
+              errorToast(err.details.message);
+            }
+          });
+          router.replace('/app/friends/all');
+          return;
         }
-      });
-      router.replace('/app/friends/all');
-      return;
-    }
-    if (incomingMessages) {
-      const newMessages = [...incomingMessages, ...messagesRef.current];
-      const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
-      const feedMessages = feed.querySelectorAll('.message');
-      const lastMessageEl = feedMessages[0];
-      if (newMessages.length > 30 && lastMessageEl) {
-        lastMessageEl.scrollIntoView();
-      }
+        if (incomingMessages) {
+          console.log('NEW MESSAGES ARRIVED', incomingMessages, 'ALL MESSAGES', [
+            ...incomingMessages,
+            ...messagesRef.current
+          ]);
+          const tempMessages = messagesRef.current.filter((message) => {
+            if (incomingMessages.indexOf(message as Message) === -1) return true;
+            return false;
+          });
 
-      setMessages(newMessages);
-      setMoreMessages(hasMore);
-      setIsLoadingMessages(false);
-    }
+          const newMessages = [...incomingMessages, ...tempMessages];
+
+          const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+          const feedMessages = feed.querySelectorAll('.message');
+          const lastMessageEl = feedMessages[0];
+          if (newMessages.length > 30 && lastMessageEl) {
+            lastMessageEl.scrollIntoView();
+          }
+
+          setMessages(newMessages);
+
+          setMoreMessages(hasMore);
+          setIsLoadingMessages(false);
+        }
+      }
+    });
   }, [incomingThreadMessages]);
 
   useEffect(() => {
+    console.log('MESSAGES STATE CHANGE');
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
 
-    if (messages.length <= messagesLimit) {
+    if (messagesRef.current.length <= messagesLimit) {
       scroll(0);
     }
 
     if (moreMessages) {
+      console.log('added scroll listener');
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
-          setCursor(messages[0].createdAt);
-          loadMessages();
+          console.log('CALLED');
+          // setCursor(messagesRef.current[0].createdAt);
+          // refetchThreadMessages();
+          fetchNextPage({ pageParam: messagesRef.current[0].createdAt });
         }
       };
       return () => {
         feed.onscroll = null;
       };
     }
-  }, [moreMessages, messages]);
+  }, [moreMessages]);
 
   return (
     <>
