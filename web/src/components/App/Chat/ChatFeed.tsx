@@ -1,23 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { InfiniteData, useInfiniteQuery } from 'react-query';
+import { InfiniteData } from 'react-query';
 import { ClipLoader } from 'react-spinners';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
-import { genericErrorMessage } from '../../../constants';
 import {
   Message,
   MessageSnippetFragment,
-  ThreadMessagesDocument,
   ThreadMessagesQuery,
   ThreadMessagesResponse,
   useMeQuery
 } from '../../../generated/graphql';
-import { graphqlClient } from '../../../utils/createGQLClient';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
 import { datesAreSameDay } from '../../../utils/datesAreSameDay';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
+import { messagesLimit, usePaginatedMessagesQuery } from '../../../utils/usePaginatedMessagesQuery';
 import ChatMessage from './ChatMessage';
 
 export interface ChatFeedProps {
@@ -26,49 +24,14 @@ export interface ChatFeedProps {
   setResendMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
 }
 
-const messagesLimit = 30;
-
 const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMessage }) => {
   const { data: meData } = useMeQuery();
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
-  const {
-    data: incomingThreadMessages,
-    refetch: refetchThreadMessages,
-    status,
-    fetchNextPage
-  } = useInfiniteQuery<ThreadMessagesQuery>(
-    `ThreadMessages-${threadId}`,
-    ({ pageParam = null }) => {
-      const vars = {
-        options: {
-          threadId,
-          cursor: pageParam,
-          limit: messagesLimit
-        }
-      };
-      return graphqlClient.request(ThreadMessagesDocument, vars);
-    },
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      },
-      // getNextPageParam: (lastPage, pages) => {
-      //   if (lastPage?.messages?.data) {
-      //     console.log(lastPage, pages);
-      //     return lastPage.messages.data[0].createdAt;
-      //   }
-      //   return null;
-      // },
-      enabled: false
-    }
-  );
+
+  const { data: incomingThreadMessages, fetchNextPage, status } = usePaginatedMessagesQuery(threadId);
   incomingThreadMessagesRef.current = incomingThreadMessages;
 
-  useEffect(() => {
-    console.log('STATUS', status);
-  }, [status]);
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
   messagesRef.current = messages;
@@ -84,7 +47,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
   };
 
   const joinRoom = (ws: ReconnectingWebSocket) => {
-    console.log('JOIN ROOK');
     const payload = {
       code: 3002,
       threadId
@@ -175,7 +137,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
       console.error(err);
     }
     return () => {
-      console.log(queryClient.getQueryCache());
       ws.removeEventListener('message', handleMessage);
       ws.removeEventListener('open', handleOpen);
     };
