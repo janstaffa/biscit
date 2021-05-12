@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
-import { useInfiniteQuery } from 'react-query';
+import { InfiniteData, useInfiniteQuery } from 'react-query';
 import { ClipLoader } from 'react-spinners';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import {
@@ -26,7 +26,6 @@ import {
   MessageSnippetFragment,
   ThreadMessagesDocument,
   ThreadMessagesQuery,
-  ThreadMessagesQueryVariables,
   ThreadMessagesResponse,
   useMeQuery,
   useThreadQuery,
@@ -69,15 +68,6 @@ const Chat: NextPage = () => {
       }
     }
   );
-
-  const [cursor, setCursor] = useState<string | null>(null);
-  const variables = {
-    options: {
-      threadId,
-      limit: messagesLimit,
-      cursor
-    }
-  } as ThreadMessagesQueryVariables;
 
   const {
     data: incomingThreadMessages,
@@ -141,14 +131,6 @@ const Chat: NextPage = () => {
     feed.scrollTop = px === 0 ? feed.scrollHeight : px;
   };
 
-  const loadMessages = () => {
-    console.log('LOAD MESSAGES');
-    if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
-      console.log('DATAS NOT IN CACHE');
-      refetchThreadMessages();
-    }
-  };
-
   const joinRoom = (ws: ReconnectingWebSocket) => {
     console.log('JOIN ROOK');
     const payload = {
@@ -159,7 +141,6 @@ const Chat: NextPage = () => {
   };
 
   useEffect(() => {
-    console.log('MAIN USE EFFECT');
     const ws = socket.connect();
     if (isServer() || !ws) return;
 
@@ -167,8 +148,10 @@ const Chat: NextPage = () => {
     messagesRef.current = [];
     setMoreMessages(false);
     setIsLoadingMessages(false);
-    setCursor(null);
-    loadMessages();
+
+    if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
+      refetchThreadMessages();
+    }
 
     const handleMessage = (e) => {
       const { data: m } = e;
@@ -180,24 +163,12 @@ const Chat: NextPage = () => {
         const currentMessages = [...messagesRef.current];
         currentMessages.push(message as MessageSnippetFragment);
 
-        const oldData: ThreadMessagesQuery | undefined = queryClient.getQueryData([
-          `ThreadMessages-${threadId}`,
-          variables
-        ]);
-        if (oldData) {
-          const oldMessages = oldData.messages.data;
-          if (oldMessages) {
-            oldMessages.push(message);
-          }
-          const newData: ThreadMessagesQuery = {
-            __typename: oldData.__typename,
-            messages: {
-              ...oldData.messages,
-              data: oldMessages
-            }
-          };
-
-          queryClient.setQueryData(`ThreadMessages-${threadId}`, newData);
+        const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
+          `ThreadMessages-${threadId}`
+        );
+        if (pages?.pages) {
+          pages.pages[0].messages.data?.push(message);
+          queryClient.setQueryData(`ThreadMessages-${threadId}`, pages);
         }
         setMessages(currentMessages);
         scroll(0);
@@ -303,10 +274,6 @@ const Chat: NextPage = () => {
           return;
         }
         if (incomingMessages) {
-          console.log('NEW MESSAGES ARRIVED', incomingMessages, 'ALL MESSAGES', [
-            ...incomingMessages,
-            ...messagesRef.current
-          ]);
           const tempMessages = messagesRef.current.filter((message) => {
             if (incomingMessages.indexOf(message as Message) === -1) return true;
             return false;
@@ -317,7 +284,16 @@ const Chat: NextPage = () => {
           const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
           const feedMessages = feed.querySelectorAll('.message');
           const lastMessageEl = feedMessages[0];
-          if (newMessages.length > 30 && lastMessageEl) {
+
+          const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
+            `ThreadMessages-${threadId}`
+          );
+          if (
+            newMessages.length > 30 &&
+            lastMessageEl &&
+            pages?.pages[0].messages.data &&
+            pages.pages[0].messages.data.length <= 30
+          ) {
             lastMessageEl.scrollIntoView();
           }
 
@@ -339,12 +315,8 @@ const Chat: NextPage = () => {
     }
 
     if (moreMessages) {
-      console.log('added scroll listener');
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
-          console.log('CALLED');
-          // setCursor(messagesRef.current[0].createdAt);
-          // refetchThreadMessages();
           fetchNextPage({ pageParam: messagesRef.current[0].createdAt });
         }
       };
