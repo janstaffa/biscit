@@ -1,13 +1,19 @@
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
+import { AiOutlineCloseCircle } from 'react-icons/ai';
 import { FaRegSmile } from 'react-icons/fa';
+import { GoReply } from 'react-icons/go';
 import { ImAttachment } from 'react-icons/im';
 import { BeatLoader } from 'react-spinners';
 import { OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
+import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
-
-const ChatBottomBar: React.FC = () => {
+export interface ChatBottomBarProps {
+  replyMessage: MessageSnippetFragment | null;
+  setReplyMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
+}
+const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMessage }) => {
   const router = useRouter();
   if (!router.query.id) {
     router.replace('/app/friends/all');
@@ -56,11 +62,17 @@ const ChatBottomBar: React.FC = () => {
           if (!value || !/\S/.test(value)) {
             return;
           }
-          const payload = {
+          let payload = {
             code: 3000,
             threadId: threadIdRef.current,
             content: value
           } as OutgoingSocketChatMessage;
+          if (replyMessage) {
+            payload = {
+              ...payload,
+              replyingToId: replyMessage.id
+            };
+          }
           try {
             if (ws.readyState === ws.OPEN) {
               ws.send(JSON.stringify(payload));
@@ -103,7 +115,24 @@ const ChatBottomBar: React.FC = () => {
   }, [messageInputValue]);
 
   return (
-    <div className="w-full h-24 bg-dark-300 px-8 flex flex-col justify-center" style={{ minHeight: '6rem' }}>
+    <div className="w-full h-24 bg-dark-300 px-8 flex flex-col justify-center relative" style={{ minHeight: '6rem' }}>
+      {replyMessage && (
+        <div
+          className="w-full h-auto flex flex-row justify-between items-center px-10 py-1 absolute bg-dark-200"
+          style={{ top: '-30px', left: 0 }}
+        >
+          <span className="text-light-400 font-roboto flex flex-row items-center">
+            <GoReply className="mr-2" />
+            replying to {replyMessage.user.username}
+          </span>
+          <AiOutlineCloseCircle
+            className="text-light-400 cursor-pointer hover:text-light-300"
+            size={23}
+            onClick={() => setReplyMessage(null)}
+            title={'cancel replying'}
+          />
+        </div>
+      )}
       <div className="flex flex-row">
         <div className="w-14 bg-dark-100 flex flex-col justify-center items-center border-r border-dark-50 rounded-l-xl">
           <ImAttachment className="text-2xl text-light-300" />

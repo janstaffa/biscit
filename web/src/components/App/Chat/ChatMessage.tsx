@@ -13,9 +13,11 @@ export interface ChatMessageProps {
   message: MessageSnippetFragment;
   myId: string | undefined;
   resendCall: () => void;
+  replyCall: () => void;
+  replyMessage: MessageSnippetFragment | null;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -64,10 +66,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
     });
   }, []);
 
-  useEffect(() => {}, [message]);
+  console.log('here: ', replyMessage?.id, message.id);
   return (
     <div
-      className="message w-full h-auto my-2.5 flex flex-row hover:shadow-lg"
+      className={
+        'message w-full h-auto my-2.5 flex flex-row hover:shadow-lg' +
+        (replyMessage?.id === message.id ? ' ring-2 ring-accent-light' : ' bg-transparent')
+      }
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => {
         setIsHovering(false);
@@ -161,10 +166,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
                       <hr className="bg-dark-50 h-px border-none" />
                     </>
                   )}
-                  <li className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center">
-                    <GoReply size={20} style={{ marginRight: '5px' }} />
-                    Reply
-                  </li>
+                  {message.userId !== myId && (
+                    <li
+                      className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                      onClick={() => replyCall()}
+                    >
+                      <GoReply size={20} style={{ marginRight: '5px' }} />
+                      Reply
+                    </li>
+                  )}
                   <li
                     className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                     onClick={() => resendCall()}

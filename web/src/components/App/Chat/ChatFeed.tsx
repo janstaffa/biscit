@@ -22,9 +22,17 @@ export interface ChatFeedProps {
   threadId: string;
   setModalShow: React.Dispatch<React.SetStateAction<boolean>>;
   setResendMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
+  setReplyMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
+  replyMessage: MessageSnippetFragment | null;
 }
 
-const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMessage }) => {
+const ChatFeed: React.FC<ChatFeedProps> = ({
+  threadId,
+  setModalShow,
+  setResendMessage,
+  setReplyMessage,
+  replyMessage
+}) => {
   const { data: meData } = useMeQuery();
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
@@ -248,8 +256,12 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
     setResendMessage(message);
   };
 
+  const handleReplyCall = (message: MessageSnippetFragment) => {
+    setReplyMessage(message);
+  };
+
   return (
-    <div className="flex-grow px-3 py-1 mt-12 overflow-y-scroll relative" id="chat-feed">
+    <div className="flex-grow px-3 mb-7 mt-12 overflow-y-scroll relative" id="chat-feed">
       {isLoadingMessages && (
         <div className="w-full h-10 text-center text-light-300 text-lg font-roboto">
           <ClipLoader color="#e09f3e" size={30} />{' '}
@@ -277,7 +289,13 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
                       today
                     </div>
                   </div>
-                  <ChatMessage message={message} myId={meData?.me?.id} resendCall={() => handleResendCall(message)} />
+                  <ChatMessage
+                    message={message}
+                    myId={meData?.me?.id}
+                    resendCall={() => handleResendCall(message)}
+                    replyCall={() => handleReplyCall(message)}
+                    replyMessage={replyMessage}
+                  />
                 </div>
               );
             }
@@ -289,6 +307,8 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
             myId={meData?.me?.id}
             key={messageId}
             resendCall={() => handleResendCall(message)}
+            replyCall={() => handleReplyCall(message)}
+            replyMessage={replyMessage}
           />
         );
       })}

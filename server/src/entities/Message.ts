@@ -52,7 +52,7 @@ export class Message extends BaseEntity {
   @Column({ default: false })
   edited: boolean;
 
-  @Field()
+  @Field(() => String, { nullable: true })
   @Column({ nullable: true })
   replyingToId: string;
 
@@ -66,8 +66,8 @@ export class Message extends BaseEntity {
   replies: Message[];
 
   @Field()
-  @Column({ default: false })
-  resended: boolean;
+  @Column({ nullable: true })
+  resendId: string;
 
   //createdAt field
   @Field(() => String)

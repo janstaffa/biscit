@@ -10,8 +10,8 @@ export interface IncomingSocketChatMessage extends SocketThreadMessage {
 
 export interface OutgoingSocketChatMessage extends SocketThreadMessage {
   content: string;
-  respondingTo?: string;
-  resended?: boolean;
+  replyingToId?: string;
+  resendId?: string;
 }
 
 export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {

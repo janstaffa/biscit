@@ -23,6 +23,8 @@ export interface SocketChatMessage extends SocketThreadMessage {
 
 export interface IncomingSocketChatMessage extends SocketThreadMessage {
   content: string;
+  replyingToId?: string;
+  resendId?: string;
 }
 
 export interface IncomingLoadMessagesMessage extends SocketThreadMessage {

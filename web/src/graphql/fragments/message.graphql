@@ -11,6 +11,8 @@ fragment messageSnippet on Message {
     bio
   }
   edited
+  replyingToId
+  resendId
   createdAt
   updatedAt
 }
