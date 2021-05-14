@@ -59,7 +59,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
       code: 3002,
       threadId
     };
-    ws.send(JSON.stringify(payload));
+    socket.send(JSON.stringify(payload));
   };
 
   useEffect(() => {
@@ -85,7 +85,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           `ThreadMessages-${incomingThreadId}`
         );
         if (pages?.pages) {
-          console.log(message, message.replyingTo);
           pages.pages[0].messages.data?.push(message);
           queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
         }
@@ -110,6 +109,9 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
               const messageIdx = thisPage.messages.data?.indexOf(thisMessage);
               pages.pages[idx].messages.data?.splice(messageIdx, 1);
               queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+              if (pages.pages[idx].messages.data) {
+                setMessages(pages.pages[idx].messages.data as MessageSnippetFragment[]);
+              }
             }
           }
         }
@@ -136,7 +138,11 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                 edited: true,
                 updatedAt: new Date().toISOString()
               });
+
               queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+              if (pages.pages[idx].messages.data) {
+                setMessages(pages.pages[idx].messages.data as MessageSnippetFragment[]);
+              }
             }
           }
         }

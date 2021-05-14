@@ -76,7 +76,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           }
           try {
             if (ws.readyState === ws.OPEN) {
-              ws.send(JSON.stringify(payload));
+              socket.send(JSON.stringify(payload));
               setMessageInputValue('');
               if (replyMessageRef.current) {
                 setReplyMessage(null);
@@ -114,10 +114,15 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
         code: 3006,
         threadId
       };
-      ws.send(JSON.stringify(payload));
+      socket.send(JSON.stringify(payload));
     }
   }, [messageInputValue]);
 
+  useEffect(() => {
+    if (replyMessage) {
+      (document.querySelector('#message-input') as HTMLInputElement).focus();
+    }
+  }, [replyMessage]);
   return (
     <div className="w-full h-24 bg-dark-300 px-8 flex flex-col justify-center relative" style={{ minHeight: '6rem' }}>
       {replyMessage && (

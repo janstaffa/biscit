@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import { RedisClient } from 'redis';
 import WebSocket from 'ws';
 import {
@@ -10,11 +11,16 @@ import {
   SocketChatMessage,
   SocketThreadMessage
 } from '.';
+import { fallbackTokenSecret } from '../constants';
 import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { getId } from '../utils/generateId';
+
+export type JWTWSTokenType = {
+  userId: string;
+};
 
 export const handleMessage = async (
   data: string,
@@ -23,8 +29,33 @@ export const handleMessage = async (
   pubClient: RedisClient,
   user: User
 ) => {
+  const returnInvalidTokenError = () => {
+    const payload = {
+      code: ERROR_MESSAGE_CODE,
+      message: 'Invalid socket token.'
+    };
+    ws.send(JSON.stringify(payload));
+    return;
+  };
   const incoming = JSON.parse(data);
-  const { code } = incoming;
+  const { code, token } = incoming;
+  if (!token) {
+    returnInvalidTokenError();
+    return;
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET || fallbackTokenSecret);
+    if ((decoded as JWTWSTokenType).userId !== user.id) {
+      returnInvalidTokenError();
+      return;
+    }
+  } catch (e) {
+    if (e) {
+      returnInvalidTokenError();
+      return;
+    }
+  }
+
   const senderUser = await User.findOne({ where: { id: user.id } });
   if (!senderUser) {
     const payload = { code: ERROR_MESSAGE_CODE, message: "It seems like, you don't exist!" };
@@ -37,7 +68,6 @@ export const handleMessage = async (
 
   if (code === CHAT_MESSAGE_CODE) {
     const { content, threadId, replyingToId, resendId } = incoming as IncomingSocketChatMessage;
-    console.log(incoming);
     try {
       const messageId = await getId(Message, 'id');
 

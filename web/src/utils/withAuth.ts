@@ -9,7 +9,6 @@ export default function withAuth(Component, location = '/login') {
     location,
     clientCondition: () => {
       const authenticated = useIsAuthenticated();
-      console.log('client: ', authenticated);
       return !authenticated;
     },
     serverCondition: (context: NextPageContext) => {
@@ -19,7 +18,6 @@ export default function withAuth(Component, location = '/login') {
         const parsed = cookie.parse(req.headers.cookie);
         authenticated = !!parsed.uid;
       }
-      console.log('server: ', authenticated);
       return !authenticated;
     }
   });

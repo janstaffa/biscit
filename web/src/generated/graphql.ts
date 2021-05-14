@@ -158,6 +158,7 @@ export type Query = {
   thread: ThreadResponse;
   threads: Array<ThreadMembers>;
   me?: Maybe<User>;
+  token?: Maybe<Scalars['String']>;
 };
 
 export type QueryMessagesArgs = {
@@ -459,6 +460,10 @@ export type ThreadsQuery = { __typename?: 'Query' } & {
       }
   >;
 };
+
+export type TokenQueryVariables = Exact<{ [key: string]: never }>;
+
+export type TokenQuery = { __typename?: 'Query' } & Pick<Query, 'token'>;
 
 export const ErrorSnippetFragmentDoc = `
     fragment errorSnippet on GQLValidationError {
@@ -847,5 +852,19 @@ export const useThreadsQuery = <TData = ThreadsQuery, TError = unknown>(
   useQuery<ThreadsQuery, TError, TData>(
     ['Threads', variables],
     useGQLRequest<ThreadsQuery, ThreadsQueryVariables>(ThreadsDocument).bind(null, variables),
+    options
+  );
+export const TokenDocument = `
+    query Token {
+  token
+}
+    `;
+export const useTokenQuery = <TData = TokenQuery, TError = unknown>(
+  variables?: TokenQueryVariables,
+  options?: UseQueryOptions<TokenQuery, TError, TData>
+) =>
+  useQuery<TokenQuery, TError, TData>(
+    ['Token', variables],
+    useGQLRequest<TokenQuery, TokenQueryVariables>(TokenDocument).bind(null, variables),
     options
   );

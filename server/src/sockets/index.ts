@@ -13,6 +13,7 @@ import { handleMessage } from './handleMessage';
 
 export interface SocketMessage {
   code: number;
+  // token: string;
 }
 export interface SocketThreadMessage extends SocketMessage {
   threadId: string;
