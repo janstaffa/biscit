@@ -85,6 +85,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           `ThreadMessages-${incomingThreadId}`
         );
         if (pages?.pages) {
+          console.log(message, message.replyingTo);
           pages.pages[0].messages.data?.push(message);
           queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
         }

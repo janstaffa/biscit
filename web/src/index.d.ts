@@ -1,3 +1,5 @@
+import { Message } from './generated/graphql';
+
 export interface SocketMessage {
   code: number;
 }

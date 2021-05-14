@@ -40,6 +40,7 @@ export const handleMessage = async (
     console.log(incoming);
     try {
       const messageId = await getId(Message, 'id');
+
       const newMessage = await Message.create({
         id: messageId,
         content,
@@ -48,6 +49,10 @@ export const handleMessage = async (
         edited: false,
         resendId,
         replyingToId: resendId ? undefined : replyingToId,
+        replyingTo:
+          !resendId && replyingToId
+            ? await Message.findOne({ where: { id: replyingToId }, relations: ['user'] })
+            : undefined,
         createdAt: new Date(),
         updatedAt: new Date()
       });

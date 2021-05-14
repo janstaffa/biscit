@@ -78,6 +78,9 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             if (ws.readyState === ws.OPEN) {
               ws.send(JSON.stringify(payload));
               setMessageInputValue('');
+              if (replyMessageRef.current) {
+                setReplyMessage(null);
+              }
               messageInput.focus();
             }
           } catch (err) {
