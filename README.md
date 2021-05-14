@@ -1,4 +1,4 @@
-![Biscit logo](./assets/logo.gif)
+![Biscit logo](./assets/logo.gif =500x350)
 
 * * *
 
