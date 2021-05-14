@@ -17,15 +17,15 @@
 <ul>
   <li>Node.js</li>
   <li>GraphQL</li>
-  <li>WebRTC</li>
   <li>PostgreSQL</li>
+  <li>Redis</li>
 </ul>
 
 <b>Frontend:</b>
 
 <ul>
   <li>React</li>
-  <li>Next</li>
+  <li>Next.js</li>
 </ul>
 
 <h3>The plan</h3>
