@@ -64,7 +64,8 @@ const Chat: NextPage = () => {
 
   const handleResend = () => {
     const ws = socket.connect();
-    if (resendMessage) {
+    console.log(resendThreads);
+    if (resendMessage && ws) {
       resendThreads.forEach((resendThread) => {
         const payload = {
           code: 3000,
@@ -72,10 +73,12 @@ const Chat: NextPage = () => {
           content: resendMessage.content,
           resendId: resendMessage.id
         } as OutgoingSocketChatMessage;
-        ws?.send(JSON.stringify(payload));
+        ws.send(JSON.stringify(payload));
       });
+      setModalShow(false);
+      setResendMessage(null);
+      setResendThreads([]);
     }
-    setModalShow(false);
   };
 
   return (

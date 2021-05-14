@@ -89,6 +89,10 @@ export type Message = {
   threadId: Scalars['String'];
   content: Scalars['String'];
   edited: Scalars['Boolean'];
+  replyingToId?: Maybe<Scalars['String']>;
+  replyingTo?: Maybe<Message>;
+  replies?: Maybe<Array<Message>>;
+  resendId?: Maybe<Scalars['String']>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };
@@ -257,8 +261,16 @@ export type ErrorSnippetFragment = { __typename?: 'GQLValidationError' } & Pick<
 
 export type MessageSnippetFragment = { __typename?: 'Message' } & Pick<
   Message,
-  'id' | 'content' | 'threadId' | 'userId' | 'edited' | 'createdAt' | 'updatedAt'
-> & { user: { __typename?: 'User' } & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'> };
+  'id' | 'content' | 'threadId' | 'userId' | 'edited' | 'replyingToId' | 'resendId' | 'createdAt' | 'updatedAt'
+> & {
+    user: { __typename?: 'User' } & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
+    replyingTo?: Maybe<
+      { __typename?: 'Message' } & Pick<
+        Message,
+        'id' | 'content' | 'threadId' | 'userId' | 'createdAt' | 'updatedAt'
+      > & { user: { __typename?: 'User' } & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'> }
+    >;
+  };
 
 export type ThreadSnippetFragment = { __typename?: 'Thread' } & Pick<
   Thread,
@@ -472,6 +484,23 @@ export const MessageSnippetFragmentDoc = `
     bio
   }
   edited
+  replyingToId
+  replyingTo {
+    id
+    content
+    threadId
+    userId
+    user {
+      id
+      username
+      email
+      status
+      bio
+    }
+    createdAt
+    updatedAt
+  }
+  resendId
   createdAt
   updatedAt
 }

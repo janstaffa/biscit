@@ -59,6 +59,7 @@ export class MessageResolver {
     const qb = createQueryBuilder(Message, 'message')
       .leftJoinAndSelect('message.user', 'user')
       .leftJoinAndSelect('message.replyingTo', 'replyingTo')
+      .leftJoinAndSelect('replyingTo.user', 'replyingToUser')
       .leftJoinAndSelect('message.replies', 'replies')
       .where('message."threadId" = :threadId', { threadId: options.threadId });
 

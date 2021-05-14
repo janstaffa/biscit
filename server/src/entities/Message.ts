@@ -65,7 +65,7 @@ export class Message extends BaseEntity {
   @OneToMany(() => Message, (message) => message.replyingTo, { nullable: true })
   replies: Message[];
 
-  @Field()
+  @Field(() => String, { nullable: true })
   @Column({ nullable: true })
   resendId: string;
 

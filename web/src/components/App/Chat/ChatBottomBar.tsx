@@ -27,7 +27,8 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
   const [messageInputValue, setMessageInputValue] = useState<string>('');
   const messageInputValueRef = useRef<string>('');
   messageInputValueRef.current = messageInputValue;
-
+  const replyMessageRef = useRef<MessageSnippetFragment | null>(null);
+  replyMessageRef.current = replyMessage;
   useEffect(() => {
     setMessageInputValue('');
     const ws = socket.connect();
@@ -67,10 +68,10 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             threadId: threadIdRef.current,
             content: value
           } as OutgoingSocketChatMessage;
-          if (replyMessage) {
+          if (replyMessageRef.current) {
             payload = {
               ...payload,
-              replyingToId: replyMessage.id
+              replyingToId: replyMessageRef.current.id
             };
           }
           try {

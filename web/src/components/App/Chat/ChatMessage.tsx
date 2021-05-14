@@ -32,7 +32,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
   const { mutate: deleteMessage } = useDeleteMessageMutation({
     onSuccess: (data) => {
       if (!data.DeleteMessage.data) {
-        errorToast(genericErrorMessage);
+        data.DeleteMessage.errors.forEach((err) => {
+          errorToast(err.details?.message);
+        });
       }
     },
     onError: (err) => {
@@ -66,7 +68,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
     });
   }, []);
 
-  console.log('here: ', replyMessage?.id, message.id);
   return (
     <div
       className={
@@ -90,6 +91,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
           </div>
           {message.edited && (
             <div className="text-light-400 font-roboto text-xs flex flex-col justify-center ml-1">(edited)</div>
+          )}
+          {!!message.resendId && (
+            <div className="text-light-400 font-roboto text-xs flex flex-row items-center ml-1">
+              ( <IoMdRefresh className="mr-1" />
+              resended)
+            </div>
+          )}
+          {!!message.replyingToId && (
+            <div className="text-light-400 font-roboto text-xs flex flex-row items-center ml-1">
+              <GoReply className="mr-1" />
+              replying to {message.replyingTo?.user.username}: {message.replyingTo?.content}
+            </div>
           )}
         </div>
         {isEditing ? (

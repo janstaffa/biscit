@@ -80,54 +80,64 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
       const incoming = JSON.parse(m);
       if (incoming.code === 3000) {
         const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
-        if (incomingThreadId !== threadId) return;
-
-        const currentMessages = [...messagesRef.current];
-        currentMessages.push(message as MessageSnippetFragment);
 
         const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
-          `ThreadMessages-${threadId}`
+          `ThreadMessages-${incomingThreadId}`
         );
         if (pages?.pages) {
           pages.pages[0].messages.data?.push(message);
-          queryClient.setQueryData(`ThreadMessages-${threadId}`, pages);
+          queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
         }
-        setMessages(currentMessages);
         scroll(0);
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
-        if (incomingThreadId !== threadId) return;
 
-        const currentMessages = [...messagesRef.current];
-        const thisMessage = currentMessages.find((message) => {
-          if (message.id === messageId) return true;
-          return false;
-        });
+        const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
+          `ThreadMessages-${incomingThreadId}`
+        );
 
-        if (thisMessage && currentMessages.includes(thisMessage)) {
-          currentMessages.splice(currentMessages.indexOf(thisMessage), 1);
-          setMessages(currentMessages);
+        if (pages?.pages) {
+          const thisPage = pages.pages.find((page) => {
+            return page.messages.data?.find((message) => message.id === messageId);
+          });
+          if (thisPage?.messages.data) {
+            const idx = pages.pages.indexOf(thisPage);
+            const thisMessage = thisPage.messages.data?.find((message) => {
+              return message.id === messageId;
+            });
+            if (thisMessage) {
+              const messageIdx = thisPage.messages.data?.indexOf(thisMessage);
+              pages.pages[idx].messages.data?.splice(messageIdx, 1);
+              queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+            }
+          }
         }
       } else if (incoming.code === 3008) {
         const { messageId, threadId: incomingThreadId, newContent } = incoming as IncomingUpdateMessage;
-        if (incomingThreadId !== threadId) return;
+        const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
+          `ThreadMessages-${incomingThreadId}`
+        );
 
-        const currentMessages = [...messagesRef.current];
-        const thisMessage = currentMessages.find((message) => {
-          if (message.id === messageId) return true;
-          return false;
-        });
-
-        if (thisMessage && currentMessages.includes(thisMessage)) {
-          const idx = currentMessages.indexOf(thisMessage);
-          currentMessages.splice(idx, 1, {
-            ...thisMessage,
-            content: newContent,
-            edited: true,
-            updatedAt: new Date().toISOString()
+        if (pages?.pages) {
+          const thisPage = pages.pages.find((page) => {
+            return page.messages.data?.find((message) => message.id === messageId);
           });
-
-          setMessages(currentMessages);
+          if (thisPage?.messages.data) {
+            const idx = pages.pages.indexOf(thisPage);
+            const thisMessage = thisPage.messages.data?.find((message) => {
+              return message.id === messageId;
+            });
+            if (thisMessage) {
+              const messageIdx = thisPage.messages.data?.indexOf(thisMessage);
+              pages.pages[idx].messages.data?.splice(messageIdx, 1, {
+                ...thisMessage,
+                content: newContent,
+                edited: true,
+                updatedAt: new Date().toISOString()
+              });
+              queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+            }
+          }
         }
       }
     };

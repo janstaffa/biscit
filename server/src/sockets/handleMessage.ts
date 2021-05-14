@@ -37,6 +37,7 @@ export const handleMessage = async (
 
   if (code === CHAT_MESSAGE_CODE) {
     const { content, threadId, replyingToId, resendId } = incoming as IncomingSocketChatMessage;
+    console.log(incoming);
     try {
       const messageId = await getId(Message, 'id');
       const newMessage = await Message.create({
@@ -46,7 +47,7 @@ export const handleMessage = async (
         userId: user.id,
         edited: false,
         resendId,
-        replyingToId,
+        replyingToId: resendId ? undefined : replyingToId,
         createdAt: new Date(),
         updatedAt: new Date()
       });
