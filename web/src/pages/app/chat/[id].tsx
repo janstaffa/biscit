@@ -60,19 +60,25 @@ const Chat: NextPage = () => {
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [resendMessage, setResendMessage] = useState<MessageSnippetFragment | null>(null);
   const [resendThreads, setResendThreads] = useState<string[]>([]);
+  const [replyMessage, setReplyMessage] = useState<MessageSnippetFragment | null>(null);
 
   const handleResend = () => {
     const ws = socket.connect();
-    resendThreads.forEach((resendThread) => {
-      const payload = {
-        code: 3000,
-        threadId: resendThread,
-        content: resendMessage?.content,
-        resended: true
-      } as OutgoingSocketChatMessage;
-      ws?.send(JSON.stringify(payload));
-    });
-    setModalShow(false);
+    console.log(resendThreads);
+    if (resendMessage && ws) {
+      resendThreads.forEach((resendThread) => {
+        const payload = {
+          code: 3000,
+          threadId: resendThread,
+          content: resendMessage.content,
+          resendId: resendMessage.id
+        } as OutgoingSocketChatMessage;
+        ws.send(JSON.stringify(payload));
+      });
+      setModalShow(false);
+      setResendMessage(null);
+      setResendThreads([]);
+    }
   };
 
   return (
@@ -90,8 +96,14 @@ const Chat: NextPage = () => {
           </div>
         </ContentNav>
         <div className="w-full h-full overflow-hidden relative flex flex-col">
-          <ChatFeed threadId={threadId} setResendMessage={setResendMessage} setModalShow={setModalShow} />
-          <ChatBottomBar />
+          <ChatFeed
+            threadId={threadId}
+            setResendMessage={setResendMessage}
+            replyMessage={replyMessage}
+            setReplyMessage={setReplyMessage}
+            setModalShow={setModalShow}
+          />
+          <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
       </Layout>
       <Modal active={modalShow}>
@@ -109,6 +121,16 @@ const Chat: NextPage = () => {
           </div>
         </div>
         <div className="w-full flex-grow relative">
+          <textarea
+            className="text-light-200 font-opensans text-sm mb-3 bg-dark-50 outline-none p-1 w-full resize-none"
+            value={resendMessage?.content}
+            rows={3}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            onChange={(e) => setResendMessage({ ...resendMessage, content: e.target.value } as MessageSnippetFragment)}
+          ></textarea>
           <p className="text-light-300 font-opensans text-md mb-3">Select all threds to send this message to.</p>
           <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
             {loadedThreads?.threads.map(({ thread }, i) => {

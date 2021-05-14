@@ -1,74 +1,45 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { InfiniteData, useInfiniteQuery } from 'react-query';
+import { InfiniteData } from 'react-query';
 import { ClipLoader } from 'react-spinners';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
-import { genericErrorMessage } from '../../../constants';
 import {
   Message,
   MessageSnippetFragment,
-  ThreadMessagesDocument,
   ThreadMessagesQuery,
   ThreadMessagesResponse,
   useMeQuery
 } from '../../../generated/graphql';
-import { graphqlClient } from '../../../utils/createGQLClient';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
 import { datesAreSameDay } from '../../../utils/datesAreSameDay';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
+import { messagesLimit, usePaginatedMessagesQuery } from '../../../utils/usePaginatedMessagesQuery';
 import ChatMessage from './ChatMessage';
 
 export interface ChatFeedProps {
   threadId: string;
   setModalShow: React.Dispatch<React.SetStateAction<boolean>>;
   setResendMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
+  setReplyMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
+  replyMessage: MessageSnippetFragment | null;
 }
 
-const messagesLimit = 30;
-
-const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMessage }) => {
+const ChatFeed: React.FC<ChatFeedProps> = ({
+  threadId,
+  setModalShow,
+  setResendMessage,
+  setReplyMessage,
+  replyMessage
+}) => {
   const { data: meData } = useMeQuery();
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
-  const {
-    data: incomingThreadMessages,
-    refetch: refetchThreadMessages,
-    status,
-    fetchNextPage
-  } = useInfiniteQuery<ThreadMessagesQuery>(
-    `ThreadMessages-${threadId}`,
-    ({ pageParam = null }) => {
-      const vars = {
-        options: {
-          threadId,
-          cursor: pageParam,
-          limit: messagesLimit
-        }
-      };
-      return graphqlClient.request(ThreadMessagesDocument, vars);
-    },
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      },
-      // getNextPageParam: (lastPage, pages) => {
-      //   if (lastPage?.messages?.data) {
-      //     console.log(lastPage, pages);
-      //     return lastPage.messages.data[0].createdAt;
-      //   }
-      //   return null;
-      // },
-      enabled: false
-    }
-  );
+
+  const { data: incomingThreadMessages, fetchNextPage, status } = usePaginatedMessagesQuery(threadId);
   incomingThreadMessagesRef.current = incomingThreadMessages;
 
-  useEffect(() => {
-    console.log('STATUS', status);
-  }, [status]);
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
   const messagesRef = useRef<MessageSnippetFragment[]>([]);
   messagesRef.current = messages;
@@ -84,7 +55,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
   };
 
   const joinRoom = (ws: ReconnectingWebSocket) => {
-    console.log('JOIN ROOK');
     const payload = {
       code: 3002,
       threadId
@@ -110,54 +80,64 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
       const incoming = JSON.parse(m);
       if (incoming.code === 3000) {
         const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
-        if (incomingThreadId !== threadId) return;
-
-        const currentMessages = [...messagesRef.current];
-        currentMessages.push(message as MessageSnippetFragment);
 
         const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
-          `ThreadMessages-${threadId}`
+          `ThreadMessages-${incomingThreadId}`
         );
         if (pages?.pages) {
           pages.pages[0].messages.data?.push(message);
-          queryClient.setQueryData(`ThreadMessages-${threadId}`, pages);
+          queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
         }
-        setMessages(currentMessages);
         scroll(0);
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
-        if (incomingThreadId !== threadId) return;
 
-        const currentMessages = [...messagesRef.current];
-        const thisMessage = currentMessages.find((message) => {
-          if (message.id === messageId) return true;
-          return false;
-        });
+        const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
+          `ThreadMessages-${incomingThreadId}`
+        );
 
-        if (thisMessage && currentMessages.includes(thisMessage)) {
-          currentMessages.splice(currentMessages.indexOf(thisMessage), 1);
-          setMessages(currentMessages);
+        if (pages?.pages) {
+          const thisPage = pages.pages.find((page) => {
+            return page.messages.data?.find((message) => message.id === messageId);
+          });
+          if (thisPage?.messages.data) {
+            const idx = pages.pages.indexOf(thisPage);
+            const thisMessage = thisPage.messages.data?.find((message) => {
+              return message.id === messageId;
+            });
+            if (thisMessage) {
+              const messageIdx = thisPage.messages.data?.indexOf(thisMessage);
+              pages.pages[idx].messages.data?.splice(messageIdx, 1);
+              queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+            }
+          }
         }
       } else if (incoming.code === 3008) {
         const { messageId, threadId: incomingThreadId, newContent } = incoming as IncomingUpdateMessage;
-        if (incomingThreadId !== threadId) return;
+        const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
+          `ThreadMessages-${incomingThreadId}`
+        );
 
-        const currentMessages = [...messagesRef.current];
-        const thisMessage = currentMessages.find((message) => {
-          if (message.id === messageId) return true;
-          return false;
-        });
-
-        if (thisMessage && currentMessages.includes(thisMessage)) {
-          const idx = currentMessages.indexOf(thisMessage);
-          currentMessages.splice(idx, 1, {
-            ...thisMessage,
-            content: newContent,
-            edited: true,
-            updatedAt: new Date().toISOString()
+        if (pages?.pages) {
+          const thisPage = pages.pages.find((page) => {
+            return page.messages.data?.find((message) => message.id === messageId);
           });
-
-          setMessages(currentMessages);
+          if (thisPage?.messages.data) {
+            const idx = pages.pages.indexOf(thisPage);
+            const thisMessage = thisPage.messages.data?.find((message) => {
+              return message.id === messageId;
+            });
+            if (thisMessage) {
+              const messageIdx = thisPage.messages.data?.indexOf(thisMessage);
+              pages.pages[idx].messages.data?.splice(messageIdx, 1, {
+                ...thisMessage,
+                content: newContent,
+                edited: true,
+                updatedAt: new Date().toISOString()
+              });
+              queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+            }
+          }
         }
       }
     };
@@ -175,7 +155,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
       console.error(err);
     }
     return () => {
-      console.log(queryClient.getQueryCache());
       ws.removeEventListener('message', handleMessage);
       ws.removeEventListener('open', handleOpen);
     };
@@ -287,8 +266,12 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
     setResendMessage(message);
   };
 
+  const handleReplyCall = (message: MessageSnippetFragment) => {
+    setReplyMessage(message);
+  };
+
   return (
-    <div className="flex-grow px-3 py-1 mt-12 overflow-y-scroll" id="chat-feed">
+    <div className="flex-grow px-3 mb-7 mt-12 overflow-y-scroll relative" id="chat-feed">
       {isLoadingMessages && (
         <div className="w-full h-10 text-center text-light-300 text-lg font-roboto">
           <ClipLoader color="#e09f3e" size={30} />{' '}
@@ -316,7 +299,13 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
                       today
                     </div>
                   </div>
-                  <ChatMessage message={message} myId={meData?.me?.id} resendCall={() => handleResendCall(message)} />
+                  <ChatMessage
+                    message={message}
+                    myId={meData?.me?.id}
+                    resendCall={() => handleResendCall(message)}
+                    replyCall={() => handleReplyCall(message)}
+                    replyMessage={replyMessage}
+                  />
                 </div>
               );
             }
@@ -328,6 +317,8 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ threadId, setModalShow, setResendMe
             myId={meData?.me?.id}
             key={messageId}
             resendCall={() => handleResendCall(message)}
+            replyCall={() => handleReplyCall(message)}
+            replyMessage={replyMessage}
           />
         );
       })}

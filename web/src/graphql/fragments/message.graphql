@@ -11,6 +11,23 @@ fragment messageSnippet on Message {
     bio
   }
   edited
+  replyingToId
+  replyingTo {
+    id
+    content
+    threadId
+    userId
+    user {
+      id
+      username
+      email
+      status
+      bio
+    }
+    createdAt
+    updatedAt
+  }
+  resendId
   createdAt
   updatedAt
 }

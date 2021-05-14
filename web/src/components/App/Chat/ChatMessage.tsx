@@ -13,9 +13,11 @@ export interface ChatMessageProps {
   message: MessageSnippetFragment;
   myId: string | undefined;
   resendCall: () => void;
+  replyCall: () => void;
+  replyMessage: MessageSnippetFragment | null;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -30,7 +32,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
   const { mutate: deleteMessage } = useDeleteMessageMutation({
     onSuccess: (data) => {
       if (!data.DeleteMessage.data) {
-        errorToast(genericErrorMessage);
+        data.DeleteMessage.errors.forEach((err) => {
+          errorToast(err.details?.message);
+        });
       }
     },
     onError: (err) => {
@@ -64,10 +68,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
     });
   }, []);
 
-  useEffect(() => {}, [message]);
   return (
     <div
-      className="message w-full h-auto my-2.5 flex flex-row hover:shadow-lg"
+      className={
+        'message w-full h-auto my-2.5 flex flex-row hover:shadow-lg' +
+        (replyMessage?.id === message.id ? ' ring-2 ring-accent-light' : ' bg-transparent')
+      }
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => {
         setIsHovering(false);
@@ -85,6 +91,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
           </div>
           {message.edited && (
             <div className="text-light-400 font-roboto text-xs flex flex-col justify-center ml-1">(edited)</div>
+          )}
+          {!!message.resendId && (
+            <div className="text-light-400 font-roboto text-xs flex flex-row items-center ml-1">
+              ( <IoMdRefresh className="mr-1" />
+              resended)
+            </div>
+          )}
+          {!!message.replyingToId && (
+            <div className="text-light-400 font-roboto text-xs flex flex-row items-center ml-1">
+              <GoReply className="mr-1" />
+              replying to {message.replyingTo?.user.username}: {message.replyingTo?.content}
+            </div>
           )}
         </div>
         {isEditing ? (
@@ -120,9 +138,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
       >
         <Popover
           isOpen={isHovering ? isPopoverOpen : false}
-          positions={['bottom', 'left', 'top', 'right']}
+          positions={['left', 'bottom', 'top', 'right']}
+          reposition={true}
           onClickOutside={() => setIsPopoverOpen(false)}
-          containerStyle={{ paddingRight: '50px' }}
           content={
             <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
               <div className="w-48">
@@ -161,10 +179,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall }) 
                       <hr className="bg-dark-50 h-px border-none" />
                     </>
                   )}
-                  <li className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center">
-                    <GoReply size={20} style={{ marginRight: '5px' }} />
-                    Reply
-                  </li>
+                  {message.userId !== myId && (
+                    <li
+                      className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                      onClick={() => replyCall()}
+                    >
+                      <GoReply size={20} style={{ marginRight: '5px' }} />
+                      Reply
+                    </li>
+                  )}
                   <li
                     className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                     onClick={() => resendCall()}
