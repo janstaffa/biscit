@@ -73,6 +73,9 @@ export const socket: Socket = {
     if (socket.ws) {
       const parsed = JSON.parse(payload);
       const { token } = useTokenStore.getState();
+      if (!token) {
+        return;
+      }
       const newPayload = {
         ...parsed,
         token

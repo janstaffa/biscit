@@ -37,7 +37,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
 
-  const { data: incomingThreadMessages, fetchNextPage, status } = usePaginatedMessagesQuery(threadId);
+  const { data: incomingThreadMessages, fetchNextPage, status, dataUpdatedAt } = usePaginatedMessagesQuery(threadId);
   incomingThreadMessagesRef.current = incomingThreadMessages;
 
   const [messages, setMessages] = useState<MessageSnippetFragment[]>([]);
@@ -87,6 +87,9 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
         if (pages?.pages) {
           pages.pages[0].messages.data?.push(message);
           queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+          if (pages.pages[0].messages.data) {
+            setMessages(pages.pages[0].messages.data as MessageSnippetFragment[]);
+          }
         }
         scroll(0);
       } else if (incoming.code === 3007) {
@@ -108,6 +111,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
             if (thisMessage) {
               const messageIdx = thisPage.messages.data?.indexOf(thisMessage);
               pages.pages[idx].messages.data?.splice(messageIdx, 1);
+
               queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
               if (pages.pages[idx].messages.data) {
                 setMessages(pages.pages[idx].messages.data as MessageSnippetFragment[]);
@@ -229,16 +233,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   }, [incomingThreadMessages]);
 
   useEffect(() => {
-    const firstPageMessages = incomingThreadMessages?.pages[0].messages.data;
-    if (
-      messages.length <= messagesLimit ||
-      (messages.length < messagesLimit && firstPageMessages && firstPageMessages?.length > messagesLimit)
-    ) {
-      scroll(0);
-    }
-  }, [messages]);
-
-  useEffect(() => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (moreMessages) {
       feed.onscroll = () => {
@@ -268,6 +262,11 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     }
   }, [moreMessages]);
 
+  useEffect(() => {
+    if (messages.length <= messagesLimit) {
+      scroll(0);
+    }
+  }, [messages]);
   const handleResendCall = (message: MessageSnippetFragment) => {
     setModalShow(true);
     setResendMessage(message);
