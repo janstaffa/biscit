@@ -48,7 +48,7 @@ export class MessageResolver {
       );
       return {
         data: null,
-        hasMore: false,
+        nextMessage: null,
         errors
       };
     }
@@ -70,9 +70,10 @@ export class MessageResolver {
 
     const messages = (await qb.getMany()) as Message[];
 
+    const realMessages = messages.slice(0, realLimit).reverse();
     return {
-      data: messages.slice(0, realLimit).reverse(),
-      hasMore: messages.length === realLimitPlusOne,
+      data: realMessages,
+      nextMessage: realMessages[0],
       errors
     };
   }

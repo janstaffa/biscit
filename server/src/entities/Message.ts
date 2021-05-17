@@ -24,7 +24,9 @@ export class Message extends BaseEntity {
 
   @BeforeInsert()
   private async generateId() {
-    this.id = await getId(Message, 'id');
+    if (!this.id) {
+      this.id = await getId(Message, 'id');
+    }
   }
 
   @Field(() => String)

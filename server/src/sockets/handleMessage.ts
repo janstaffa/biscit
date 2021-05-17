@@ -39,7 +39,7 @@ export const handleMessage = async (
   };
   const incoming = JSON.parse(data);
   const { code, token } = incoming;
-  console.log(incoming);
+
   if (!token) {
     returnInvalidTokenError();
     return;

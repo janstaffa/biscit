@@ -24,7 +24,12 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
         console.error(err);
         errorToast(genericErrorMessage);
       },
-      enabled: false
+      getNextPageParam: (lastPage) => lastPage.messages.nextMessage?.createdAt,
+      enabled: false,
+      select: (data) => ({
+        pages: [...data.pages].reverse(),
+        pageParams: [...data.pageParams].reverse()
+      })
     }
   );
 };

@@ -5,6 +5,7 @@ import { FaRegSmile } from 'react-icons/fa';
 import { GoReply } from 'react-icons/go';
 import { ImAttachment } from 'react-icons/im';
 import { BeatLoader } from 'react-spinners';
+import { Popover } from 'react-tiny-popover';
 import { OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
 import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
@@ -29,6 +30,8 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
   messageInputValueRef.current = messageInputValue;
   const replyMessageRef = useRef<MessageSnippetFragment | null>(null);
   replyMessageRef.current = replyMessage;
+
+  const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
   useEffect(() => {
     setMessageInputValue('');
     const ws = socket.connect();
@@ -54,7 +57,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
       }
     };
     const handleEnterListener = () => {
-      const messageInput = document.getElementById('message-input')! as HTMLInputElement;
+      const messageInput = document.getElementById('message-input')! as HTMLDivElement;
       if (!messageInput) return;
 
       messageInput.addEventListener('keyup', (e) => {
@@ -78,9 +81,6 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             if (ws.readyState === ws.OPEN) {
               socket.send(JSON.stringify(payload));
               setMessageInputValue('');
-              if (replyMessageRef.current) {
-                setReplyMessage(null);
-              }
               messageInput.focus();
             }
           } catch (err) {
@@ -120,7 +120,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
 
   useEffect(() => {
     if (replyMessage) {
-      (document.querySelector('#message-input') as HTMLInputElement).focus();
+      (document.querySelector('#message-input') as HTMLDivElement).focus();
     }
   }, [replyMessage]);
   return (
@@ -143,7 +143,10 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
         </div>
       )}
       <div className="flex flex-row">
-        <div className="w-14 bg-dark-100 flex flex-col justify-center items-center border-r border-dark-50 rounded-l-xl">
+        <div
+          className="w-14 bg-dark-100 flex flex-col justify-center items-center border-r border-dark-50 rounded-l-xl"
+          style={{ minWidth: '3.5rem' }}
+        >
           <ImAttachment className="text-2xl text-light-300" />
         </div>
         <div className="flex-grow justify-center">
@@ -159,9 +162,24 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             onChange={(e) => setMessageInputValue(e.target.value)}
           />
         </div>
-        <div className="w-20 bg-dark-100 rounded-r-xl flex flex-row justify-center items-center ">
-          <FaRegSmile className="text-2xl text-light-300" />
-        </div>
+        {!isServer() && (
+          <Popover
+            isOpen={isPopoverOpen}
+            positions={['top', 'left', 'right', 'bottom']}
+            reposition={true}
+            onClickOutside={() => setIsPopoverOpen(false)}
+            content={
+              <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">can you see me?</div>
+            }
+          >
+            <div
+              className="w-20 bg-dark-100 rounded-r-xl flex flex-row justify-center items-center"
+              style={{ minWidth: '5rem' }}
+            >
+              <FaRegSmile className="text-2xl text-light-300" onClick={() => setIsPopoverOpen(!isPopoverOpen)} />
+            </div>
+          </Popover>
+        )}
       </div>
       <div className="w-full h-5 text-light-300 text-md mt-1 ml-1 font-roboto flex flex-row items-center">
         {typing && (
