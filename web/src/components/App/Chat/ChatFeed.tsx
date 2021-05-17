@@ -58,6 +58,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   };
 
   useEffect(() => {
+    scroll(0);
     const ws = socket.connect();
     if (isServer() || !ws) return;
     setIsLoadingMessages(false);
@@ -154,50 +155,27 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   useEffect(() => {
     return function cleanup() {
+      scroll(0);
       setIsLoadingMessages(false);
     };
   }, []);
   useEffect(() => {
     setIsLoadingMessages(true);
     if (!incomingThreadMessages?.pages) return;
-    const { data: incomingMessages, nextMessage, errors } = incomingThreadMessages.pages[0]
-      .messages as ThreadMessagesResponse;
+    const { data: incomingMessages } = incomingThreadMessages.pages[0].messages as ThreadMessagesResponse;
     if (incomingMessages) {
       setIsLoadingMessages(false);
-    }
 
-    // incomingThreadMessages.pages.forEach((page) => {
-    //   if (page.messages) {
-    //     const { data: incomingMessages, hasMore, errors } = page.messages as ThreadMessagesResponse;
-    //     if (errors.length > 0) {
-    //       errors.forEach((err) => {
-    //         if (err.details?.message) {
-    //           errorToast(err.details.message);
-    //         }
-    //       });
-    //       return;
-    //     }
-    //     if (incomingMessages) {
-    //       const tempMessages = messagesRef.current.filter((message) => {
-    //         if (incomingMessages.indexOf(message as Message) === -1) return true;
-    //         return false;
-    //       });
-    //       const newMessages = [...incomingMessages, ...tempMessages];
-    //       const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
-    //       const feedMessages = feed.querySelectorAll('.message');
-    //       const lastMessageEl = feedMessages[0];
-    //       if (newMessages.length > messagesLimit && lastMessageEl && !(incomingMessages.length > messagesLimit)) {
-    //         lastMessageEl.scrollIntoView();
-    //       }
-    //       setMessages(newMessages);
-    //       if (incomingMessages.length > messagesLimit) {
-    //         scroll(0);
-    //       }
-    //       setMoreMessages(hasMore);
-    //       setIsLoadingMessages(false);
-    //     }
-    //   }
-    // });
+      const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
+      const feedMessages = feed.querySelectorAll('.message');
+      const lastMessageEl = feedMessages[incomingMessages.length];
+
+      if (incomingThreadMessages.pages.length === 1) {
+        scroll(0);
+      } else if (lastMessageEl) {
+        lastMessageEl.scrollIntoView();
+      }
+    }
   }, [incomingThreadMessages]);
 
   useEffect(() => {
@@ -205,34 +183,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     if (hasNextPage) {
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
-          // const pages: InfiniteData<ThreadMessagesQuery> | undefined = queryClient.getQueryData(
-          //   `ThreadMessages-${threadId}`
-          // );
-
-          // let cursor: string | null = null;
-          // const realPages = pages?.pages.reverse();
-          // const lastPage = realPages?.[0];
-
-          // if (lastPage && lastPage.messages.data) {
-          //   cursor = lastPage.messages.data[0].createdAt;
-          // }
-
-          // if (incomingThreadMessagesRef.current?.pageParams.find((p) => p === cursor)) {
-          //   incomingThreadMessagesRef.current.pages.splice(
-          //     incomingThreadMessagesRef.current.pageParams.indexOf(cursor),
-          //     1
-          //   );
-          //   incomingThreadMessagesRef.current.pageParams.splice(
-          //     incomingThreadMessagesRef.current.pageParams.indexOf(cursor),
-          //     1
-          //   );
-          //   const newData = {
-          //     pages: incomingThreadMessagesRef.current.pages,
-          //     pageParams: incomingThreadMessagesRef.current.pageParams
-          //   };
-          //   queryClient.setQueryData(`ThreadMessages-${threadId}`, newData);
-          // }
-
           fetchNextPage();
         }
       };
