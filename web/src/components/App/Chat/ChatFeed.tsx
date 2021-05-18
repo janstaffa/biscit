@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { InfiniteData } from 'react-query';
 import { ClipLoader } from 'react-spinners';
-import ReconnectingWebSocket from 'reconnecting-websocket';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
 import {
   MessageSnippetFragment,
@@ -35,26 +34,16 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
 
-  const { data: incomingThreadMessages, fetchNextPage, status, dataUpdatedAt, hasNextPage } = usePaginatedMessagesQuery(
-    threadId
-  );
+  const { data: incomingThreadMessages, fetchNextPage, hasNextPage } = usePaginatedMessagesQuery(threadId);
   incomingThreadMessagesRef.current = incomingThreadMessages;
 
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
-
+  const [shouldScroll, setShouldScroll] = useState<boolean>(false);
   const scroll = (px = 0) => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (!feed) return;
 
     feed.scrollTop = px === 0 ? feed.scrollHeight : px;
-  };
-
-  const joinRoom = (ws: ReconnectingWebSocket) => {
-    const payload = {
-      code: 3002,
-      threadId
-    };
-    socket.send(JSON.stringify(payload));
   };
 
   useEffect(() => {
@@ -70,7 +59,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     const handleMessage = (e) => {
       const { data: m } = e;
       const incoming = JSON.parse(m);
-      // updating / deleting is broken, sets messages to current page -> removes messages from the feed
+
       if (incoming.code === 3000) {
         const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
 
@@ -79,6 +68,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
         );
         if (pages?.pages) {
           pages.pages[0].messages.data?.push(message);
+          setShouldScroll(true);
           queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
         }
       } else if (incoming.code === 3007) {
@@ -135,7 +125,11 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
       }
     };
     const handleOpen = () => {
-      joinRoom(ws);
+      const payload = {
+        code: 3002,
+        threadId
+      };
+      socket.send(JSON.stringify(payload));
     };
     try {
       scroll(0);
@@ -153,12 +147,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     };
   }, [threadId]);
 
-  useEffect(() => {
-    return function cleanup() {
-      scroll(0);
-      setIsLoadingMessages(false);
-    };
-  }, []);
   useEffect(() => {
     setIsLoadingMessages(true);
     if (!incomingThreadMessages?.pages) return;
@@ -183,6 +171,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     if (hasNextPage) {
       feed.onscroll = () => {
         if (feed.scrollTop === 0) {
+          setIsLoadingMessages(true);
           fetchNextPage();
         }
       };
@@ -199,6 +188,13 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   const handleReplyCall = (message: MessageSnippetFragment) => {
     setReplyMessage(message);
+  };
+
+  const handleMessageReady = () => {
+    if (shouldScroll) {
+      scroll(0);
+      setShouldScroll(false);
+    }
   };
 
   return (
@@ -243,6 +239,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                       resendCall={() => handleResendCall(message)}
                       replyCall={() => handleReplyCall(message)}
                       replyMessage={replyMessage}
+                      onReady={() => handleMessageReady()}
                     />
                   </div>
                 );
@@ -257,6 +254,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
               resendCall={() => handleResendCall(message)}
               replyCall={() => handleReplyCall(message)}
               replyMessage={replyMessage}
+              onReady={() => handleMessageReady()}
             />
           );
         });

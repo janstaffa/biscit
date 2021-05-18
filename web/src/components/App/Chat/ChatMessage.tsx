@@ -15,9 +15,10 @@ export interface ChatMessageProps {
   resendCall: () => void;
   replyCall: () => void;
   replyMessage: MessageSnippetFragment | null;
+  onReady?: () => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage, onReady }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -61,6 +62,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
   };
 
   useEffect(() => {
+    onReady?.();
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         setIsEditing(false);

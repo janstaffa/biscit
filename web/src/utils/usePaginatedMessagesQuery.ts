@@ -29,7 +29,8 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
       select: (data) => ({
         pages: [...data.pages].reverse(),
         pageParams: [...data.pageParams].reverse()
-      })
+      }),
+      cacheTime: 24 * 3600 * 1000 // 1 day
     }
   );
 };
