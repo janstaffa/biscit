@@ -5,6 +5,7 @@ import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
+import { Modal } from 'react-tiny-modals';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
 import {
@@ -25,7 +26,6 @@ import { formatTime } from '../../utils/formatTime';
 import { isServer } from '../../utils/isServer';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
-import Modal from '../modals/Modal';
 import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 
@@ -48,6 +48,7 @@ const LeftSidebar: React.FC = () => {
         }
     >
   >([]);
+
   const threadListRef = useRef<typeof threadList>([]);
   threadListRef.current = threadList;
 
@@ -88,6 +89,22 @@ const LeftSidebar: React.FC = () => {
     }
   );
 
+  const [threadSearchQuery, setThreadSearchQuery] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (loadedThreads) {
+      if (threadSearchQuery) {
+        const oldThreadList = [...loadedThreads.threads];
+        const newThreadList = oldThreadList.filter((thread) => {
+          return thread.thread.name?.toLowerCase().includes(threadSearchQuery.toLowerCase());
+        });
+
+        setThreadList(newThreadList);
+      } else {
+        setThreadList(loadedThreads.threads);
+      }
+    }
+  }, [threadSearchQuery]);
   useEffect(() => {
     const ws = socket.connect();
     const handleMessage = (e) => {
@@ -185,6 +202,7 @@ const LeftSidebar: React.FC = () => {
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck="false"
+              onChange={(e) => setThreadSearchQuery(e.target.value)}
             />
             <div
               className="w-10 flex flex-col justify-center items-center bg-dark-50 text-light-200 rounded-tr-xl rounded-br-xl"
@@ -208,7 +226,7 @@ const LeftSidebar: React.FC = () => {
                 }
                 return (
                   <ThreadButton
-                    name={membership.thread.name as string}
+                    name={membership.thread.name || ''}
                     time={formatTime(membership.thread.lastActivity)}
                     threadId={membership.threadId}
                     latestMessage={membership.thread.lastMessage}
@@ -263,58 +281,60 @@ const LeftSidebar: React.FC = () => {
           </div>
         </div>
       </div>
-      <Modal active={modalShow}>
-        <div className="w-full h-10 flex flex-row justify-between">
-          <div className="text-light-300 text-lg font-roboto">Change status</div>
-          <div>
-            <IoMdClose
-              className="text-2xl text-light-300 hover:text-light cursor-pointer"
-              onClick={() => setModalShow(false)}
-            />
+      <Modal isOpen={modalShow} backOpacity={0.5} onOpen={() => setStatusInput(meData?.me?.bio || '')}>
+        <div className="bg-dark-200 p-5 rounded-xl w-96">
+          <div className="w-full h-10 flex flex-row justify-between">
+            <div className="text-light-300 text-lg font-roboto">Change status</div>
+            <div>
+              <IoMdClose
+                className="text-2xl text-light-300 hover:text-light cursor-pointer"
+                onClick={() => setModalShow(false)}
+              />
+            </div>
           </div>
-        </div>
-        <div className="w-full flex-grow">
-          <input
-            type="text"
-            className="w-full h-9 rounded-md bg-dark-100 focus:bg-dark-50 outline-none px-3 text-light-200"
-            placeholder="tired but happy"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            maxLength={100}
-            value={statusInput}
-            onChange={(e) => setStatusInput(e.target.value)}
-          />
-          <p className="text-light-300 mt-1 text-sm">max 100 characters</p>
-          <div className="w-full flex flex-row justify-end mt-6">
-            <button
-              className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
-              onClick={() => setModalShow(false)}
-            >
-              Cancel
-            </button>
-            <SubmitButton
-              onClick={async () => {
-                await updateStatus(
-                  { options: { status: statusInput } },
-                  {
-                    onSuccess: (data) => {
-                      setModalShow(false);
-                      queryClient.invalidateQueries('Me');
+          <div className="w-full flex-grow">
+            <input
+              type="text"
+              className="w-full h-9 rounded-md bg-dark-100 focus:bg-dark-50 outline-none px-3 text-light-200"
+              placeholder="tired but happy"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              maxLength={100}
+              value={statusInput}
+              onChange={(e) => setStatusInput(e.target.value)}
+            />
+            <p className="text-light-300 mt-1 text-sm">max 100 characters</p>
+            <div className="w-full flex flex-row justify-end mt-6">
+              <button
+                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
+                onClick={() => setModalShow(false)}
+              >
+                Cancel
+              </button>
+              <SubmitButton
+                onClick={async () => {
+                  await updateStatus(
+                    { options: { status: statusInput } },
+                    {
+                      onSuccess: (data) => {
+                        setModalShow(false);
+                        queryClient.invalidateQueries('Me');
 
-                      if (data.UserUpdateStatus) {
-                        successToast('Your status was changed.');
-                      } else {
-                        errorToast(genericErrorMessage);
+                        if (data.UserUpdateStatus) {
+                          successToast('Your status was changed.');
+                        } else {
+                          errorToast(genericErrorMessage);
+                        }
                       }
                     }
-                  }
-                );
-              }}
-            >
-              Save
-            </SubmitButton>
+                  );
+                }}
+              >
+                Save
+              </SubmitButton>
+            </div>
           </div>
         </div>
       </Modal>

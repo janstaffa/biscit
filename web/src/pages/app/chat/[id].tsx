@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import React, { useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
+import { Modal } from 'react-tiny-modals';
 import { OutgoingSocketChatMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
@@ -11,7 +12,6 @@ import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
-import Modal from '../../../components/modals/Modal';
 import { genericErrorMessage } from '../../../constants';
 import { MessageSnippetFragment, useThreadQuery, useThreadsQuery } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
@@ -94,7 +94,9 @@ const Chat: NextPage = () => {
             <div className="text-light-200 text-lg font-bold font-opensans">{data?.thread.data?.name}</div>
           </div>
         </ContentNav>
-        <div className="w-full h-full overflow-hidden relative flex flex-col">
+
+        {/* this might need to be set to position absolute */}
+        <div className="w-full h-full overflow-hidden flex flex-col">
           <ChatFeed
             threadId={threadId}
             setResendMessage={setResendMessage}
@@ -105,67 +107,71 @@ const Chat: NextPage = () => {
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
       </Layout>
-      <Modal active={modalShow}>
-        <div className="w-full h-10 flex flex-row justify-between">
-          <div className="text-light-300 text-lg font-roboto">Resend message</div>
-          <div>
-            <IoMdClose
-              className="text-2xl text-light-300 hover:text-light cursor-pointer"
-              onClick={() => {
-                setModalShow(false);
-                setResendThreads([]);
-                setResendMessage(null);
-              }}
-            />
+      <Modal isOpen={modalShow} backOpacity={0.5}>
+        <div className="bg-dark-200 p-5 rounded-xl w-96">
+          <div className="w-full h-10 flex flex-row justify-between">
+            <div className="text-light-300 text-lg font-roboto">Resend message</div>
+            <div>
+              <IoMdClose
+                className="text-2xl text-light-300 hover:text-light cursor-pointer"
+                onClick={() => {
+                  setModalShow(false);
+                  setResendThreads([]);
+                  setResendMessage(null);
+                }}
+              />
+            </div>
           </div>
-        </div>
-        <div className="w-full flex-grow relative">
-          <textarea
-            className="text-light-200 font-opensans text-sm mb-3 bg-dark-50 outline-none p-1 w-full resize-none"
-            value={resendMessage?.content}
-            rows={3}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            onChange={(e) => setResendMessage({ ...resendMessage, content: e.target.value } as MessageSnippetFragment)}
-          ></textarea>
-          <p className="text-light-300 font-opensans text-md mb-3">Select all threds to send this message to.</p>
-          <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
-            {loadedThreads?.threads.map(({ thread }, i) => {
-              return (
-                <ThreadListItem
-                  thread={thread}
-                  key={thread.id}
-                  onChecked={(checked) => {
-                    if (checked) {
-                      setResendThreads([...resendThreads, thread.id]);
-                      return;
-                    }
-                    const currentResendThreads = [...resendThreads];
-                    const newResendThreads = currentResendThreads.filter((resendThread) => {
-                      if (resendThread === thread.id) return false;
-                      return true;
-                    });
-                    setResendThreads(newResendThreads);
-                  }}
-                />
-              );
-            })}
-          </ul>
+          <div className="w-full flex-grow relative">
+            <textarea
+              className="text-light-200 font-opensans text-sm mb-3 bg-dark-50 outline-none p-1 w-full resize-none"
+              value={resendMessage?.content}
+              rows={3}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              onChange={(e) =>
+                setResendMessage({ ...resendMessage, content: e.target.value } as MessageSnippetFragment)
+              }
+            ></textarea>
+            <p className="text-light-300 font-opensans text-md mb-3">Select all threds to send this message to.</p>
+            <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
+              {loadedThreads?.threads.map(({ thread }, i) => {
+                return (
+                  <ThreadListItem
+                    thread={thread}
+                    key={thread.id}
+                    onChecked={(checked) => {
+                      if (checked) {
+                        setResendThreads([...resendThreads, thread.id]);
+                        return;
+                      }
+                      const currentResendThreads = [...resendThreads];
+                      const newResendThreads = currentResendThreads.filter((resendThread) => {
+                        if (resendThread === thread.id) return false;
+                        return true;
+                      });
+                      setResendThreads(newResendThreads);
+                    }}
+                  />
+                );
+              })}
+            </ul>
 
-          <div className="w-full flex flex-row justify-end mt-6">
-            <button
-              className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
-              onClick={() => {
-                setModalShow(false);
-                setResendThreads([]);
-                setResendMessage(null);
-              }}
-            >
-              Cancel
-            </button>
-            <SubmitButton onClick={() => handleResend()}>Send</SubmitButton>
+            <div className="w-full flex flex-row justify-end mt-6">
+              <button
+                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
+                onClick={() => {
+                  setModalShow(false);
+                  setResendThreads([]);
+                  setResendMessage(null);
+                }}
+              >
+                Cancel
+              </button>
+              <SubmitButton onClick={() => handleResend()}>Send</SubmitButton>
+            </div>
           </div>
         </div>
       </Modal>

@@ -39,6 +39,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
   const [shouldScroll, setShouldScroll] = useState<boolean>(false);
+
   const scroll = (px = 0) => {
     const feed = document.querySelector('#chat-feed')! as HTMLDivElement;
     if (!feed) return;
@@ -198,7 +199,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   };
 
   return (
-    <div className="flex-grow px-3 mb-7 mt-12 overflow-y-scroll relative" id="chat-feed">
+    <div className="flex-grow px-3 mt-12 overflow-y-scroll relative" id="chat-feed">
       {isLoadingMessages && (
         <div className="w-full h-10 text-center text-light-300 text-lg font-roboto">
           <ClipLoader color="#e09f3e" size={30} />

@@ -4,4 +4,4 @@ export const EMAIL_REGEX = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*
 export const SALT_ROUNDS = 10;
 export const browserOrigin = __prod__ ? '' : 'http://localhost:3000';
 export const fallbackTokenSecret = 'ADHDhdhdsiaoDOdhdnhasadnbN';
-export const tokenExpiration = 60 * 60 * 24;
+export const tokenExpiration = '7d';

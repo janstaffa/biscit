@@ -52,7 +52,7 @@ dotenv.config();
       saveUninitialized: false,
       store: new TypeormStore({ repository }),
       cookie: {
-        maxAge: 1000 * 3600 * 24 * 7,
+        maxAge: 1000 * 3600 * 24 * 30,
         httpOnly: true,
         secure: __prod__,
         sameSite: 'lax'
