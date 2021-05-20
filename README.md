@@ -6,7 +6,7 @@
 <ul>
   <li>Biscit is a full stack open source project.</li>
   <li>The goal is to create a functional 'Discord' like chat application.</li>
-  <li>The development will start 1. April 2021.</li>
+  <li>The development started on 1. April 2021.</li>
 </ul>
 
 <h3>Current state</h3>
