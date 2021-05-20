@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import { useRouter } from 'next/router';
+import React from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
-import { Popover } from 'react-tiny-popover';
+import { Popup } from 'react-tiny-modals';
 import { genericErrorMessage } from '../../../constants';
 import { User, useRemoveFriendMutation } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
@@ -10,13 +11,11 @@ import { errorToast } from '../../../utils/toasts';
 export interface FriendTabProps {
   friendId: string;
   friend: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
+  threadId: string;
 }
 
-const FriendTab: React.FC<FriendTabProps> = ({
-  friendId,
-  friend: { username, bio, status },
-}) => {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend: { username, bio, status }, threadId }) => {
+  const router = useRouter();
   const { mutate: removeFriend } = useRemoveFriendMutation({
     onSuccess: (data) => {
       if (!data.FriendRemove.data) {
@@ -27,7 +26,7 @@ const FriendTab: React.FC<FriendTabProps> = ({
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
-    },
+    }
   });
 
   return (
@@ -40,24 +39,19 @@ const FriendTab: React.FC<FriendTabProps> = ({
           <div className="flex flex-row w-full justify-between">
             <div className="flex flex-col justify-center items-start">
               <div className=" text-light font-roboto">{username}</div>
-              <div className="text-light-300 w-full font-roboto text-sm truncate">
-                {bio || status}
-              </div>
+              <div className="text-light-300 w-full font-roboto text-sm truncate">{bio || status}</div>
             </div>
             <div className="flex flex-row items-center">
               <BiMessageAltDetail
                 className="text-light-300 text-2xl mx-2 hover:text-light-200"
                 title="Message"
+                onClick={() => router.push(`/app/chat/${threadId}`)}
               />
-              <IoMdCall
-                className="text-light-300 text-2xl mx-2 hover:text-light-200"
-                title="Call"
-              />
-              <Popover
-                isOpen={isPopoverOpen}
-                positions={['left', 'bottom', 'top', 'right']}
-                onClickOutside={() => setIsPopoverOpen(false)}
-                content={
+              <IoMdCall className="text-light-300 text-2xl mx-2 hover:text-light-200" title="Call" />
+              <Popup
+                position={['left', 'bottom', 'top', 'right']}
+                onClickOutside={({ setShow }) => setShow(false)}
+                content={() => (
                   <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
                     <div className="w-32">
                       <ul>
@@ -72,16 +66,18 @@ const FriendTab: React.FC<FriendTabProps> = ({
                       </ul>
                     </div>
                   </div>
-                }
+                )}
               >
-                <div>
-                  <HiDotsVertical
-                    className="text-light-300 text-2xl mx-2 hover:text-light-200"
-                    title="Options"
-                    onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-                  />
-                </div>
-              </Popover>
+                {({ show, setShow }) => (
+                  <div>
+                    <HiDotsVertical
+                      className="text-light-300 text-2xl mx-2 hover:text-light-200"
+                      title="Options"
+                      onClick={() => setShow(!show)}
+                    />
+                  </div>
+                )}
+              </Popup>
             </div>
           </div>
         </div>
