@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import '../styles/fonts.css';
 import '../styles/globals.css';
 import { queryClient } from '../utils/createQueryClient';
+import GetToken from '../utils/GetToken';
 toast.configure();
 
 const _App = ({ Component, pageProps, authenticated }) => {
@@ -21,6 +22,7 @@ const _App = ({ Component, pageProps, authenticated }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider authenticated={authenticated}>
+        <GetToken />
         <Head>
           <link rel="icon" href="/logo_browser.gif" />
         </Head>

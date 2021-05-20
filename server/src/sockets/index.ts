@@ -13,6 +13,7 @@ import { handleMessage } from './handleMessage';
 
 export interface SocketMessage {
   code: number;
+  // token: string;
 }
 export interface SocketThreadMessage extends SocketMessage {
   threadId: string;
@@ -48,7 +49,7 @@ export const READY_CODE = 3005;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
-const THROTTLE_LIMIT = 100;
+const THROTTLE_LIMIT = 200;
 const THROTTLE_INTERVAL = 500;
 
 export const closeConnection = (ws: WebSocket) => {
@@ -166,7 +167,7 @@ export const sockets = (server: Server) => {
           await handleMessage(delayedMessages[0], ws, subClient, pubClient, user);
           delayedMessages.shift();
         } else {
-          if (sentMessages > 0) sentMessages--;
+          if (sentMessages > 0) sentMessages -= 3;
         }
       }, THROTTLE_INTERVAL);
 

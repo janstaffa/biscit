@@ -48,7 +48,7 @@ export class MessageResolver {
       );
       return {
         data: null,
-        hasMore: false,
+        nextMessage: null,
         errors
       };
     }
@@ -60,20 +60,20 @@ export class MessageResolver {
       .leftJoinAndSelect('message.user', 'user')
       .leftJoinAndSelect('message.replyingTo', 'replyingTo')
       .leftJoinAndSelect('replyingTo.user', 'replyingToUser')
-      .leftJoinAndSelect('message.replies', 'replies')
+      // .leftJoinAndSelect('message.replies', 'replies')
       .where('message."threadId" = :threadId', { threadId: options.threadId });
 
     if (options.cursor) {
-      console.log('CURSOR:', new Date(parseInt(options.cursor)));
       qb.andWhere('message."createdAt" < :cursor', { cursor: new Date(parseInt(options.cursor)) });
     }
     qb.orderBy('message."createdAt"', 'DESC').limit(realLimitPlusOne);
 
     const messages = (await qb.getMany()) as Message[];
 
+    const realMessages = messages.slice(0, realLimit).reverse();
     return {
-      data: messages.slice(0, realLimit).reverse(),
-      hasMore: messages.length === realLimitPlusOne,
+      data: realMessages,
+      nextMessage: realMessages[0],
       errors
     };
   }
@@ -112,7 +112,7 @@ export class MessageResolver {
       threadId: message.threadId,
       messageId: options.messageId
     };
-    console.log(1, message);
+
     pubClient.publish(message.threadId, JSON.stringify(payload));
     return {
       data: true,
@@ -163,7 +163,6 @@ export class MessageResolver {
       messageId: options.messageId,
       newContent: options.newContent
     };
-    console.log(2, message);
     pubClient.publish(rawMessage.threadId, JSON.stringify(payload));
 
     return {

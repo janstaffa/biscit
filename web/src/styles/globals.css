@@ -37,3 +37,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #d89530;
 }
+
+.emoji {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  margin: 3px;
+}

@@ -9,7 +9,7 @@ export interface ResponseType<T> {
 }
 export interface ThreadMessagesResponseType {
   data: Message[] | null;
-  hasMore: boolean;
+  nextMessage: Message | null;
   errors: GQLValidationError[] | [];
 }
 
@@ -36,8 +36,8 @@ export class ThreadMessagesResponse {
   @Field(() => [Message], { nullable: true })
   data: Message[];
 
-  @Field(() => Boolean)
-  hasMore: boolean;
+  @Field(() => Message, { nullable: true })
+  nextMessage: Message | null;
 
   @Field(() => [GQLValidationError])
   errors: GQLValidationError[] | [];

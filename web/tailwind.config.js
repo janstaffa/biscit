@@ -35,6 +35,9 @@ module.exports = {
       },
       fontSize: {
         md: ['15px', '22px']
+      },
+      lineHeight: {
+        12: '3rem'
       }
     }
   },

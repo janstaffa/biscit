@@ -4,7 +4,7 @@ import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdRefresh } from 'react-icons/io';
 import { MdEdit } from 'react-icons/md';
 import { RiDeleteBin6Line } from 'react-icons/ri';
-import { Popover } from 'react-tiny-popover';
+import { Popup } from 'react-tiny-modals';
 import { genericErrorMessage } from '../../../constants';
 import { MessageSnippetFragment, useDeleteMessageMutation, useUpdateMessageMutation } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
@@ -15,9 +15,10 @@ export interface ChatMessageProps {
   resendCall: () => void;
   replyCall: () => void;
   replyMessage: MessageSnippetFragment | null;
+  onReady?: () => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage, onReady }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -61,6 +62,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
   };
 
   useEffect(() => {
+    onReady?.();
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         setIsEditing(false);
@@ -136,12 +138,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
         className="w-auto h-16 flex flex-col justify-center items-center"
         style={{ visibility: isHovering ? 'visible' : 'hidden' }}
       >
-        <Popover
+        <Popup
           isOpen={isHovering ? isPopoverOpen : false}
-          positions={['left', 'bottom', 'top', 'right']}
+          position={['left', 'bottom', 'top', 'right']}
           reposition={true}
-          onClickOutside={() => setIsPopoverOpen(false)}
-          content={
+          onClickOutside={({ setShow }) => setShow(false)}
+          onClose={() => setIsPopoverOpen(false)}
+          onOpen={() => setIsPopoverOpen(true)}
+          content={({ setShow }) => (
             <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
               <div className="w-48">
                 <ul>
@@ -159,7 +163,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
                       <li
                         className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                         onClick={() => {
-                          setIsPopoverOpen(false);
+                          setShow(false);
                           deleteMessage({ options: { messageId: message.id } });
                         }}
                       >
@@ -169,7 +173,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
                       <li
                         className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                         onClick={() => {
-                          setIsPopoverOpen(false);
+                          setShow(false);
                           setIsEditing(true);
                         }}
                       >
@@ -198,16 +202,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
                 </ul>
               </div>
             </div>
-          }
+          )}
         >
-          <div>
-            <HiDotsVertical
-              className="text-light-300 text-2xl mx-2 hover:text-light-200 cursor-pointer"
-              title="Options"
-              onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-            />
-          </div>
-        </Popover>
+          {({ show, setShow }) => (
+            <div>
+              <HiDotsVertical
+                className="text-light-300 text-2xl mx-2 hover:text-light-200 cursor-pointer"
+                title="Options"
+                onClick={() => setShow(!show)}
+              />
+            </div>
+          )}
+        </Popup>
       </div>
     </div>
   );

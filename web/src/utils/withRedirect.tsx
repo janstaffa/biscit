@@ -7,7 +7,6 @@ export default function withRedirect({ location }) {
     const WithRedirectWrapper = (props) => {
       const router = useRouter();
       if (!isServer() && location) {
-        console.log('client redirect: ', location);
         router.push(location);
         return null;
       }
@@ -17,7 +16,6 @@ export default function withRedirect({ location }) {
     WithRedirectWrapper.getInitialProps = async (context: NextPageContext) => {
       if (isServer() && context.res) {
         if (location) {
-          console.log('server redirect: ', location);
           context.res.writeHead(302, { Location: location });
           context.res.end();
         }

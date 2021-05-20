@@ -24,6 +24,7 @@ query Me {
     friends {
       id
       key
+      threadId
       friend {
         ...userSnippet
       }

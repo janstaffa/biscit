@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import {
   Arg,
   Ctx,
@@ -13,7 +14,7 @@ import {
 } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
 import * as yup from 'yup';
-import { COOKIE_NAME, EMAIL_REGEX, SALT_ROUNDS } from '../constants';
+import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpiration } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
 import { Message } from '../entities/Message';
@@ -24,7 +25,6 @@ import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { GQLValidationError, validateSchema } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
-
 @ObjectType()
 class FriendRequestResponse {
   @Field(() => [FriendRequest])
@@ -122,6 +122,15 @@ export class UserResolver {
     return await User.findOne({
       where: { id: userId }
     });
+  }
+
+  @Query(() => String, { nullable: true })
+  @UseMiddleware(isAuth)
+  async token(@Ctx() { req, res }: ContextType): Promise<string | undefined> {
+    const userId = req.session.userId;
+    if (!userId) return;
+
+    return jwt.sign({ userId }, process.env.TOKEN_SECRET || fallbackTokenSecret, { expiresIn: tokenExpiration });
   }
 
   @Mutation(() => BooleanResponse)

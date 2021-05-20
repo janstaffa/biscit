@@ -24,14 +24,13 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
         console.error(err);
         errorToast(genericErrorMessage);
       },
-      // getNextPageParam: (lastPage, pages) => {
-      //   if (lastPage?.messages?.data) {
-      //     console.log(lastPage, pages);
-      //     return lastPage.messages.data[0].createdAt;
-      //   }
-      //   return null;
-      // },
-      enabled: false
+      getNextPageParam: (lastPage) => lastPage.messages.nextMessage?.createdAt,
+      enabled: false,
+      select: (data) => ({
+        pages: [...data.pages].reverse(),
+        pageParams: [...data.pageParams].reverse()
+      }),
+      cacheTime: 24 * 3600 * 1000 // 1 day
     }
   );
 };

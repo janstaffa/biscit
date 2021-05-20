@@ -25,11 +25,13 @@ const AllFriends: NextPage = () => {
               <div>
                 {friends.map((friendship) => {
                   const { friend } = friendship;
+
                   return (
                     <FriendTab
                       friendId={friendship.key}
                       friend={friend}
                       key={friendship.id}
+                      threadId={friendship.threadId}
                     />
                   );
                 })}

@@ -3,7 +3,9 @@ query ThreadMessages($options: ThreadMessagesQueryInput!) {
     data {
       ...messageSnippet
     }
-    hasMore
+    nextMessage {
+      ...messageSnippet
+    }
     errors {
       ...errorSnippet
     }

@@ -158,6 +158,7 @@ export type Query = {
   thread: ThreadResponse;
   threads: Array<ThreadMembers>;
   me?: Maybe<User>;
+  token?: Maybe<Scalars['String']>;
 };
 
 export type QueryMessagesArgs = {
@@ -223,7 +224,7 @@ export type ThreadMessagesQueryInput = {
 export type ThreadMessagesResponse = {
   __typename?: 'ThreadMessagesResponse';
   data?: Maybe<Array<Message>>;
-  hasMore: Scalars['Boolean'];
+  nextMessage?: Maybe<Message>;
   errors: Array<GqlValidationError>;
 };
 
@@ -410,7 +411,7 @@ export type MeQuery = { __typename?: 'Query' } & {
         };
         friends?: Maybe<
           Array<
-            { __typename?: 'Friend' } & Pick<Friend, 'id' | 'key' | 'createdAt'> & {
+            { __typename?: 'Friend' } & Pick<Friend, 'id' | 'key' | 'threadId' | 'createdAt'> & {
                 friend: { __typename?: 'User' } & UserSnippetFragment;
               }
           >
@@ -424,10 +425,11 @@ export type ThreadMessagesQueryVariables = Exact<{
 }>;
 
 export type ThreadMessagesQuery = { __typename?: 'Query' } & {
-  messages: { __typename?: 'ThreadMessagesResponse' } & Pick<ThreadMessagesResponse, 'hasMore'> & {
-      data?: Maybe<Array<{ __typename?: 'Message' } & MessageSnippetFragment>>;
-      errors: Array<{ __typename?: 'GQLValidationError' } & ErrorSnippetFragment>;
-    };
+  messages: { __typename?: 'ThreadMessagesResponse' } & {
+    data?: Maybe<Array<{ __typename?: 'Message' } & MessageSnippetFragment>>;
+    nextMessage?: Maybe<{ __typename?: 'Message' } & MessageSnippetFragment>;
+    errors: Array<{ __typename?: 'GQLValidationError' } & ErrorSnippetFragment>;
+  };
 };
 
 export type ThreadQueryVariables = Exact<{
@@ -459,6 +461,10 @@ export type ThreadsQuery = { __typename?: 'Query' } & {
       }
   >;
 };
+
+export type TokenQueryVariables = Exact<{ [key: string]: never }>;
+
+export type TokenQuery = { __typename?: 'Query' } & Pick<Query, 'token'>;
 
 export const ErrorSnippetFragmentDoc = `
     fragment errorSnippet on GQLValidationError {
@@ -752,6 +758,7 @@ export const MeDocument = `
     friends {
       id
       key
+      threadId
       friend {
         ...userSnippet
       }
@@ -775,7 +782,9 @@ export const ThreadMessagesDocument = `
     data {
       ...messageSnippet
     }
-    hasMore
+    nextMessage {
+      ...messageSnippet
+    }
     errors {
       ...errorSnippet
     }
@@ -847,5 +856,19 @@ export const useThreadsQuery = <TData = ThreadsQuery, TError = unknown>(
   useQuery<ThreadsQuery, TError, TData>(
     ['Threads', variables],
     useGQLRequest<ThreadsQuery, ThreadsQueryVariables>(ThreadsDocument).bind(null, variables),
+    options
+  );
+export const TokenDocument = `
+    query Token {
+  token
+}
+    `;
+export const useTokenQuery = <TData = TokenQuery, TError = unknown>(
+  variables?: TokenQueryVariables,
+  options?: UseQueryOptions<TokenQuery, TError, TData>
+) =>
+  useQuery<TokenQuery, TError, TData>(
+    ['Token', variables],
+    useGQLRequest<TokenQuery, TokenQueryVariables>(TokenDocument).bind(null, variables),
     options
   );
