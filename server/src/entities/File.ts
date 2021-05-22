@@ -36,8 +36,8 @@ export class File extends BaseEntity {
   @Column()
   fileName: string;
 
-  @Field()
-  @Column()
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
   format: string;
 
   @Field(() => String)

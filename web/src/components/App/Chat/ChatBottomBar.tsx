@@ -4,15 +4,13 @@ import { AiOutlineCloseCircle } from 'react-icons/ai';
 import { FaRegSmile } from 'react-icons/fa';
 import { GoReply } from 'react-icons/go';
 import { ImAttachment } from 'react-icons/im';
-import { IoMdClose } from 'react-icons/io';
 import { BeatLoader } from 'react-spinners';
-import { Modal, Popup } from 'react-tiny-modals';
+import { Popup } from 'react-tiny-modals';
 import { OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
 import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
-import SubmitButton from '../../Buttons/SubmitButton';
-import FileDropZone from './FileDropZode';
+import FileDropZone from './FileDropZone';
 
 export interface ChatBottomBarProps {
   replyMessage: MessageSnippetFragment | null;
@@ -174,27 +172,54 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
     }
   }, [replyMessage]);
 
-  const [attachmentModalShow, setAttachmentModalShow] = useState<boolean>(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  const showDropZone = (e: DragEvent) => {
+    const dt = e.dataTransfer;
+    if (dt && dt.types && (dt.types.indexOf ? dt.types.indexOf('Files') !== -1 : dt.types.includes('Files'))) {
+      setIsDragging(true);
+      return;
+    }
+    setIsDragging(false);
+  };
+
+  const hideDropZone = (e: DragEvent) => {
+    if (!e.relatedTarget) {
+      setIsDragging(false);
+    }
+  };
+  useEffect(() => {
+    document.addEventListener('dragenter', showDropZone, false);
+    document.addEventListener('dragleave', hideDropZone, false);
+    document.addEventListener('drop', hideDropZone, false);
+    return () => {
+      document.removeEventListener('dragenter', showDropZone, false);
+      document.removeEventListener('dragleave', hideDropZone, false);
+      document.removeEventListener('drop', hideDropZone, false);
+    };
+  }, []);
+
   return (
     <>
+      {isDragging && <FileDropZone />}
+      <div className="w-full h-20 flex flex-row justify-between items-center px-10 py-1 bg-dark-200">
+        <img src="http://localhost:3000/logo.gif" className="h-full border border-dark-300" />
+      </div>
+      {replyMessage && (
+        <div className="w-full h-auto flex flex-row justify-between items-center px-10 py-1 bg-dark-200">
+          <span className="text-light-400 font-roboto flex flex-row items-center">
+            <GoReply className="mr-2" />
+            replying to {replyMessage.user.username}
+          </span>
+          <AiOutlineCloseCircle
+            className="text-light-400 cursor-pointer hover:text-light-300"
+            size={18}
+            onClick={() => setReplyMessage(null)}
+            title={'cancel replying'}
+          />
+        </div>
+      )}
       <div className="w-full h-24 bg-dark-300 px-8 flex flex-col justify-center relative" style={{ minHeight: '6rem' }}>
-        {replyMessage && (
-          <div
-            className="w-full h-auto flex flex-row justify-between items-center px-10 py-1 absolute bg-dark-200"
-            style={{ top: '-30px', left: 0 }}
-          >
-            <span className="text-light-400 font-roboto flex flex-row items-center">
-              <GoReply className="mr-2" />
-              replying to {replyMessage.user.username}
-            </span>
-            <AiOutlineCloseCircle
-              className="text-light-400 cursor-pointer hover:text-light-300"
-              size={18}
-              onClick={() => setReplyMessage(null)}
-              title={'cancel replying'}
-            />
-          </div>
-        )}
         <div className="flex flex-row">
           <div
             className="w-14 bg-dark-100 flex flex-col justify-center items-center border-r border-dark-50 rounded-l-xl"
@@ -202,7 +227,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           >
             <ImAttachment
               className="text-2xl text-light-300 cursor-pointer"
-              onClick={() => setAttachmentModalShow(!attachmentModalShow)}
+              // onClick={() => setAttachmentModalShow(!attachmentModalShow)}
             />
           </div>
           <div className="flex-grow justify-center">
@@ -262,32 +287,6 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           )}
         </div>
       </div>
-      <Modal isOpen={attachmentModalShow}>
-        <div className="bg-dark-200 p-5 rounded-xl w-96">
-          <div className="w-full h-10 flex flex-row justify-between">
-            <div className="text-light-300 text-lg font-roboto">Send an attachment</div>
-            <div>
-              <IoMdClose
-                className="text-2xl text-light-300 hover:text-light cursor-pointer"
-                onClick={() => setAttachmentModalShow(false)}
-              />
-            </div>
-          </div>
-          <div className="w-full flex-grow">
-            <FileDropZone />
-            <p className="text-light-300 mt-1 text-sm">max 10 MB</p>
-            <div className="w-full flex flex-row justify-end mt-6">
-              <button
-                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
-                onClick={() => setAttachmentModalShow(false)}
-              >
-                Cancel
-              </button>
-              <SubmitButton onClick={() => {}}>Send</SubmitButton>
-            </div>
-          </div>
-        </div>
-      </Modal>
     </>
   );
 };

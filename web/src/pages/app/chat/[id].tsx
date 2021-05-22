@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
@@ -80,6 +80,9 @@ const Chat: NextPage = () => {
     }
   };
 
+  useEffect(() => {
+    setReplyMessage(null);
+  }, [threadId]);
   return (
     <>
       <Head>
@@ -96,7 +99,7 @@ const Chat: NextPage = () => {
         </ContentNav>
 
         {/* this might need to be set to position absolute */}
-        <div className="w-full h-full overflow-hidden flex flex-col">
+        <div className="w-full h-full overflow-hidden flex flex-col relative">
           <ChatFeed
             threadId={threadId}
             setResendMessage={setResendMessage}
