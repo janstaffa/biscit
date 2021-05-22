@@ -6,12 +6,12 @@ import { GoReply } from 'react-icons/go';
 import { ImAttachment } from 'react-icons/im';
 import { BeatLoader } from 'react-spinners';
 import { Popup } from 'react-tiny-modals';
-import { OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
+import { attachment, OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
 import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
+import AttachmentBar from './AttachmentBar';
 import FileDropZone from './FileDropZone';
-
 export interface ChatBottomBarProps {
   replyMessage: MessageSnippetFragment | null;
   setReplyMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
@@ -79,7 +79,8 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
   const replyMessageRef = useRef<MessageSnippetFragment | null>(null);
   replyMessageRef.current = replyMessage;
 
-  const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
+  const [attachments, setAttachments] = useState<attachment[]>([]);
+
   useEffect(() => {
     setMessageInputValue('');
     const ws = socket.connect();
@@ -128,6 +129,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           try {
             if (ws.readyState === ws.OPEN) {
               socket.send(JSON.stringify(payload));
+              setAttachments([]);
               setMessageInputValue('');
               messageInput.focus();
             }
@@ -201,10 +203,9 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
 
   return (
     <>
-      {isDragging && <FileDropZone />}
-      <div className="w-full h-20 flex flex-row justify-between items-center px-10 py-1 bg-dark-200">
-        <img src="http://localhost:3000/logo.gif" className="h-full border border-dark-300" />
-      </div>
+      {isDragging && <FileDropZone attachments={attachments} setAttachments={setAttachments} />}
+
+      {attachments.length > 0 && <AttachmentBar attachments={attachments} setAttachments={setAttachments} />}
       {replyMessage && (
         <div className="w-full h-auto flex flex-row justify-between items-center px-10 py-1 bg-dark-200">
           <span className="text-light-400 font-roboto flex flex-row items-center">

@@ -10,6 +10,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { File } from './File';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
 import { Message } from './Message';
@@ -67,6 +68,8 @@ export class User extends BaseEntity {
   @OneToMany(() => Message, (message) => message.user)
   messages: Message[];
 
+  @OneToMany(() => File, (file) => file.user)
+  files: File[];
   //createdAt field
   @Field(() => String)
   @CreateDateColumn()

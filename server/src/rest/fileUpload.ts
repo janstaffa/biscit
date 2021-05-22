@@ -9,15 +9,13 @@ import { getId } from '../utils/generateId';
 export const fileUploadController = (app: Express) => {
   app.post('/upload', (req: Request, res) => {
     if (!req.files?.file) {
-      res.send({ error: 'No files were included.' });
-      return;
+      return res.send({ error: 'No files were included.' });
     }
 
     //@ts-ignore
     const userId = req.session.userId;
     if (!userId) {
-      res.send({ error: 'You need to be signed in to upload files.' });
-      return;
+      return res.send({ error: 'You need to be signed in to upload files.' });
     }
 
     const uploadFile = async (file: UploadedFile) => {
@@ -29,11 +27,17 @@ export const fileUploadController = (app: Express) => {
       }
 
       const id = await getId(File, 'id');
-      await File.create({ id, fileName: file.name, userId, format: extension, size: file.size });
+      const newFile = File.create({ id, fileName: file.name, userId, format: extension, size: file.size });
 
-      fs.writeFile(path.join(__dirname, '../../uploaded', file.name), file.data, { encoding: 'binary' }, () => {
-        console.log('done');
-      });
+      fs.writeFile(
+        path.join(__dirname, '../../uploaded', newFile.id + '.' + extension),
+        file.data,
+        { encoding: 'binary' },
+        async () => {
+          await newFile.save();
+          res.send({ status: 'success', fileId: newFile.id });
+        }
+      );
     };
 
     if (Array.isArray(req.files.file)) {
@@ -43,5 +47,27 @@ export const fileUploadController = (app: Express) => {
     } else {
       uploadFile(req.files.file);
     }
+  });
+
+  app.get('/files/:fileId', async (req, res) => {
+    //@ts-ignore
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.send({ error: 'You must be signed in to proceed.' });
+    }
+    const fileId = req.params.fileId;
+    if (!fileId) {
+      return res.send({ error: 'File id was not provided.' });
+    }
+
+    const file = await File.findOne({ where: { id: fileId } });
+
+    if (!file) {
+      return res.send({ error: 'This file was not found.' });
+    }
+
+    res.sendFile(path.join(__dirname, '../../uploaded', fileId + '.' + file.format));
+    // const friend = await
   });
 };

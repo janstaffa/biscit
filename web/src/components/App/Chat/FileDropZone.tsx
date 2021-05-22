@@ -1,9 +1,15 @@
 // export interface FileDropZoneProps {}
 
 import { useEffect, useRef, useState } from 'react';
+import { attachment } from '../../..';
 import { fileUploadURL } from '../../../constants';
+import { errorToast } from '../../../utils/toasts';
 
-const FileDropZone: React.FC = () => {
+export interface FileDropZoneProps {
+  attachments: attachment[];
+  setAttachments: React.Dispatch<React.SetStateAction<attachment[]>>;
+}
+const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments }) => {
   const dropZone = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
@@ -16,49 +22,46 @@ const FileDropZone: React.FC = () => {
     e.preventDefault();
     setIsHighlighted(false);
   };
-  const handleClick = (e) => {
-    setIsHighlighted(false);
-    fileInput.current?.click();
-  };
-  const handleUpload = (files: FileList) => {
-    Array.from(files).forEach((file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      fetch(fileUploadURL, { method: 'POST', credentials: 'include', body: formData })
-        .then((response) => response.json())
-        .then((data) => console.log('succes' + JSON.stringify(data)))
-        .catch((error) => {
-          console.error('Error:', error);
-        });
 
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.addEventListener('load', (e) => {
-        const img = document.createElement('img');
-        if (reader.result) {
-          let parsedResult: string;
-          if (Buffer.isBuffer(reader.result)) {
-            parsedResult = String.fromCharCode.apply(null, new Uint16Array(reader.result));
-          } else {
-            parsedResult = reader.result as string;
-          }
-          img.classList.add('w-20', 'h-20');
-          img.src = parsedResult;
-          // if (preview.current) {
-          //   preview.current.innerHTML = '';
-          //   preview.current?.append(img);
-          // }
+  const handleUpload = (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // send the threadId to validate future get requests
+    fetch(fileUploadURL, { method: 'POST', credentials: 'include', body: formData })
+      .then((response) => response.json())
+      .then((data) => {
+        const response = data;
+        if (response.error) {
+          errorToast(response.error);
+          return;
         }
+        if (response.fileId) {
+          setAttachments([...attachments, { id: response.fileId, name: file.name }]);
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
       });
-    });
   };
+
   const handleDrop = (e: DragEvent) => {
     unHighlightDropZone(e);
     const dt = e.dataTransfer;
-    const files = dt?.files;
-    if (!files) return;
+    if (dt?.items) {
+      const items = dt.items;
 
-    handleUpload(files);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i].getAsFile();
+        if (item) {
+          if (!item.type) {
+            errorToast('Only valid files are accepted.');
+            return;
+          }
+          handleUpload(item);
+        }
+      }
+    }
   };
 
   useEffect(() => {

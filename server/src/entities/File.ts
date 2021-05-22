@@ -11,7 +11,6 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
-import { Message } from './Message';
 import { User } from './User';
 
 @ObjectType()
@@ -42,19 +41,10 @@ export class File extends BaseEntity {
 
   @Field(() => String)
   @Column()
-  messageId: string;
-
-  @Field(() => Message)
-  @ManyToOne(() => Message, (message) => message.media)
-  @JoinColumn({ name: 'messageId' })
-  message: Message;
-
-  @Field(() => String)
-  @Column()
   userId: string;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.files, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

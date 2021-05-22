@@ -37,3 +37,8 @@ export interface IncomingUpdateMessage extends SocketThreadMessage {
   messageId: string;
   newContent: string;
 }
+
+export interface attachment {
+  id: string;
+  name: string;
+}
