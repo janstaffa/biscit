@@ -10,6 +10,8 @@ import { attachment, OutgoingSocketChatMessage, SocketThreadMessage, TypingMessa
 import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
+import { errorToast } from '../../../utils/toasts';
+import { uploadFile } from '../../../utils/uploadFile';
 import AttachmentBar from './AttachmentBar';
 import FileDropZone from './FileDropZone';
 export interface ChatBottomBarProps {
@@ -80,7 +82,8 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
   replyMessageRef.current = replyMessage;
 
   const [attachments, setAttachments] = useState<attachment[]>([]);
-
+  const attachmentRef = useRef<attachment[]>([]);
+  attachmentRef.current = attachments;
   useEffect(() => {
     setMessageInputValue('');
     const ws = socket.connect();
@@ -201,9 +204,10 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
     };
   }, []);
 
+  const fileInput = useRef<HTMLInputElement | null>(null);
   return (
     <>
-      {isDragging && <FileDropZone attachments={attachments} setAttachments={setAttachments} />}
+      {isDragging && <FileDropZone attachments={attachmentRef.current} setAttachments={setAttachments} />}
 
       {attachments.length > 0 && <AttachmentBar attachments={attachments} setAttachments={setAttachments} />}
       {replyMessage && (
@@ -228,7 +232,33 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           >
             <ImAttachment
               className="text-2xl text-light-300 cursor-pointer"
-              // onClick={() => setAttachmentModalShow(!attachmentModalShow)}
+              onClick={() => {
+                fileInput.current?.click();
+              }}
+            />
+            <input
+              type="file"
+              className="hidden"
+              multiple
+              ref={fileInput}
+              onChange={async (e) => {
+                const files = e.target.files;
+
+                if (files) {
+                  for (let i = 0; i < files.length; i++) {
+                    const item = files[i];
+                    if (item) {
+                      if (!item.type) {
+                        errorToast('Only valid files are accepted.');
+                        return;
+                      }
+                      const newAttachment = await uploadFile(item);
+                      console.log(newAttachment);
+                      setAttachments([...attachmentRef.current, newAttachment]);
+                    }
+                  }
+                }
+              }}
             />
           </div>
           <div className="flex-grow justify-center">

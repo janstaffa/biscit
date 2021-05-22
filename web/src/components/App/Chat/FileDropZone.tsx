@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { attachment } from '../../..';
-import { fileUploadURL } from '../../../constants';
 import { errorToast } from '../../../utils/toasts';
+import { uploadFile } from '../../../utils/uploadFile';
 
 export interface FileDropZoneProps {
   attachments: attachment[];
   setAttachments: React.Dispatch<React.SetStateAction<attachment[]>>;
 }
+
 const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments }) => {
   const dropZone = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -23,29 +24,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments
     setIsHighlighted(false);
   };
 
-  const handleUpload = (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    // send the threadId to validate future get requests
-    fetch(fileUploadURL, { method: 'POST', credentials: 'include', body: formData })
-      .then((response) => response.json())
-      .then((data) => {
-        const response = data;
-        if (response.error) {
-          errorToast(response.error);
-          return;
-        }
-        if (response.fileId) {
-          setAttachments([...attachments, { id: response.fileId, name: file.name }]);
-        }
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  };
-
-  const handleDrop = (e: DragEvent) => {
+  const handleDrop = async (e: DragEvent) => {
     unHighlightDropZone(e);
     const dt = e.dataTransfer;
     if (dt?.items) {
@@ -58,7 +37,9 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments
             errorToast('Only valid files are accepted.');
             return;
           }
-          handleUpload(item);
+          const newAttachment = await uploadFile(item);
+          // only displays one attachment in AttachmentBar when uploading multiple files, attachmentRef.current
+          setAttachments([...attachments, newAttachment]);
         }
       }
     }
@@ -83,7 +64,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments
   return (
     <div
       className={
-        'w-full absolute border-dashed border-2  flex flex-col justify-center items-center cursor-pointer' +
+        'w-full absolute border-dashed border-2  flex flex-col justify-center items-center cursor-pointer z-10' +
         (isHighlighted ? ' border-accent-hover' : ' border-accent')
       }
       style={{ height: 'calc(100% - 144px)', top: '48px', backgroundColor: 'rgba(21,25,32, 0.8)' }}
