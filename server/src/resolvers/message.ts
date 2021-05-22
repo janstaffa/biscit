@@ -8,7 +8,6 @@ import {
   ThreadMessagesQueryInput,
   UpdateMessageMutationInput
 } from '../entities/types/message';
-import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { DELETE_MESSAGE_CODE, UPDATE_MESSAGE_CODE } from '../sockets';
 import { ContextType } from '../types';
@@ -23,7 +22,7 @@ pubClient.on('error', (error) => {
   console.error(error);
 });
 
-@Resolver(User)
+@Resolver(Message)
 export class MessageResolver {
   @Query(() => ThreadMessagesResponse)
   @UseMiddleware(isAuth)

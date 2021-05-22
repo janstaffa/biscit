@@ -270,6 +270,13 @@
   dependencies:
     dotenv "^8.2.0"
 
+"@types/express-fileupload@^1.1.6":
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/@types/express-fileupload/-/express-fileupload-1.1.6.tgz#fdc3b1d6f54fe4522867f8550f0acf24bcbf5c45"
+  integrity sha512-8z92PCVgvWvG1TpxucRU9oRz3hZc5cUz+CkeDe4XwVmg2DJDdd/7QASMsJzIo+9Pbfp7LfTEWSeEFUJZBohv9g==
+  dependencies:
+    "@types/express" "*"
+
 "@types/express-serve-static-core@4.17.19", "@types/express-serve-static-core@^4.17.18":
   version "4.17.19"
   resolved "https://registry.yarnpkg.com/@types/express-serve-static-core/-/express-serve-static-core-4.17.19.tgz#00acfc1632e729acac4f1530e9e16f6dd1508a1d"
@@ -1687,6 +1694,13 @@ eventemitter3@^3.1.0:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
   integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
+
+express-fileupload@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/express-fileupload/-/express-fileupload-1.2.1.tgz#73ac798bd14247d510adb1e439af2420c8367ded"
+  integrity sha512-fWPNAkBj+Azt9Itmcz/Reqdg3LeBfaXptDEev2JM8bCC0yDptglCnlizhf0YZauyU5X/g6v7v4Xxqhg8tmEfEA==
+  dependencies:
+    busboy "^0.3.1"
 
 express-session@^1.17.1:
   version "1.17.1"
@@ -4014,10 +4028,6 @@ typescript@^4.2.3:
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.3.tgz#39062d8019912d43726298f09493d598048c1ce3"
   integrity sha512-qOcYwxaByStAWrBf4x0fibwZvMRG+r4cQoTjbPtUlrWjBHbmCAww1i448U0GJ+3cNNEtebDteo/cHOR3xJ4wEw==
-
-uWebSockets.js@uNetworking/uWebSockets.js#v19.2.0:
-  version "19.2.0"
-  resolved "https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/77b1761c5a23ac6a5c2adf2bd808be0ae6b5000a"
 
 uid-safe@~2.1.5:
   version "2.1.5"

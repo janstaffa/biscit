@@ -12,6 +12,7 @@ import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import SubmitButton from '../../Buttons/SubmitButton';
+import FileDropZone from './FileDropZode';
 
 export interface ChatBottomBarProps {
   replyMessage: MessageSnippetFragment | null;
@@ -273,7 +274,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             </div>
           </div>
           <div className="w-full flex-grow">
-            <input type="file" />
+            <FileDropZone />
             <p className="text-light-300 mt-1 text-sm">max 10 MB</p>
             <div className="w-full flex flex-row justify-end mt-6">
               <button

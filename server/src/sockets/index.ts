@@ -57,7 +57,7 @@ export const closeConnection = (ws: WebSocket) => {
   ws.terminate();
 };
 
-export const sockets = (server: Server) => {
+export const socketController = (server: Server) => {
   const wss = new WebSocket.Server({
     noServer: true,
     path: '/socket',

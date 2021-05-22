@@ -141,7 +141,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
         <Popup
           isOpen={isHovering ? isPopoverOpen : false}
           position={['left', 'bottom', 'top', 'right']}
-          reposition={true}
+          reposition={false}
           onClickOutside={({ setShow }) => setShow(false)}
           onClose={() => setIsPopoverOpen(false)}
           onOpen={() => setIsPopoverOpen(true)}

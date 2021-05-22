@@ -16,7 +16,7 @@ import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
 
-@Resolver(User)
+@Resolver(Friend)
 export class FriendResolver {
   @Mutation(() => BooleanResponse)
   @UseMiddleware(isAuth)
