@@ -210,7 +210,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           const { id: messageId } = message;
           const date = new Date(parseInt(message.createdAt));
           const now = new Date();
-
+          console.log(message);
           if (datesAreSameDay(date, now)) {
             let prevMessage = page.messages.data && page.messages.data[i - 1];
             if (i === 0) {

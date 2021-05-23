@@ -9,6 +9,7 @@ import { genericErrorMessage } from '../../../constants';
 import { MessageSnippetFragment, useDeleteMessageMutation, useUpdateMessageMutation } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast } from '../../../utils/toasts';
+import Attachment from './Attachment';
 export interface ChatMessageProps {
   message: MessageSnippetFragment;
   myId: string | undefined;
@@ -130,6 +131,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
               (isEditing ? ' bg-dark-200 p-2' : ' bg-dark-100')
             }
           >
+            {message.media && (
+              <div className="flex flex-col">
+                {message.media.length > 0 &&
+                  message.media.map((file) => {
+                    return <Attachment file={file} key={file.id} />;
+                  })}
+              </div>
+            )}
             {message.content}
           </div>
         )}

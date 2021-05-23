@@ -115,14 +115,18 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
       messageInput.addEventListener('keyup', (e) => {
         if (!e.repeat && e.key === 'Enter') {
           const value = messageInputValueRef.current;
-          if (!value || !/\S/.test(value)) {
+          if (attachmentRef.current.length === 0 && (!value || !/\S/.test(value))) {
             return;
           }
+          console.log('called');
           let payload = {
             code: 3000,
             threadId: threadIdRef.current,
-            content: value
+            content: value,
+            media: attachmentRef.current.length > 0 ? attachmentRef.current.map((at) => at.id) : null
           } as OutgoingSocketChatMessage;
+
+          // currently not supported
           if (replyMessageRef.current) {
             payload = {
               ...payload,
@@ -246,14 +250,13 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
 
                 if (files) {
                   for (let i = 0; i < files.length; i++) {
-                    const item = files[i];
-                    if (item) {
-                      if (!item.type) {
+                    const file = files[i];
+                    if (file) {
+                      if (!file.type) {
                         errorToast('Only valid files are accepted.');
                         return;
                       }
-                      const newAttachment = await uploadFile(item);
-                      console.log(newAttachment);
+                      const newAttachment = await uploadFile(file, threadId);
                       setAttachments([...attachmentRef.current, newAttachment]);
                     }
                   }

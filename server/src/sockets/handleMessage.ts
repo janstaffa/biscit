@@ -68,7 +68,7 @@ export const handleMessage = async (
   }
 
   if (code === CHAT_MESSAGE_CODE) {
-    const { content, threadId, replyingToId, resendId } = incoming as IncomingSocketChatMessage;
+    const { content, threadId, replyingToId, resendId, media } = incoming as IncomingSocketChatMessage;
     try {
       const messageId = await getId(Message, 'id');
 
@@ -84,6 +84,7 @@ export const handleMessage = async (
           !resendId && replyingToId
             ? await Message.findOne({ where: { id: replyingToId }, relations: ['user'] })
             : undefined,
+        mediaIds: media,
         createdAt: new Date(),
         updatedAt: new Date()
       });

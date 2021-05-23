@@ -14,6 +14,7 @@ export interface OutgoingSocketChatMessage extends SocketThreadMessage {
   content: string;
   replyingToId?: string;
   resendId?: string;
+  media?: string[];
 }
 
 export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {

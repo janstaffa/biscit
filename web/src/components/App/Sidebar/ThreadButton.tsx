@@ -76,7 +76,9 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ name, time, latestMessage, 
               </div>
               <div className=" w-full flex flex-row justify-between">
                 <div className="text-light-300 w-48 font-roboto text-sm truncate">
-                  {displayMessage || 'no messages yet'}
+                  {(latestMessage?.media && latestMessage.media.length > 0 ? '<attachment>' : '') +
+                    ' ' +
+                    (displayMessage || '')}
                 </div>
                 <div className="w-8 flex flex-row justify-center items-center">
                   {unread && <div className="w-4 h-4 bg-light rounded-full"></div>}

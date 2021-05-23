@@ -11,6 +11,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { Thread } from './Thread';
 import { User } from './User';
 
 @ObjectType()
@@ -47,6 +48,14 @@ export class File extends BaseEntity {
   @ManyToOne(() => User, (user) => user.files, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Field()
+  @Column()
+  threadId: string;
+
+  @ManyToOne(() => Thread, (thread) => thread.media, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'threadId' })
+  thread: Thread;
 
   //createdAt field
   @Field(() => String)

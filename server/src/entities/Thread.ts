@@ -10,6 +10,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { File } from './File';
 import { Message } from './Message';
 import { ThreadMembers } from './ThreadMembers';
 
@@ -46,6 +47,10 @@ export class Thread extends BaseEntity {
   @Field()
   @Column({ type: 'timestamptz', default: new Date() })
   lastActivity: Date;
+
+  @Field(() => [File], { nullable: true })
+  @OneToMany(() => File, (file) => file.thread, { nullable: true })
+  media: File[];
 
   //createdAt field
   @Field(() => String)

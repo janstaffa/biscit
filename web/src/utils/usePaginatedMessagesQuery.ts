@@ -3,6 +3,7 @@ import { genericErrorMessage } from '../constants';
 import { ThreadMessagesDocument, ThreadMessagesQuery } from '../generated/graphql';
 import { graphqlClient } from './createGQLClient';
 import { errorToast } from './toasts';
+import { removeDuplicateFragments } from './useGQLRequest';
 
 export const messagesLimit = 30;
 
@@ -17,7 +18,7 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
           limit: messagesLimit
         }
       };
-      return graphqlClient.request(ThreadMessagesDocument, vars);
+      return graphqlClient.request(removeDuplicateFragments(ThreadMessagesDocument), vars);
     },
     {
       onError: (err) => {

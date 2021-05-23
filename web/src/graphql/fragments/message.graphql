@@ -4,11 +4,7 @@ fragment messageSnippet on Message {
   threadId
   userId
   user {
-    id
-    username
-    email
-    status
-    bio
+    ...userSnippet
   }
   edited
   replyingToId
@@ -28,6 +24,9 @@ fragment messageSnippet on Message {
     updatedAt
   }
   resendId
+  media {
+    ...fileSnippet
+  }
   createdAt
   updatedAt
 }

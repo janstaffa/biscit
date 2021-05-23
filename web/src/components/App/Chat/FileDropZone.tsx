@@ -1,5 +1,6 @@
 // export interface FileDropZoneProps {}
 
+import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { attachment } from '../../..';
 import { errorToast } from '../../../utils/toasts';
@@ -11,8 +12,17 @@ export interface FileDropZoneProps {
 }
 
 const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments }) => {
+  const router = useRouter();
+  if (!router.query.id) {
+    router.replace('/app/friends/all');
+    return null;
+  }
+  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
+
   const dropZone = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const attachmentRef = useRef<attachment[]>([]);
+  attachmentRef.current = attachments;
 
   const [isHighlighted, setIsHighlighted] = useState<boolean>(false);
   const highlightDropZone = (e: DragEvent) => {
@@ -30,18 +40,19 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments
     if (dt?.items) {
       const items = dt.items;
 
+      const promises: Promise<{ id: string; name: string }>[] = [];
       for (let i = 0; i < items.length; i++) {
-        const item = items[i].getAsFile();
-        if (item) {
-          if (!item.type) {
-            errorToast('Only valid files are accepted.');
-            return;
+        const file = items[i].getAsFile();
+        if (file) {
+          if (!file.type) {
+            errorToast('Invalid file.');
+            continue;
           }
-          const newAttachment = await uploadFile(item);
-          // only displays one attachment in AttachmentBar when uploading multiple files, attachmentRef.current
-          setAttachments([...attachments, newAttachment]);
+          promises.push(uploadFile(file, threadId));
         }
       }
+      const newAttachments = await Promise.all(promises);
+      setAttachments([...attachmentRef.current, ...newAttachments]);
     }
   };
 

@@ -8,6 +8,9 @@ fragment threadSnippet on Thread {
   members {
     ...threadMembersSnippet
   }
+  media {
+    ...fileSnippet
+  }
   lastActivity
   createdAt
   updatedAt

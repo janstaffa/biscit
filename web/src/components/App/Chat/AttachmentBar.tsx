@@ -9,9 +9,10 @@ export interface AttachmentBarProps {
 }
 
 const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachments, setAttachments }) => {
+  console.log(attachments);
   return (
     <div className="w-full px-3 bg-dark-200 overflow-y-auto" style={{ minHeight: '80px' }}>
-      <div className="w-full flex flex-row justify-start items-center flex-wrap py-3">
+      <div className="w-full flex flex-row justify-start items-center flex-wrap py-1.5">
         {attachments.map((at) => {
           let extension: string | null = null;
           if (at.name.includes('.')) {
@@ -21,7 +22,7 @@ const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachments, setAttachmen
           let display: ReactNode;
           if (extension) {
             if (imageRegExp.test(extension)) {
-              display = <img src={'http://localhost:9000/files/' + at.id} className="h-14 w-14" />;
+              display = <img src={'http://localhost:9000/files/' + at.id} className="h-auto w-14" />;
             } else if (documentRegExp.test(extension)) {
               display = <FaRegFileAlt className="text-accent" size={25} />;
             } else if (pdfRegExp.test(extension)) {

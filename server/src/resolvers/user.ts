@@ -15,6 +15,7 @@ import {
 import { createQueryBuilder } from 'typeorm';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpiration } from '../constants';
+import { File } from '../entities/File';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
 import { Message } from '../entities/Message';
@@ -98,7 +99,18 @@ export class UserResolver {
             .getOne();
 
           if (lastMessage) {
-            response.thread.lastMessage = lastMessage;
+            if (lastMessage.mediaIds && lastMessage.mediaIds.length > 0) {
+              const files = await createQueryBuilder(File, 'file')
+                .leftJoinAndSelect('file.user', 'user')
+                .where('file.id IN (:...ids)', { ids: lastMessage.mediaIds })
+                .getMany();
+              response.thread.lastMessage = {
+                ...lastMessage,
+                media: files
+              } as Message;
+            } else {
+              response.thread.lastMessage = lastMessage;
+            }
           }
           return response;
         })

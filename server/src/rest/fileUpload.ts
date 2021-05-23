@@ -3,13 +3,19 @@ import { Express, Request } from 'express';
 import { UploadedFile } from 'express-fileupload';
 import fs from 'fs';
 import path from 'path';
+import temp from 'temp';
 import { File } from '../entities/File';
 import { getId } from '../utils/generateId';
+temp.track();
 
 export const fileUploadController = (app: Express) => {
   app.post('/upload', (req: Request, res) => {
     if (!req.files?.file) {
       return res.send({ error: 'No files were included.' });
+    }
+
+    if (!req.body.threadId || typeof req.body.threadId !== 'string') {
+      return res.send({ error: 'ThreadID was not provided.' });
     }
 
     //@ts-ignore
@@ -27,7 +33,14 @@ export const fileUploadController = (app: Express) => {
       }
 
       const id = await getId(File, 'id');
-      const newFile = File.create({ id, fileName: file.name, userId, format: extension, size: file.size });
+      const newFile = File.create({
+        id,
+        threadId: req.body.threadId,
+        fileName: file.name,
+        userId,
+        format: extension,
+        size: file.size
+      });
 
       fs.writeFile(
         path.join(__dirname, '../../uploaded', newFile.id + '.' + extension),
@@ -61,13 +74,34 @@ export const fileUploadController = (app: Express) => {
       return res.send({ error: 'File id was not provided.' });
     }
 
-    const file = await File.findOne({ where: { id: fileId } });
+    const file = await File.findOne({ where: { id: fileId }, relations: ['thread', 'thread.members'] });
 
     if (!file) {
       return res.send({ error: 'This file was not found.' });
     }
 
-    res.sendFile(path.join(__dirname, '../../uploaded', fileId + '.' + file.format));
-    // const friend = await
+    const thisUser = file.thread.members.find((member) => member.userId === userId);
+    if (!thisUser) {
+      return res.send({ error: 'You dont have access to view this file.' });
+    }
+
+    // res.setHeader('Content-Disposition', 'attachment; filename=' + file.fileName + '.' + file.format);
+    // res.setHeader('Content-Transfer-Encoding', 'binary');
+    // res.setHeader('Content-Type', 'application/octet-stream');
+    // fs.readFile(path.join(__dirname, '../../uploaded', fileId + '.' + file.format), (err, data) => {
+    //   temp.mkdir('tmp', (err, dirPath) => {
+    //     if (!err) {
+    //       const newPath = path.join(dirPath, file.fileName + '.' + file.format);
+    //       fs.writeFile(newPath, data, (err) => {
+    //         if (err) {
+    //           console.error(err);
+    //           return;
+    //         }
+    //         console.log(newPath);
+    //       });
+    //     }
+    //   });
+    // });
+    res.download(path.join(__dirname, '../../uploaded/', file.id + '.' + file.format), file.fileName);
   });
 };

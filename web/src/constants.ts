@@ -7,6 +7,7 @@ export const currentUrl = () => (isServer() ? null : window.location);
 export const genericErrorMessage = 'Something went wrong, please try again later.';
 export const webSocketURL = 'ws://localhost:9000/socket';
 export const fileUploadURL = serverURL + '/upload';
+export const fileApiURL = serverURL + '/files';
 
 export const imageRegExp = /png|jpe?g|gif|bmp/;
 export const documentRegExp = /docx?|odt|pages|html?|txt/;

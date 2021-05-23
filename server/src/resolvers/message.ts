@@ -1,6 +1,7 @@
 import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder, getRepository } from 'typeorm';
+import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import {
@@ -59,7 +60,6 @@ export class MessageResolver {
       .leftJoinAndSelect('message.user', 'user')
       .leftJoinAndSelect('message.replyingTo', 'replyingTo')
       .leftJoinAndSelect('replyingTo.user', 'replyingToUser')
-      // .leftJoinAndSelect('message.replies', 'replies')
       .where('message."threadId" = :threadId', { threadId: options.threadId });
 
     if (options.cursor) {
@@ -69,7 +69,24 @@ export class MessageResolver {
 
     const messages = (await qb.getMany()) as Message[];
 
-    const realMessages = messages.slice(0, realLimit).reverse();
+    const newMessages = (await Promise.all(
+      messages.map(async (message) => {
+        if (message.mediaIds && message.mediaIds.length > 0) {
+          console.log(message);
+          const files = await createQueryBuilder(File, 'file')
+            .leftJoinAndSelect('file.user', 'user')
+            .where('file.id IN (:...ids)', { ids: message.mediaIds })
+            .getMany();
+          console.log(files);
+          return {
+            ...message,
+            media: files
+          };
+        }
+        return message;
+      })
+    )) as Message[];
+    const realMessages = newMessages.slice(0, realLimit).reverse();
     return {
       data: realMessages,
       nextMessage: realMessages[0],

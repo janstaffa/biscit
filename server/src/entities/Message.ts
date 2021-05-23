@@ -12,6 +12,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { File } from './File';
 import { Thread } from './Thread';
 import { User } from './User';
 
@@ -71,9 +72,11 @@ export class Message extends BaseEntity {
   @Column({ nullable: true })
   resendId: string;
 
-  @Field(() => [String], { nullable: true })
   @Column('text', { array: true, nullable: true })
-  media: string[];
+  mediaIds: string[];
+
+  @Field(() => [File], { nullable: true })
+  media: File[];
 
   //createdAt field
   @Field(() => String)

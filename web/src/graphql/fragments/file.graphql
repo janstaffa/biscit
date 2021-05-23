@@ -1,0 +1,13 @@
+fragment fileSnippet on File {
+  id
+  size
+  fileName
+  format
+  userId
+  user {
+    ...userSnippet
+  }
+  threadId
+  createdAt
+  updatedAt
+}
