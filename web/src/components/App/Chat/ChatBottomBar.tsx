@@ -118,7 +118,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           if (attachmentRef.current.length === 0 && (!value || !/\S/.test(value))) {
             return;
           }
-          console.log('called');
+
           let payload = {
             code: 3000,
             threadId: threadIdRef.current,

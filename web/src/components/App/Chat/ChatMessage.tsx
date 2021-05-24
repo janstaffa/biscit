@@ -6,7 +6,13 @@ import { MdEdit } from 'react-icons/md';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { Popup } from 'react-tiny-modals';
 import { genericErrorMessage } from '../../../constants';
-import { MessageSnippetFragment, useDeleteMessageMutation, useUpdateMessageMutation } from '../../../generated/graphql';
+import {
+  FileSnippetFragment,
+  MessageSnippetFragment,
+  useDeleteMessageMutation,
+  useUpdateMessageMutation
+} from '../../../generated/graphql';
+import { formatMessage } from '../../../utils/formatMessage';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast } from '../../../utils/toasts';
 import Attachment from './Attachment';
@@ -17,9 +23,18 @@ export interface ChatMessageProps {
   replyCall: () => void;
   replyMessage: MessageSnippetFragment | null;
   onReady?: () => void;
+  setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage, onReady }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({
+  message,
+  myId,
+  resendCall,
+  replyCall,
+  replyMessage,
+  onReady,
+  setGalleryFile
+}) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -53,7 +68,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (updateFieldValue && /\S/.test(updateFieldValue)) {
+      if ((updateFieldValue && /\S/.test(updateFieldValue)) || message.media) {
         updateMessage({ options: { messageId: message.id, newContent: updateFieldValue } });
         setIsEditing(false);
       } else {
@@ -108,6 +123,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
             </div>
           )}
         </div>
+        {message.media && (
+          <div className="flex flex-col">
+            {message.media.length > 0 &&
+              message.media.map((file) => {
+                return <Attachment file={file} key={file.id} setGalleryFile={setGalleryFile} />;
+              })}
+          </div>
+        )}
         {isEditing ? (
           <textarea
             autoComplete="off"
@@ -130,17 +153,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
               'text-light-200 font-roboto text-md outline-none resize-none h-auto' +
               (isEditing ? ' bg-dark-200 p-2' : ' bg-dark-100')
             }
-          >
-            {message.media && (
-              <div className="flex flex-col">
-                {message.media.length > 0 &&
-                  message.media.map((file) => {
-                    return <Attachment file={file} key={file.id} />;
-                  })}
-              </div>
-            )}
-            {message.content}
-          </div>
+            dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+          ></div>
         )}
       </div>
       <div
@@ -179,16 +193,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
                         <RiDeleteBin6Line size={20} style={{ marginRight: '5px' }} />
                         Delete
                       </li>
-                      <li
-                        className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
-                        onClick={() => {
-                          setShow(false);
-                          setIsEditing(true);
-                        }}
-                      >
-                        <MdEdit size={20} style={{ marginRight: '5px' }} />
-                        Edit
-                      </li>
+                      {message.content && (
+                        <li
+                          className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                          onClick={() => {
+                            setShow(false);
+                            setIsEditing(true);
+                          }}
+                        >
+                          <MdEdit size={20} style={{ marginRight: '5px' }} />
+                          Edit
+                        </li>
+                      )}
                       <hr className="bg-dark-50 h-px border-none" />
                     </>
                   )}

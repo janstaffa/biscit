@@ -19,6 +19,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ name, time, latestMessage, 
   const [currentLatestMessage, setCurrentLatestMessage] = useState<string | null | undefined>();
   const currentDisplayMessageRef = useRef<string | null | undefined>();
   currentDisplayMessageRef.current = currentLatestMessage;
+  const [userTyping, setUserTyping] = useState<string | null>(null);
 
   useEffect(() => {
     const ws = socket.connect();
@@ -32,13 +33,13 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ name, time, latestMessage, 
       if (incoming.code === 3006) {
         const { username: incomingUsername, threadId: incomingThreadId } = incoming as TypingMessage;
         if (incomingThreadId === threadId) {
-          setDisplayMessage(`${incomingUsername} is typing...`);
+          setUserTyping(incomingUsername);
           if (resetTyping) {
             clearTimeout(resetTyping);
             resetTyping = null;
           }
           resetTyping = setTimeout(() => {
-            setDisplayMessage(currentDisplayMessageRef.current);
+            setUserTyping(null);
           }, 2000);
         }
       }
@@ -76,9 +77,11 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ name, time, latestMessage, 
               </div>
               <div className=" w-full flex flex-row justify-between">
                 <div className="text-light-300 w-48 font-roboto text-sm truncate">
-                  {(latestMessage?.media && latestMessage.media.length > 0 ? '<attachment>' : '') +
-                    ' ' +
-                    (displayMessage || '')}
+                  {userTyping
+                    ? `${userTyping} is typing...`
+                    : (latestMessage?.media && latestMessage.media.length > 0 ? '<attachment>' : '') +
+                      ' ' +
+                      (displayMessage || '')}
                 </div>
                 <div className="w-8 flex flex-row justify-center items-center">
                   {unread && <div className="w-4 h-4 bg-light rounded-full"></div>}

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { RedisClient } from 'redis';
+import { createQueryBuilder } from 'typeorm';
 import WebSocket from 'ws';
 import {
   CHAT_MESSAGE_CODE,
@@ -12,6 +13,7 @@ import {
   SocketThreadMessage
 } from '.';
 import { fallbackTokenSecret } from '../constants';
+import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
@@ -89,6 +91,15 @@ export const handleMessage = async (
         updatedAt: new Date()
       });
 
+      if (newMessage.mediaIds && newMessage.mediaIds.length > 0) {
+        const files = await createQueryBuilder(File, 'file')
+          .leftJoinAndSelect('file.user', 'user')
+          .where('file.id IN (:...ids)', { ids: newMessage.mediaIds })
+          .getMany();
+        if (files && files.length > 0) {
+          newMessage.media = files;
+        }
+      }
       const membership = await ThreadMembers.findOne({ where: { userId: user.id, threadId } });
       if (!membership) {
         const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this thread' };

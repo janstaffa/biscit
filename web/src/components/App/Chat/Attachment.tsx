@@ -1,5 +1,5 @@
 import React, { ReactNode, useRef } from 'react';
-import { FaRegFile, FaRegFileAlt, FaRegFileAudio, FaRegFileExcel, FaRegFilePdf, FaRegFileVideo } from 'react-icons/fa';
+import { FaRegFile, FaRegFileAlt, FaRegFileExcel, FaRegFilePdf } from 'react-icons/fa';
 import { HiDownload } from 'react-icons/hi';
 import {
   audioRegExp,
@@ -14,9 +14,10 @@ import { FileSnippetFragment } from '../../../generated/graphql';
 
 export interface AttachmentProps {
   file: FileSnippetFragment;
+  setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
 }
 
-const Attachment: React.FC<AttachmentProps> = ({ file }) => {
+const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile }) => {
   let display: ReactNode;
   let iconDisplay: ReactNode | null = null;
 
@@ -28,16 +29,29 @@ const Attachment: React.FC<AttachmentProps> = ({ file }) => {
     } else if (sheetRegExp.test(file.format)) {
       iconDisplay = <FaRegFileExcel className="text-accent" size={25} />;
     } else if (videoRegExp.test(file.format)) {
-      iconDisplay = <FaRegFileVideo className="text-accent" size={25} />;
+      display = (
+        <video className="my-1" style={{ width: '384px', height: '216px' }} controls>
+          <source src={fileApiURL + '/' + file.id} type={`video/${file.format}`}></source>
+        </video>
+      );
     } else if (audioRegExp.test(file.format)) {
-      iconDisplay = <FaRegFileAudio className="text-accent" size={25} />;
+      display = (
+        <audio controls className="my-2">
+          <source src={fileApiURL + '/' + file.id} type={`audio/${file.format}`} />
+        </audio>
+      );
     } else if (imageRegExp.test(file.format)) {
       display = (
-        <img
-          src={fileApiURL + '/' + file.id}
-          className="h-auto m-1"
-          style={{ maxWidth: '200px', maxHeight: '500px' }}
-        />
+        <div style={{ height: '230px' }}>
+          <img
+            src={fileApiURL + '/' + file.id}
+            className="my-1 cursor-pointer"
+            height="216px"
+            style={{ maxWidth: '384px', height: '216px' }}
+            alt={file.fileName}
+            onClick={() => setGalleryFile(file)}
+          />
+        </div>
       );
     } else {
       iconDisplay = <FaRegFile className="text-accent" size={25} />;
@@ -49,7 +63,7 @@ const Attachment: React.FC<AttachmentProps> = ({ file }) => {
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
   if (iconDisplay) {
     display = (
-      <div className="w-48 my-1 p-3 rounded-lg bg-dark-200 flex flex-row items-center">
+      <div className="w-52 my-1 p-4 rounded-lg bg-dark-200 flex flex-row items-center">
         <div>{iconDisplay}</div>
         <div className="text-light-200 ml-1.5 truncate flex flex-col justify-center text-sm font-roboto">
           {file.fileName}
@@ -58,6 +72,7 @@ const Attachment: React.FC<AttachmentProps> = ({ file }) => {
           <HiDownload
             size={20}
             className="cursor-pointer ml-2 text-light-400 hover:text-light-hover"
+            title={`Download this file.(${file.size / 1000}KB) `}
             onClick={() => {
               const anchor = document.createElement('a');
               anchor.setAttribute('href', fileApiURL + '/' + file.id);

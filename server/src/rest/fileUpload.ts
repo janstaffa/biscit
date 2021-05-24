@@ -85,23 +85,6 @@ export const fileUploadController = (app: Express) => {
       return res.send({ error: 'You dont have access to view this file.' });
     }
 
-    // res.setHeader('Content-Disposition', 'attachment; filename=' + file.fileName + '.' + file.format);
-    // res.setHeader('Content-Transfer-Encoding', 'binary');
-    // res.setHeader('Content-Type', 'application/octet-stream');
-    // fs.readFile(path.join(__dirname, '../../uploaded', fileId + '.' + file.format), (err, data) => {
-    //   temp.mkdir('tmp', (err, dirPath) => {
-    //     if (!err) {
-    //       const newPath = path.join(dirPath, file.fileName + '.' + file.format);
-    //       fs.writeFile(newPath, data, (err) => {
-    //         if (err) {
-    //           console.error(err);
-    //           return;
-    //         }
-    //         console.log(newPath);
-    //       });
-    //     }
-    //   });
-    // });
     res.download(path.join(__dirname, '../../uploaded/', file.id + '.' + file.format), file.fileName);
   });
 };

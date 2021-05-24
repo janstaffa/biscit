@@ -224,7 +224,6 @@ const LeftSidebar: React.FC = () => {
                 if (router.query.id === membership.threadId) {
                   threadList[i].unread = 0;
                 }
-                console.log(membership.thread.lastMessage);
                 return (
                   <ThreadButton
                     name={membership.thread.name || ''}

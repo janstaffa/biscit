@@ -8,12 +8,18 @@ import { Modal } from 'react-tiny-modals';
 import { OutgoingSocketChatMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
+import ImageGallery from '../../../components/App/Chat/ImageGallery';
 import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
 import { genericErrorMessage } from '../../../constants';
-import { MessageSnippetFragment, useThreadQuery, useThreadsQuery } from '../../../generated/graphql';
+import {
+  FileSnippetFragment,
+  MessageSnippetFragment,
+  useThreadQuery,
+  useThreadsQuery
+} from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
@@ -83,6 +89,22 @@ const Chat: NextPage = () => {
   useEffect(() => {
     setReplyMessage(null);
   }, [threadId]);
+
+  const [galleryFile, setGalleryFile] = useState<FileSnippetFragment | null>(null);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (galleryFile) {
+          setGalleryFile(null);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [galleryFile]);
   return (
     <>
       <Head>
@@ -98,7 +120,7 @@ const Chat: NextPage = () => {
           </div>
         </ContentNav>
 
-        {/* this might need to be set to position absolute */}
+        {galleryFile && <ImageGallery file={galleryFile} setGalleryFile={setGalleryFile} />}
         <div className="w-full h-full overflow-hidden flex flex-col relative">
           <ChatFeed
             threadId={threadId}
@@ -106,6 +128,7 @@ const Chat: NextPage = () => {
             replyMessage={replyMessage}
             setReplyMessage={setReplyMessage}
             setModalShow={setModalShow}
+            setGalleryFile={setGalleryFile}
           />
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
