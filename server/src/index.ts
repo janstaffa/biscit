@@ -111,10 +111,12 @@ dotenv.config();
       debug: true,
       limitHandler: (req, res) => {
         res.send({ error: 'Maximum file upload size is 10MB.' });
-      }
+      },
+      abortOnLimit: true
     })
   );
   fileUploadController(app);
+
   server.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);
   });

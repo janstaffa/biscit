@@ -9,7 +9,6 @@ export interface AttachmentBarProps {
 }
 
 const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachments, setAttachments }) => {
-  console.log(attachments);
   return (
     <div className="w-full px-3 bg-dark-200 overflow-y-auto" style={{ minHeight: '80px' }}>
       <div className="w-full flex flex-row justify-start items-center flex-wrap py-1.5">

@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder, getRepository } from 'typeorm';
@@ -72,12 +74,10 @@ export class MessageResolver {
     const newMessages = (await Promise.all(
       messages.map(async (message) => {
         if (message.mediaIds && message.mediaIds.length > 0) {
-          console.log(message);
           const files = await createQueryBuilder(File, 'file')
             .leftJoinAndSelect('file.user', 'user')
             .where('file.id IN (:...ids)', { ids: message.mediaIds })
             .getMany();
-          console.log(files);
           return {
             ...message,
             media: files
@@ -123,6 +123,26 @@ export class MessageResolver {
 
     await Message.remove(message);
 
+    if (message.mediaIds && message.mediaIds.length > 0) {
+      const files = await File.findByIds(message.mediaIds);
+      message.mediaIds.forEach((id) => {
+        const file = files.find((file) => file.id === id);
+        const extension = file?.format;
+        fs.unlink(
+          path.join(
+            __dirname,
+            '../../uploaded',
+            id.replace(/\./g, '') + (extension ? '.' + extension.replace(/\./g, '') : '')
+          ),
+          (err) => {
+            console.log(id, ' was deleted.');
+            if (err) {
+              console.error(err);
+            }
+          }
+        );
+      });
+    }
     const payload = {
       code: DELETE_MESSAGE_CODE,
       threadId: message.threadId,
