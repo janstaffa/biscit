@@ -1,0 +1,13 @@
+mutation DeleteFile($options: DeleteFileMutationInput!) {
+  DeleteFile(options: $options) {
+    data
+    errors {
+      name
+      details {
+        field
+        value
+        message
+      }
+    }
+  }
+}

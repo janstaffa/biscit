@@ -2,13 +2,29 @@ import React, { ReactNode } from 'react';
 import { FaRegFile, FaRegFileAlt, FaRegFileAudio, FaRegFileExcel, FaRegFilePdf, FaRegFileVideo } from 'react-icons/fa';
 import { IoMdCloseCircle } from 'react-icons/io';
 import { attachment } from '../../..';
-import { audioRegExp, documentRegExp, imageRegExp, pdfRegExp, sheetRegExp, videoRegExp } from '../../../constants';
+import {
+  audioRegExp,
+  documentRegExp,
+  genericErrorMessage,
+  imageRegExp,
+  pdfRegExp,
+  sheetRegExp,
+  videoRegExp
+} from '../../../constants';
+import { useDeleteFileMutation } from '../../../generated/graphql';
+import { errorToast } from '../../../utils/toasts';
 export interface AttachmentBarProps {
   attachments: attachment[];
   setAttachments: React.Dispatch<React.SetStateAction<attachment[]>>;
 }
 
 const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachments, setAttachments }) => {
+  const { mutate: deleteFile } = useDeleteFileMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
   return (
     <div className="w-full px-3 bg-dark-200 overflow-y-auto" style={{ minHeight: '80px' }}>
       <div className="w-full flex flex-row justify-start items-center flex-wrap py-1.5">
@@ -53,6 +69,7 @@ const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachments, setAttachmen
                     const newAttachments = [...attachments];
                     newAttachments.splice(idx, 1);
                     setAttachments(newAttachments);
+                    deleteFile({ options: { fileId: at.id } });
                   }}
                 />
               </div>

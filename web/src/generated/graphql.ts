@@ -22,6 +22,10 @@ export type BooleanResponse = {
 };
 
 
+export type DeleteFileMutationInput = {
+  fileId: Scalars['String'];
+};
+
 export type DeleteMessageMutationInput = {
   messageId: Scalars['String'];
 };
@@ -114,6 +118,7 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  DeleteFile: BooleanResponse;
   FriendRequestSend: BooleanResponse;
   FriendRequestAccept: BooleanResponse;
   FriendRemove: BooleanResponse;
@@ -125,6 +130,11 @@ export type Mutation = {
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
   UserUpdateStatus: Scalars['Boolean'];
+};
+
+
+export type MutationDeleteFileArgs = {
+  options: DeleteFileMutationInput;
 };
 
 
@@ -376,6 +386,27 @@ export type CancelRequestMutation = (
     & { errors: Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
+    )> }
+  ) }
+);
+
+export type DeleteFileMutationVariables = Exact<{
+  options: DeleteFileMutationInput;
+}>;
+
+
+export type DeleteFileMutation = (
+  { __typename?: 'Mutation' }
+  & { DeleteFile: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & Pick<GqlValidationError, 'name'>
+      & { details?: Maybe<(
+        { __typename?: 'DetailsType' }
+        & Pick<DetailsType, 'field' | 'value' | 'message'>
+      )> }
     )> }
   ) }
 );
@@ -765,6 +796,29 @@ export const useCancelRequestMutation = <
     >(options?: UseMutationOptions<CancelRequestMutation, TError, CancelRequestMutationVariables, TContext>) => 
     useMutation<CancelRequestMutation, TError, CancelRequestMutationVariables, TContext>(
       useGQLRequest<CancelRequestMutation, CancelRequestMutationVariables>(CancelRequestDocument),
+      options
+    );
+export const DeleteFileDocument = `
+    mutation DeleteFile($options: DeleteFileMutationInput!) {
+  DeleteFile(options: $options) {
+    data
+    errors {
+      name
+      details {
+        field
+        value
+        message
+      }
+    }
+  }
+}
+    `;
+export const useDeleteFileMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<DeleteFileMutation, TError, DeleteFileMutationVariables, TContext>) => 
+    useMutation<DeleteFileMutation, TError, DeleteFileMutationVariables, TContext>(
+      useGQLRequest<DeleteFileMutation, DeleteFileMutationVariables>(DeleteFileDocument),
       options
     );
 export const DeleteMessageDocument = `
