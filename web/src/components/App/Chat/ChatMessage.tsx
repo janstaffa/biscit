@@ -127,6 +127,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className="flex flex-col">
             {message.media.length > 0 &&
               message.media.map((file) => {
+                console.log(formatTime(message.createdAt), message.media);
                 return <Attachment file={file} key={file.id} setGalleryFile={setGalleryFile} />;
               })}
           </div>

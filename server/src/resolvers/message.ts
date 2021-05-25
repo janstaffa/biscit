@@ -121,8 +121,6 @@ export class MessageResolver {
       };
     }
 
-    await Message.remove(message);
-
     if (message.mediaIds && message.mediaIds.length > 0) {
       const files = await File.findByIds(message.mediaIds);
       message.mediaIds.forEach((id) => {
@@ -134,10 +132,16 @@ export class MessageResolver {
             '../../uploaded',
             id.replace(/\./g, '') + (extension ? '.' + extension.replace(/\./g, '') : '')
           ),
-          (err) => {
-            console.log(id, ' was deleted.');
-            if (err) {
-              console.error(err);
+          async (err) => {
+            try {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              await Message.remove(message);
+              await File.remove(files);
+            } catch (e) {
+              console.error(e);
             }
           }
         );
