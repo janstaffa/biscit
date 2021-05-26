@@ -14,6 +14,7 @@ import { File } from './File';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
 import { Message } from './Message';
+import { Thread } from './Thread';
 import { ThreadMembers } from './ThreadMembers';
 
 @ObjectType()
@@ -65,11 +66,16 @@ export class User extends BaseEntity {
   @OneToMany(() => ThreadMembers, (thread) => thread.user)
   threads: ThreadMembers[];
 
+  @Field(() => [Thread])
+  @OneToMany(() => Thread, (thread) => thread.creator, { nullable: true })
+  myThreads: Thread[];
+
   @OneToMany(() => Message, (message) => message.user)
   messages: Message[];
 
   @OneToMany(() => File, (file) => file.user)
   files: File[];
+
   //createdAt field
   @Field(() => String)
   @CreateDateColumn()

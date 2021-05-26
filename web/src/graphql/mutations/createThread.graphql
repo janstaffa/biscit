@@ -1,0 +1,8 @@
+mutation CreateThread($options: CreateThreadInput!) {
+  CreateThread(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

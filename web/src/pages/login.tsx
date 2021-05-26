@@ -17,7 +17,7 @@ import withNoAuth from '../utils/withNoAuth';
 
 const LoginSchema = yup.object().shape({
   usernameOrEmail: yup.string().required('username or email is required'),
-  password: yup.string().required('password is required'),
+  password: yup.string().required('password is required')
 });
 
 const Login: NextPage = () => {
@@ -27,7 +27,7 @@ const Login: NextPage = () => {
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
-    },
+    }
   });
 
   return (
@@ -62,7 +62,7 @@ const Login: NextPage = () => {
                           errorToast(genericErrorMessage);
                         }
                       }
-                    },
+                    }
                   }
                 );
                 setSubmitting(false);
@@ -85,7 +85,7 @@ const Login: NextPage = () => {
                     placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
                   />
                   <div className="text-right text-light">
-                    Don't have an account?{' '}
+                    Don't have an account?
                     <span className="text-accent hover:text-accent-hover hover:underline">
                       <Link href="/register">register</Link>
                     </span>

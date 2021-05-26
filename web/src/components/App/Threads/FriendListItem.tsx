@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { ThreadSnippetFragment } from '../../../generated/graphql';
+import { User } from '../../../generated/graphql';
 
-export interface ThreadListItemProps {
-  thread: ThreadSnippetFragment;
+export interface FriendListItemProps {
+  friend: User;
   onChecked?: (value: boolean) => void;
 }
 
-const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, onChecked }) => {
+const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onChecked }) => {
   const [checked, setChecked] = useState<boolean>(false);
   return (
     <li
@@ -27,7 +27,7 @@ const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, onChecked }) =>
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">
-                <div className=" text-light font-roboto">{thread.name}</div>
+                <div className=" text-light font-roboto">{friend.username}</div>
               </div>
             </div>
           </div>
@@ -37,4 +37,4 @@ const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, onChecked }) =>
   );
 };
 
-export default ThreadListItem;
+export default FriendListItem;

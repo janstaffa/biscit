@@ -5,6 +5,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryColumn,
   UpdateDateColumn
@@ -13,6 +15,7 @@ import { getId } from '../utils/generateId';
 import { File } from './File';
 import { Message } from './Message';
 import { ThreadMembers } from './ThreadMembers';
+import { User } from './User';
 
 @ObjectType()
 @Entity()
@@ -23,12 +26,23 @@ export class Thread extends BaseEntity {
 
   @BeforeInsert()
   private async generateId() {
-    this.id = await getId(Thread, 'id');
+    if (!this.id) {
+      this.id = await getId(Thread, 'id');
+    }
   }
 
   @Field()
   @Column({ type: 'boolean' })
   isDm: boolean;
+
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
+  creatorId: string;
+
+  @Field(() => User, { nullable: true })
+  @ManyToOne(() => User, (user) => user.myThreads, { nullable: true })
+  @JoinColumn({ name: 'creatorId' })
+  creator: User;
 
   @Field(() => String, { nullable: true })
   @Column({ length: 100, nullable: true })

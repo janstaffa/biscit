@@ -213,7 +213,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           </div>
         )}
         {incomingThreadMessages?.pages?.map((page, pi) => {
-          console.log('page render', page);
           return page.messages.data?.map((message, i) => {
             const { id: messageId } = message;
             const date = new Date(parseInt(message.createdAt));

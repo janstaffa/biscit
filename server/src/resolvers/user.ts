@@ -12,14 +12,10 @@ import {
   Root,
   UseMiddleware
 } from 'type-graphql';
-import { createQueryBuilder } from 'typeorm';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpiration } from '../constants';
-import { File } from '../entities/File';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
-import { Message } from '../entities/Message';
-import { ThreadMembers } from '../entities/ThreadMembers';
 import { LoginInput, RegisterInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
@@ -67,60 +63,6 @@ export class UserResolver {
       });
 
       return friends;
-    }
-    return null;
-  }
-
-  @Query(() => [ThreadMembers])
-  @UseMiddleware(isAuth)
-  async threads(@Ctx() { req }: ContextType): Promise<ThreadMembers[] | null> {
-    const userId = req.session.userId;
-    if (userId === req.session.userId) {
-      const threads = await ThreadMembers.find({
-        where: { userId },
-        relations: ['thread', 'thread.members', 'thread.members.user']
-      });
-      const updatedThreads = await Promise.all(
-        threads.map(async (thread) => {
-          const response = thread;
-          if (thread.thread.isDm) {
-            const otherUser = thread.thread.members.filter((member) => {
-              return member.user.id !== userId;
-            });
-
-            response.thread.name = otherUser[0].user.username;
-          }
-          const lastMessage = await createQueryBuilder(Message, 'message')
-            .leftJoinAndSelect('message.user', 'user')
-            .where('message."threadId" = :threadId', {
-              threadId: thread.threadId
-            })
-            .orderBy('message."createdAt"', 'DESC')
-            .getOne();
-
-          if (lastMessage) {
-            if (lastMessage.mediaIds && lastMessage.mediaIds.length > 0) {
-              const files = await createQueryBuilder(File, 'file')
-                .leftJoinAndSelect('file.user', 'user')
-                .where('file.id IN (:...ids)', { ids: lastMessage.mediaIds })
-                .getMany();
-              response.thread.lastMessage = {
-                ...lastMessage,
-                media: files
-              } as Message;
-            } else {
-              response.thread.lastMessage = lastMessage;
-            }
-          }
-          return response;
-        })
-      );
-      updatedThreads.sort((a, b) => {
-        if (a.thread.lastActivity < b.thread.lastActivity) return 1;
-        if (a.thread.lastActivity > b.thread.lastActivity) return -1;
-        else return 0;
-      });
-      return updatedThreads;
     }
     return null;
   }

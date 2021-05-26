@@ -4,4 +4,6 @@ fragment userSnippet on User {
   email
   status
   bio
+  createdAt
+  updatedAt
 }

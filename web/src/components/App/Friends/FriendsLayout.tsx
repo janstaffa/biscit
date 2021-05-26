@@ -1,9 +1,9 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { FaUserFriends } from 'react-icons/fa';
 import { currentUrl } from '../../../constants';
+import NavLink from '../../Buttons/NavLink';
 import ContentNav from '../ContentNav';
 import Layout from '../Layout';
-import NavLink from './NavLink';
 
 export interface FriendsLayoutProps {
   children: ReactNode;
@@ -23,31 +23,20 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
           <div className="border-r border-light-300 px-4 mr-2">
             <FaUserFriends className="text-light-300 text-2xl" />
           </div>
-          <NavLink
-            href="/app/friends/all"
-            active={currentPath === '/app/friends/all'}
-          >
+          <NavLink href="/app/friends/all" active={currentPath === '/app/friends/all'}>
             All
           </NavLink>
-          <NavLink
-            href="/app/friends/online"
-            active={currentPath === '/app/friends/online'}
-          >
+          <NavLink href="/app/friends/online" active={currentPath === '/app/friends/online'}>
             Online
           </NavLink>
-          <NavLink
-            href="/app/friends/pending"
-            active={currentPath === '/app/friends/pending'}
-          >
+          <NavLink href="/app/friends/pending" active={currentPath === '/app/friends/pending'}>
             Pending
           </NavLink>
           <NavLink
             href="/app/friends/add"
             className={
               'border-lime-300 border-2 text-lime-200 font-bold mx-2 px-3 rounded-full cursor-pointer ml-5' +
-              (currentPath === '/app/friends/add'
-                ? ' bg-dark-50'
-                : ' hover:bg-dark-50 bg-dark-100')
+              (currentPath === '/app/friends/add' ? ' bg-dark-50' : ' hover:bg-dark-50 bg-dark-100')
             }
           >
             Add friend
