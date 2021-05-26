@@ -2,9 +2,9 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
-import { FaHashtag } from 'react-icons/fa';
+import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
-import { IoMdClose } from 'react-icons/io';
+import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
 import { OutgoingSocketChatMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
@@ -123,10 +123,17 @@ const Chat: NextPage = () => {
               </div>
               <div className="text-light-200 text-lg font-bold font-opensans">{data?.thread.data?.name}</div>
             </div>
-            <div className="flex flex-col justify-center items-center mr-2">
+            <div className="flex flex-row items-center justify-center mr-2">
+              <FaVideo
+                size={24}
+                className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
+                title="Video call"
+              />
+              <IoMdCall size={24} className="text-light-300 hover:text-light-hover cursor-pointer mx-2" title="Call" />
               <HiDotsVertical
                 size={26}
-                className="text-light-200 hover:text-light-hover cursor-pointer"
+                className="text-light-200 hover:text-light-hover cursor-pointer mx-1"
+                title="Open info tab"
                 onClick={() => setShowChatInfo(!showChatInfo)}
               />
             </div>

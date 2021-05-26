@@ -48,7 +48,7 @@ const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile, fullWidth
       );
     } else if (imageRegExp.test(file.format)) {
       display = (
-        <div style={{ height: '230px' }}>
+        <div style={{ height: 'auto' }}>
           <img
             src={fileApiURL + '/' + file.id}
             className="my-1 cursor-pointer"

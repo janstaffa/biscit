@@ -13,7 +13,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
 
   return (
     <div
-      className="bg-dark-200 mt-12 border-l-2 border-dark-50 absolute right-0 overflow-x-hidden"
+      className="bg-dark-200 mt-12 border-l-2 border-dark-50 absolute right-0 overflow-x-hidden flex flex-col"
       style={{
         width: '350px',
         height: 'calc(100% - 3rem)',
@@ -30,7 +30,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
         </p>
       </div>
       {media && media.length > 0 && (
-        <div className="w-full max-h-96 h-auto overflow-y-auto px-5 bg-dark-300 flex flex-col relative">
+        <div className="w-full h-auto overflow-y-auto px-5 bg-dark-300 flex-grow flex flex-col relative">
           <div className="sticky left-0 top-0 w-full py-2 bg-dark-300 z-10 text-light-200 text-lg mb-3 font-opensans">
             Media:
           </div>
