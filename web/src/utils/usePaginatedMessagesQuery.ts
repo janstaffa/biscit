@@ -10,7 +10,7 @@ export const messagesLimit = 30;
 export const usePaginatedMessagesQuery = (threadId: string) => {
   return useInfiniteQuery<ThreadMessagesQuery>(
     `ThreadMessages-${threadId}`,
-    ({ pageParam = null }) => {
+    ({ pageParam = undefined }) => {
       const vars = {
         options: {
           threadId,
@@ -31,7 +31,8 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
         pages: [...data.pages].reverse(),
         pageParams: [...data.pageParams].reverse()
       }),
-      cacheTime: 24 * 3600 * 1000 // 1 day
+      refetchOnMount: false,
+      cacheTime: 7 * 24 * 3600 * 1000 // 7 days
     }
   );
 };

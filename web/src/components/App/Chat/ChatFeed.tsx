@@ -52,12 +52,15 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   useEffect(() => {
     scroll(0);
+    if (incomingThreadMessages?.pages && incomingThreadMessages.pages.length > 0) {
+      incomingThreadMessages.pages = [incomingThreadMessages.pages[0]];
+    }
     const ws = socket.connect();
     if (isServer() || !ws) return;
     setIsLoadingMessages(false);
 
     if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
-      fetchNextPage();
+      fetchNextPage({ pageParam: undefined });
     }
 
     const handleMessage = (e) => {
@@ -210,6 +213,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           </div>
         )}
         {incomingThreadMessages?.pages?.map((page, pi) => {
+          console.log('page render', page);
           return page.messages.data?.map((message, i) => {
             const { id: messageId } = message;
             const date = new Date(parseInt(message.createdAt));
