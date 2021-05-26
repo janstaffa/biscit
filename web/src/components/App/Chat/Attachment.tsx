@@ -15,12 +15,18 @@ import { FileSnippetFragment } from '../../../generated/graphql';
 export interface AttachmentProps {
   file: FileSnippetFragment;
   setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
+  fullWidth?: boolean;
 }
 
-const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile }) => {
+const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile, fullWidth = false }) => {
   let display: ReactNode;
   let iconDisplay: ReactNode | null = null;
 
+  const defaultWidth = '384px';
+  const defaultHeight = '216px';
+
+  const width = fullWidth ? '100%' : defaultWidth;
+  const height = fullWidth ? 'auto' : defaultHeight;
   if (file.format) {
     if (documentRegExp.test(file.format)) {
       iconDisplay = <FaRegFileAlt className="text-accent" size={25} />;
@@ -30,13 +36,13 @@ const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile }) => {
       iconDisplay = <FaRegFileExcel className="text-accent" size={25} />;
     } else if (videoRegExp.test(file.format)) {
       display = (
-        <video className="my-1" style={{ width: '384px', height: '216px' }} controls>
+        <video className="my-1" style={{ width, height }} controls>
           <source src={fileApiURL + '/' + file.id} type={`video/${file.format}`}></source>
         </video>
       );
     } else if (audioRegExp.test(file.format)) {
       display = (
-        <audio controls className="my-2">
+        <audio controls className="my-2" style={{ width }}>
           <source src={fileApiURL + '/' + file.id} type={`audio/${file.format}`} />
         </audio>
       );
@@ -46,8 +52,8 @@ const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile }) => {
           <img
             src={fileApiURL + '/' + file.id}
             className="my-1 cursor-pointer"
-            height="216px"
-            style={{ maxWidth: '384px', height: '216px' }}
+            height={height}
+            style={{ maxWidth: width, height }}
             alt={file.fileName}
             onClick={() => setGalleryFile(file)}
           />
@@ -63,7 +69,10 @@ const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile }) => {
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
   if (iconDisplay) {
     display = (
-      <div className="w-52 my-1 p-4 rounded-lg bg-dark-200 flex flex-row items-center">
+      <div
+        className="my-1 p-4 rounded-lg bg-dark-200 flex flex-row items-center"
+        style={{ width: fullWidth ? '100%' : '13rem' }}
+      >
         <div>{iconDisplay}</div>
         <div className="text-light-200 ml-1.5 truncate flex flex-col justify-center text-sm font-roboto">
           {file.fileName}

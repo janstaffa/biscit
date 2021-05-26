@@ -3,11 +3,13 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import { FaHashtag } from 'react-icons/fa';
+import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
 import { OutgoingSocketChatMessage } from '../../..';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
+import ChatInfoBar from '../../../components/App/Chat/ChatInfoBar';
 import ImageGallery from '../../../components/App/Chat/ImageGallery';
 import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
 import ContentNav from '../../../components/App/ContentNav';
@@ -105,6 +107,8 @@ const Chat: NextPage = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [galleryFile]);
+
+  const [showChatInfo, setShowChatInfo] = useState<boolean>(false);
   return (
     <>
       <Head>
@@ -112,27 +116,39 @@ const Chat: NextPage = () => {
       </Head>
       <Layout>
         <ContentNav>
-          <div className="flex flex-row items-center h-full select-none">
-            <div className="border-r border-light-300 px-4 mr-2">
-              <FaHashtag className="text-light-300 text-2xl" />
+          <div className="flex flex-row justify-between h-full select-none">
+            <div className="flex flex-row items-center">
+              <div className="border-r border-light-300 px-4 mr-2">
+                <FaHashtag className="text-light-300 text-2xl" />
+              </div>
+              <div className="text-light-200 text-lg font-bold font-opensans">{data?.thread.data?.name}</div>
             </div>
-            <div className="text-light-200 text-lg font-bold font-opensans">{data?.thread.data?.name}</div>
+            <div className="flex flex-col justify-center items-center mr-2">
+              <HiDotsVertical
+                size={26}
+                className="text-light-200 hover:text-light-hover cursor-pointer"
+                onClick={() => setShowChatInfo(!showChatInfo)}
+              />
+            </div>
           </div>
         </ContentNav>
 
-        {galleryFile && <ImageGallery file={galleryFile} setGalleryFile={setGalleryFile} />}
         <div className="w-full h-full overflow-hidden flex flex-col relative">
-          <ChatFeed
-            threadId={threadId}
-            setResendMessage={setResendMessage}
-            replyMessage={replyMessage}
-            setReplyMessage={setReplyMessage}
-            setModalShow={setModalShow}
-            setGalleryFile={setGalleryFile}
-          />
+          <div className="flex flex-row flex-grow overflow-y-auto overflow-x-hidden relative">
+            <ChatFeed
+              threadId={threadId}
+              setResendMessage={setResendMessage}
+              replyMessage={replyMessage}
+              setReplyMessage={setReplyMessage}
+              setModalShow={setModalShow}
+              setGalleryFile={setGalleryFile}
+            />
+            <ChatInfoBar show={showChatInfo} thread={data} setGalleryFile={setGalleryFile} />
+          </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
       </Layout>
+      {galleryFile && <ImageGallery file={galleryFile} setGalleryFile={setGalleryFile} />}
       <Modal isOpen={modalShow} backOpacity={0.5}>
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">

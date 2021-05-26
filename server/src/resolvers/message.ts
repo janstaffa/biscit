@@ -138,7 +138,6 @@ export class MessageResolver {
                 console.error(err);
                 return;
               }
-              await Message.remove(message);
               await File.remove(files);
             } catch (e) {
               console.error(e);
@@ -147,6 +146,7 @@ export class MessageResolver {
         );
       });
     }
+    await Message.remove(message);
     const payload = {
       code: DELETE_MESSAGE_CODE,
       threadId: message.threadId,

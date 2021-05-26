@@ -2,8 +2,15 @@ query Thread($options: ThreadInput!) {
   thread(options: $options) {
     data {
       id
+      isDm
       name
+      lastMessage {
+        ...messageSnippet
+      }
       lastActivity
+      media {
+        ...fileSnippet
+      }
       createdAt
       updatedAt
       members {

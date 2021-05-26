@@ -621,8 +621,14 @@ export type ThreadQuery = (
     { __typename?: 'ThreadResponse' }
     & { data?: Maybe<(
       { __typename?: 'Thread' }
-      & Pick<Thread, 'id' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
-      & { members: Array<(
+      & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+      & { lastMessage?: Maybe<(
+        { __typename?: 'Message' }
+        & MessageSnippetFragment
+      )>, media?: Maybe<Array<(
+        { __typename?: 'File' }
+        & FileSnippetFragment
+      )>>, members: Array<(
         { __typename?: 'ThreadMembers' }
         & Pick<ThreadMembers, 'id' | 'isAdmin' | 'unread' | 'lastActivity' | 'createdAt'>
         & { user: (
@@ -1059,8 +1065,15 @@ export const ThreadDocument = `
   thread(options: $options) {
     data {
       id
+      isDm
       name
+      lastMessage {
+        ...messageSnippet
+      }
       lastActivity
+      media {
+        ...fileSnippet
+      }
       createdAt
       updatedAt
       members {
@@ -1079,7 +1092,9 @@ export const ThreadDocument = `
     }
   }
 }
-    ${UserSnippetFragmentDoc}
+    ${MessageSnippetFragmentDoc}
+${FileSnippetFragmentDoc}
+${UserSnippetFragmentDoc}
 ${ErrorSnippetFragmentDoc}`;
 export const useThreadQuery = <
       TData = ThreadQuery,

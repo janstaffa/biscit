@@ -1,4 +1,5 @@
 import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
+import { File } from '../entities/File';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { ThreadInput } from '../entities/types/thread';
@@ -56,6 +57,11 @@ export class ThreadResolver {
       });
 
       thread.name = otherUser[0].user.username;
+    }
+
+    const media = await File.find({ where: { threadId: options.threadId }, relations: ['user'] });
+    if (media) {
+      thread.media = media;
     }
 
     return {

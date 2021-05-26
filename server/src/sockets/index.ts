@@ -154,6 +154,7 @@ export const socketController = (server: Server) => {
       }, ELAPSED_TIME);
 
       const closeConnectionAndClear = () => {
+        console.log('connection closed');
         closeConnection(ws);
         subClient.removeAllListeners();
         clearTimeout(elapsed);

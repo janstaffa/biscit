@@ -11,8 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Navbar />
         <div className="flex flex-row flex-1 overflow-hidden">
           <LeftSidebar />
-          <div className="flex-1">{children}</div>
-          {/* <div className="h-full w-96"></div> */}
+          <div className="flex-1 relative">{children}</div>
         </div>
       </div>
     </div>
