@@ -51,17 +51,17 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   };
 
   useEffect(() => {
-    scroll(0);
-    if (incomingThreadMessages?.pages && incomingThreadMessages.pages.length > 0) {
-      incomingThreadMessages.pages = [incomingThreadMessages.pages[0]];
-    }
+    setShouldScroll(true);
     const ws = socket.connect();
     if (isServer() || !ws) return;
     setIsLoadingMessages(false);
 
-    if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
-      fetchNextPage({ pageParam: undefined });
-    }
+    // const queryData = queryClient.getQueryData(`ThreadMessages-${threadId}`);
+    // if (!queryData) {
+    //   fetchNextPage({ pageParam: undefined });
+    // } else {
+    //   console.log('called');
+    // }
 
     const handleMessage = (e) => {
       const { data: m } = e;
@@ -156,7 +156,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   useEffect(() => {
     setIsLoadingMessages(true);
-    if (!incomingThreadMessages?.pages) return;
+    if (!incomingThreadMessages?.pages || !incomingThreadMessages.pages[0]?.messages) return;
     const { data: incomingMessages } = incomingThreadMessages.pages[0].messages as ThreadMessagesResponse;
     if (incomingMessages) {
       setIsLoadingMessages(false);
@@ -165,8 +165,10 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
       const feedMessages = feed.querySelectorAll('.message');
       const lastMessageEl = feedMessages[incomingMessages.length];
 
-      if (incomingThreadMessages.pages.length === 1) {
+      console.log(incomingThreadMessages);
+      if (incomingThreadMessages.pages.length === 1 || shouldScroll) {
         scroll(0);
+        setShouldScroll(false);
       } else if (lastMessageEl) {
         lastMessageEl.scrollIntoView();
       }
@@ -213,14 +215,14 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           </div>
         )}
         {incomingThreadMessages?.pages?.map((page, pi) => {
-          return page.messages.data?.map((message, i) => {
+          return page?.messages.data?.map((message, i) => {
             const { id: messageId } = message;
             const date = new Date(parseInt(message.createdAt));
             const now = new Date();
             if (datesAreSameDay(date, now)) {
               let prevMessage = page.messages.data && page.messages.data[i - 1];
               if (i === 0) {
-                const prevPage = incomingThreadMessages.pages[pi - 1];
+                const prevPage = incomingThreadMessages?.pages[pi - 1];
                 if (prevPage) {
                   prevMessage = prevPage.messages.data && prevPage.messages.data[prevPage.messages.data.length - 1];
                 }
