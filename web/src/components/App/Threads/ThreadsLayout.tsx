@@ -142,7 +142,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
                         if (data.CreateThread.data) {
                           successToast(`New thread ${newThreadName} was created successfully.`);
                           queryClient.refetchQueries({ queryKey: 'Threads' });
-                          // router.push(`/app/chat/${newThreadId}`)
+                          router.push(`/app/chat/${data.CreateThread.data}`);
                         } else {
                           errorToast(genericErrorMessage);
                         }

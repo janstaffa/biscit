@@ -8,7 +8,6 @@ import { removeDuplicateFragments } from './useGQLRequest';
 
 export const messagesLimit = 30;
 
-// const loaded: Array<string> = [];
 export const usePaginatedMessagesQuery = (threadId: string) => {
   return useInfiniteQuery<ThreadMessagesQuery>(
     `ThreadMessages-${threadId}`,
@@ -17,10 +16,6 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
         `ThreadMessages-${threadId}`
       );
 
-      // if (pages?.pageParams.includes(pageParam)) {
-      // console.log('setting');
-      // loaded.push(threadId);
-      // }
       const vars = {
         options: {
           threadId,
@@ -45,16 +40,6 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
         return undefined;
       },
       select: (data) => {
-        // if (loaded.includes(threadId)) {
-        //   console.log('heyyyy');
-        //   const firstPage = data.pages[0];
-        //   const firstParams = data.pageParams[0];
-        //   loaded.splice(loaded.indexOf(threadId), 1);
-        //   return {
-        //     pages: [firstPage],
-        //     pageParams: [firstParams]
-        //   };
-        // }
         return {
           pages: [...data.pages].reverse(),
           pageParams: [...data.pageParams].reverse()

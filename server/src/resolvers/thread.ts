@@ -9,7 +9,7 @@ import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
-import { BooleanResponse, ResponseType, ThreadResponse } from './types';
+import { BooleanResponse, ResponseType, StringResponse, ThreadResponse } from './types';
 
 @Resolver(Thread)
 export class ThreadResolver {
@@ -158,12 +158,12 @@ export class ThreadResolver {
     };
   }
 
-  @Mutation(() => BooleanResponse)
+  @Mutation(() => StringResponse)
   @UseMiddleware(isAuth)
   async CreateThread(
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: CreateThreadInput
-  ): Promise<ResponseType<boolean>> {
+  ): Promise<ResponseType<string>> {
     const userId = req.session.userId;
 
     const id = await getId(Thread, 'id');
@@ -184,7 +184,7 @@ export class ThreadResolver {
       await ThreadMembers.create({ threadId: id, userId: member, isAdmin: false }).save();
     }
     return {
-      data: true,
+      data: id,
       errors: []
     };
   }

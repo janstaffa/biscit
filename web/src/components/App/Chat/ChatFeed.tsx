@@ -165,7 +165,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
       const feedMessages = feed.querySelectorAll('.message');
       const lastMessageEl = feedMessages[incomingMessages.length];
 
-      console.log(incomingThreadMessages);
       if (incomingThreadMessages.pages.length === 1 || shouldScroll) {
         scroll(0);
         setShouldScroll(false);
