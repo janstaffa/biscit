@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { User } from '../../../generated/graphql';
 
 export interface FriendListItemProps {
-  friend: User;
+  friend: Pick<User, 'id' | 'createdAt' | 'updatedAt' | 'username' | 'email' | 'status' | 'bio'>;
   onChecked?: (value: boolean) => void;
 }
 

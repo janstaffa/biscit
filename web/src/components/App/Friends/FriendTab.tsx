@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import React from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
+import { BsFillPersonDashFill } from 'react-icons/bs';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
 import { Popup } from 'react-tiny-modals';
@@ -53,14 +54,15 @@ const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend: { username, bio
                 onClickOutside={({ setShow }) => setShow(false)}
                 content={() => (
                   <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
-                    <div className="w-32">
+                    <div className="w-44">
                       <ul>
                         <li
-                          className="text-red-600 font-opensans text-center py-2 hover:bg-dark-200 cursor-pointer"
+                          className="text-red-600 font-opensans text-center p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                           onClick={() => {
                             removeFriend({ options: { friendId } });
                           }}
                         >
+                          <BsFillPersonDashFill size={20} style={{ marginRight: '5px' }} />
                           Remove friend
                         </li>
                       </ul>

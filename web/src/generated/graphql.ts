@@ -688,7 +688,10 @@ export type ThreadsQuery = (
   & { threads: Array<(
     { __typename?: 'ThreadMembers' }
     & Pick<ThreadMembers, 'isAdmin' | 'threadId' | 'unread'>
-    & { thread: (
+    & { user: (
+      { __typename?: 'User' }
+      & UserSnippetFragment
+    ), thread: (
       { __typename?: 'Thread' }
       & ThreadSnippetFragment
     ) }
@@ -1171,12 +1174,16 @@ export const ThreadsDocument = `
     isAdmin
     threadId
     unread
+    user {
+      ...userSnippet
+    }
     thread {
       ...threadSnippet
     }
   }
 }
-    ${ThreadSnippetFragmentDoc}`;
+    ${UserSnippetFragmentDoc}
+${ThreadSnippetFragmentDoc}`;
 export const useThreadsQuery = <
       TData = ThreadsQuery,
       TError = unknown

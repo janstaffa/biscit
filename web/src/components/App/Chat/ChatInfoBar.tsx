@@ -1,51 +1,25 @@
 import { useState } from 'react';
 import { BsFillInfoCircleFill, BsFillPeopleFill } from 'react-icons/bs';
 import { MdEdit, MdPermMedia } from 'react-icons/md';
-import { FileSnippetFragment, ThreadQuery } from '../../../generated/graphql';
-import Attachment from './Attachment';
+import {
+  FileSnippetFragment,
+  MeQuery,
+  ThreadQuery,
+  ThreadsQuery,
+  useMeQuery,
+  useThreadsQuery
+} from '../../../generated/graphql';
+import InfoBarTab from '../InfoBar/InfoBarTab';
 export interface ChatInfoBarProps {
   show: boolean;
   thread: ThreadQuery | undefined;
   setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
 }
 
-export interface ChatInfoBarTabProps {
-  tab: number;
-  thread: ThreadQuery | undefined;
-  setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
-}
-
-const Tab: React.FC<ChatInfoBarTabProps> = ({ tab, thread, setGalleryFile }) => {
-  const media = thread?.thread.data?.media;
-
-  switch (tab) {
-    case 1:
-      return (
-        <div>
-          {media && media.length > 0 && (
-            <div className="w-full h-auto overflow-y-auto px-5 bg-dark-300 flex flex-col relative">
-              <div className="sticky left-0 top-0 w-full py-2 bg-dark-300 z-10 text-light-200 text-lg mb-3 font-opensans">
-                Media:
-              </div>
-              {media.map((file) => (
-                <Attachment file={file} setGalleryFile={setGalleryFile} fullWidth={true} key={file.id} />
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    case 2:
-      return <div>people tab</div>;
-    case 3:
-      return <div>info tab</div>;
-    default:
-      return <div></div>;
-  }
-};
-
 const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile }) => {
   const [tab, setTab] = useState<number>(1);
-
+  const meData = useMeQuery();
+  const { data: threads } = useThreadsQuery();
   return (
     <div
       className="bg-dark-200 mt-12 border-l-2 border-dark-50 absolute right-0 overflow-x-hidden flex flex-col"
@@ -82,7 +56,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
               'cursor-pointer' +
               (tab === 2 ? ' text-accent mx-2 hover:text-accent-hover' : ' text-light-400 mx-2 hover:text-light-200')
             }
-            title="View members of this thread."
+            title="View all members of this thread."
             onClick={() => setTab(2)}
           />
           <BsFillInfoCircleFill
@@ -102,7 +76,13 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
         </div>
       </div>
       <div className="flex-grow overflow-y-auto">
-        <Tab thread={thread} setGalleryFile={setGalleryFile} tab={tab} />
+        <InfoBarTab
+          thread={thread}
+          setGalleryFile={setGalleryFile}
+          tab={tab}
+          me={meData.data as MeQuery}
+          myThreads={threads as ThreadsQuery | undefined}
+        />
       </div>
     </div>
   );

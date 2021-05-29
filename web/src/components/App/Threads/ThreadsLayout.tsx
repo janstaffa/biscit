@@ -4,7 +4,7 @@ import { FaUserFriends } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
 import { currentUrl, genericErrorMessage } from '../../../constants';
-import { useCreateThreadMutation, useMeQuery, User } from '../../../generated/graphql';
+import { useCreateThreadMutation, useMeQuery } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
 import NavLink from '../../Buttons/NavLink';
@@ -99,7 +99,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
 
                     return (
                       <FriendListItem
-                        friend={friend as User}
+                        friend={friend}
                         key={friendship.id}
                         onChecked={(checked) => {
                           if (checked) {

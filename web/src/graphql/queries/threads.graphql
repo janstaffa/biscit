@@ -3,6 +3,9 @@ query Threads {
     isAdmin
     threadId
     unread
+    user {
+      ...userSnippet
+    }
     thread {
       ...threadSnippet
     }

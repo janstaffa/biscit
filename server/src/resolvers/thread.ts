@@ -80,7 +80,7 @@ export class ThreadResolver {
     if (userId === req.session.userId) {
       const threads = await ThreadMembers.find({
         where: { userId },
-        relations: ['thread', 'thread.members', 'thread.members.user']
+        relations: ['user', 'thread', 'thread.members', 'thread.members.user']
       });
       const updatedThreads = await Promise.all(
         threads.map(async (thread) => {
@@ -180,8 +180,7 @@ export class ThreadResolver {
       members = [...members, ...options.members];
     }
     for (const member of members) {
-      console.log(member);
-      await ThreadMembers.create({ threadId: id, userId: member, isAdmin: false }).save();
+      await ThreadMembers.create({ threadId: id, userId: member, isAdmin: member === userId ? true : false }).save();
     }
     return {
       data: id,
