@@ -65,7 +65,10 @@ const Chat: NextPage = () => {
     }
   );
 
-  const [modalShow, setModalShow] = useState<boolean>(false);
+  const [resendModalShow, setResendModalShow] = useState<boolean>(false);
+  const [editModalShow, setEditModalShow] = useState<boolean>(false);
+  const [editThreadName, setEditThreadName] = useState<string>(data?.thread.data?.name || '');
+
   const [resendMessage, setResendMessage] = useState<MessageSnippetFragment | null>(null);
   const [resendThreads, setResendThreads] = useState<string[]>([]);
   const [replyMessage, setReplyMessage] = useState<MessageSnippetFragment | null>(null);
@@ -82,7 +85,7 @@ const Chat: NextPage = () => {
         } as OutgoingSocketChatMessage;
         socket.send(JSON.stringify(payload));
       });
-      setModalShow(false);
+      setResendModalShow(false);
       setResendMessage(null);
       setResendThreads([]);
     }
@@ -147,16 +150,22 @@ const Chat: NextPage = () => {
               setResendMessage={setResendMessage}
               replyMessage={replyMessage}
               setReplyMessage={setReplyMessage}
-              setModalShow={setModalShow}
+              setModalShow={setResendModalShow}
               setGalleryFile={setGalleryFile}
             />
-            <ChatInfoBar show={showChatInfo} thread={data} setGalleryFile={setGalleryFile} />
+            <ChatInfoBar
+              show={showChatInfo}
+              thread={data}
+              setGalleryFile={setGalleryFile}
+              setEditModalShow={setEditModalShow}
+              editModalShow={editModalShow}
+            />
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
       </Layout>
       {galleryFile && <ImageGallery file={galleryFile} setGalleryFile={setGalleryFile} />}
-      <Modal isOpen={modalShow} backOpacity={0.5}>
+      <Modal isOpen={resendModalShow} backOpacity={0.5}>
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">
             <div className="text-light-300 text-lg font-roboto">Resend message</div>
@@ -164,7 +173,7 @@ const Chat: NextPage = () => {
               <IoMdClose
                 className="text-2xl text-light-300 hover:text-light cursor-pointer"
                 onClick={() => {
-                  setModalShow(false);
+                  setResendModalShow(false);
                   setResendThreads([]);
                   setResendMessage(null);
                 }}
@@ -184,7 +193,7 @@ const Chat: NextPage = () => {
                 setResendMessage({ ...resendMessage, content: e.target.value } as MessageSnippetFragment)
               }
             ></textarea>
-            <p className="text-light-300 font-opensans text-md mb-3">Select all threds to send this message to.</p>
+            <p className="text-light-300 font-opensans text-md mb-3">Select all threads to send this message to.</p>
             <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
               {loadedThreads?.threads.map(({ thread }, i) => {
                 return (
@@ -212,7 +221,7 @@ const Chat: NextPage = () => {
               <button
                 className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
                 onClick={() => {
-                  setModalShow(false);
+                  setResendModalShow(false);
                   setResendThreads([]);
                   setResendMessage(null);
                 }}
@@ -223,6 +232,51 @@ const Chat: NextPage = () => {
             </div>
           </div>
         </div>
+      </Modal>
+      <Modal
+        isOpen={editModalShow}
+        zIndex={100}
+        backOpacity={0.5}
+        onOpen={() => setEditThreadName(data?.thread.data?.name || '')}
+      >
+        <div className="bg-dark-200 p-5 rounded-xl w-96">
+          <div className="w-full h-10 flex flex-row justify-between">
+            <div className="text-light-300 text-lg font-roboto">Edit thread</div>
+            <div>
+              <IoMdClose
+                className="text-2xl text-light-300 hover:text-light cursor-pointer"
+                onClick={() => setEditModalShow(false)}
+              />
+            </div>
+          </div>
+          <div className="w-full flex-grow">
+            <div className="w-full h-auto flex flex-col justify-center items-center mb-3">
+              <div className="w-28 h-28 bg-white rounded-full"></div>
+            </div>
+            <p className="text-light-300 font-opensans text-md mb-1">Thread name</p>
+            <input
+              type="text"
+              className="w-full h-9 rounded-md bg-dark-100 focus:bg-dark-50 outline-none px-3 text-light-200"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              maxLength={100}
+              value={editThreadName}
+              onChange={(e) => setEditThreadName(e.target.value)}
+            />
+            <p className="text-light-300 mt-1 text-sm">max 100 characters</p>
+            <div className="w-full flex flex-row justify-end mt-6">
+              <button
+                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
+                onClick={() => setEditModalShow(false)}
+              >
+                Cancel
+              </button>
+              <SubmitButton onClick={async () => {}}>Save</SubmitButton>
+            </div>
+          </div>
+        </div>{' '}
       </Modal>
     </>
   );

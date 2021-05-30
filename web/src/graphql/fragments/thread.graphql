@@ -15,6 +15,7 @@ fragment threadSnippet on Thread {
   creator {
     ...userSnippet
   }
+  messagesCount
   lastActivity
   createdAt
   updatedAt

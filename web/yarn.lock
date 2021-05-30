@@ -5252,10 +5252,10 @@ react-spinners@^0.10.6:
   dependencies:
     "@emotion/core" "^10.0.35"
 
-react-tiny-modals@^1.4.1:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/react-tiny-modals/-/react-tiny-modals-1.4.1.tgz#18fb574cc6e2dd7852dd94b10201b77ed25c5124"
-  integrity sha512-WC5Fd5u/8Jr/2M6m7/7ijCjWCCOL+EcZ++QhlP08SqOU/aLOJbs/941+ElBx3UVyS3s0dfaDGR8+gRR20z5fYw==
+react-tiny-modals@^1.4.3:
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/react-tiny-modals/-/react-tiny-modals-1.4.3.tgz#14f118bd336148409895b918856bb02df82ff259"
+  integrity sha512-VX5B5GQB0ocn/Qw+JvQWeKdw7MtIW7El8fOxX4p3gcxb0Py4FxVRJ9XRWRyqmCbxXlu9sJb+cLT4LFUx2IoS4Q==
   dependencies:
     react "^17.0.2"
     react-dom "^17.0.2"

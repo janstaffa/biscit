@@ -19,7 +19,7 @@ export class ThreadResolver {
     const userId = req.session.userId;
     const thread = await Thread.findOne({
       where: { id: options.threadId },
-      relations: ['members', 'members.user']
+      relations: ['members', 'members.user', 'creator']
     });
     const errors: GQLValidationError[] = [];
 
@@ -67,6 +67,8 @@ export class ThreadResolver {
       thread.media = media;
     }
 
+    const messagesCount = await Message.count({ where: { threadId: options.threadId } });
+    thread.messagesCount = messagesCount;
     return {
       data: thread,
       errors
@@ -83,10 +85,10 @@ export class ThreadResolver {
         relations: ['user', 'thread', 'thread.creator', 'thread.members', 'thread.members.user']
       });
       const updatedThreads = await Promise.all(
-        threads.map(async (thread) => {
-          const response = thread;
-          if (thread.thread.isDm) {
-            const otherUser = thread.thread.members.filter((member) => {
+        threads.map(async (membership) => {
+          const response = membership;
+          if (membership.thread.isDm) {
+            const otherUser = membership.thread.members.filter((member) => {
               return member.user.id !== userId;
             });
 
@@ -95,7 +97,7 @@ export class ThreadResolver {
           const lastMessage = await createQueryBuilder(Message, 'message')
             .leftJoinAndSelect('message.user', 'user')
             .where('message."threadId" = :threadId', {
-              threadId: thread.threadId
+              threadId: membership.threadId
             })
             .orderBy('message."createdAt"', 'DESC')
             .getOne();
@@ -114,6 +116,8 @@ export class ThreadResolver {
               response.thread.lastMessage = lastMessage;
             }
           }
+          const messagesCount = await Message.count({ where: { threadId: membership.threadId } });
+          response.thread.messagesCount = messagesCount;
           return response;
         })
       );

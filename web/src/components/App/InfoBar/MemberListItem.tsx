@@ -1,7 +1,7 @@
 import React from 'react';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import { HiDotsVertical } from 'react-icons/hi';
-import { ImArrowUp, ImCross } from 'react-icons/im';
+import { ImArrowDown, ImArrowUp, ImCross } from 'react-icons/im';
 import { Popup } from 'react-tiny-modals';
 import { MeQuery, ThreadMembers, ThreadQuery, ThreadsQuery } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
@@ -51,10 +51,17 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                             <li className="text-light-300 text-sm font-opensans text-left px-2 py-1">
                               Member since {formatTime(member.createdAt, { fullDate: true })}
                             </li>
+                            {!thread?.thread.data?.isDm &&
+                              me.me?.id !== user?.id &&
+                              (!isFriend ||
+                                (isAdmin && !member.isAdmin) ||
+                                thread?.thread.data?.creatorId === me.me?.id) && (
+                                <hr className="bg-dark-50 h-px border-none" />
+                              )}
 
-                            {!thread?.thread.data?.isDm && (
-                              <div>
-                                {!isFriend && me.me?.id !== user?.id && (
+                            {!thread?.thread.data?.isDm && me.me?.id !== user?.id && (
+                              <>
+                                {!isFriend && (
                                   <li
                                     className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
                                     onClick={() => {}}
@@ -63,7 +70,7 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                     Add friend
                                   </li>
                                 )}
-                                {isAdmin && me.me?.id !== user?.id && (
+                                {isAdmin && !member.isAdmin && (
                                   <li
                                     className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
                                     onClick={() => {}}
@@ -72,16 +79,28 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                     Remove from thread
                                   </li>
                                 )}
-                                {thread?.thread.data?.creatorId === me.me?.id && me.me?.id !== user?.id && (
-                                  <li
-                                    className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                    onClick={() => {}}
-                                  >
-                                    <ImArrowUp size={18} style={{ marginRight: '5px' }} />
-                                    Promote
-                                  </li>
+                                {thread?.thread.data?.creatorId === me.me?.id && (
+                                  <>
+                                    {member.isAdmin ? (
+                                      <li
+                                        className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
+                                        onClick={() => {}}
+                                      >
+                                        <ImArrowDown size={18} style={{ marginRight: '5px' }} />
+                                        Remove admin
+                                      </li>
+                                    ) : (
+                                      <li
+                                        className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
+                                        onClick={() => {}}
+                                      >
+                                        <ImArrowUp size={18} style={{ marginRight: '5px' }} />
+                                        Make admin
+                                      </li>
+                                    )}
+                                  </>
                                 )}
-                              </div>
+                              </>
                             )}
                           </ul>
                         </div>

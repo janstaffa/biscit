@@ -76,7 +76,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
           </div>
           <div className="w-full flex-grow">
             <div className="my-2">
-              <p className="text-light-300 font-opensans text-md mb-3">Thread name</p>
+              <p className="text-light-300 font-opensans text-md mb-1">Thread name</p>
               <input
                 type="text"
                 className="w-full h-9 rounded-md bg-dark-100 focus:bg-dark-50 outline-none px-3 text-light-200"
@@ -91,7 +91,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
               />
             </div>
             <div className="mt-4">
-              <p className="text-light-300 font-opensans text-md mb-3">Choose members</p>
+              <p className="text-light-300 font-opensans text-md mb-1">Choose members</p>
               <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
                 {!isLoading && friends && friends.length > 0 ? (
                   friends.map((friendship) => {

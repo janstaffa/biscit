@@ -55,6 +55,9 @@ export class Thread extends BaseEntity {
   @OneToMany(() => Message, (message) => message.thread)
   messages: Message[];
 
+  @Field(() => Number)
+  messagesCount: number;
+
   @Field(() => Message, { nullable: true })
   lastMessage: Message;
 

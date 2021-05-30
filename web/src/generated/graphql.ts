@@ -247,6 +247,7 @@ export type Thread = {
   creator?: Maybe<User>;
   name?: Maybe<Scalars['String']>;
   members: Array<ThreadMembers>;
+  messagesCount: Scalars['Float'];
   lastMessage?: Maybe<Message>;
   lastActivity: Scalars['DateTime'];
   media?: Maybe<Array<File>>;
@@ -353,7 +354,7 @@ export type MessageSnippetFragment = (
 
 export type ThreadSnippetFragment = (
   { __typename?: 'Thread' }
-  & Pick<Thread, 'id' | 'isDm' | 'name' | 'creatorId' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+  & Pick<Thread, 'id' | 'isDm' | 'name' | 'creatorId' | 'messagesCount' | 'lastActivity' | 'createdAt' | 'updatedAt'>
   & { lastMessage?: Maybe<(
     { __typename?: 'Message' }
     & MessageSnippetFragment
@@ -803,6 +804,7 @@ export const ThreadSnippetFragmentDoc = `
   creator {
     ...userSnippet
   }
+  messagesCount
   lastActivity
   createdAt
   updatedAt

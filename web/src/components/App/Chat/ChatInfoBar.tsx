@@ -14,9 +14,11 @@ export interface ChatInfoBarProps {
   show: boolean;
   thread: ThreadQuery | undefined;
   setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
+  setEditModalShow: React.Dispatch<React.SetStateAction<boolean>>;
+  editModalShow: boolean;
 }
 
-const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile }) => {
+const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile, setEditModalShow, editModalShow }) => {
   const [tab, setTab] = useState<number>(1);
   const meData = useMeQuery();
   const { data: threads } = useThreadsQuery();
@@ -37,10 +39,6 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
       >
         <div className="w-28 h-28 bg-white rounded-full mb-3"></div>
         <h3 className="text-xl text-light-200 text-center font-opensans">{thread?.thread.data?.name}</h3>
-        {/* <p className="text-md text-light-300 text-center font-opensans">
-          {thread?.thread.data?.isDm ? 'friends since ' : 'created '}:
-          {thread?.thread.data?.createdAt ? formatTime(thread?.thread.data?.createdAt) : 'unknown'}
-        </p> */}
         <div className="mt-2 w-full flex flex-row justify-end">
           <MdPermMedia
             size={28}
@@ -51,15 +49,17 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
             title="View media sent in this thread."
             onClick={() => setTab(1)}
           />
-          <BsFillPeopleFill
-            size={28}
-            className={
-              'cursor-pointer' +
-              (tab === 2 ? ' text-accent mx-2 hover:text-accent-hover' : ' text-light-400 mx-2 hover:text-light-200')
-            }
-            title="View all members of this thread."
-            onClick={() => setTab(2)}
-          />
+          {!thread?.thread.data?.isDm && (
+            <BsFillPeopleFill
+              size={28}
+              className={
+                'cursor-pointer' +
+                (tab === 2 ? ' text-accent mx-2 hover:text-accent-hover' : ' text-light-400 mx-2 hover:text-light-200')
+              }
+              title="View all members of this thread."
+              onClick={() => setTab(2)}
+            />
+          )}
           <BsFillInfoCircleFill
             size={28}
             className={
@@ -69,11 +69,14 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
             title="More info."
             onClick={() => setTab(3)}
           />
-          <MdEdit
-            size={28}
-            className="cursor-pointer text-light-400 mx-2 hover:text-light-200"
-            title="Edit this thread."
-          />
+          {!thread?.thread.data?.isDm && meData.data?.me?.id === thread?.thread.data?.creatorId && (
+            <MdEdit
+              size={28}
+              className="cursor-pointer text-light-400 mx-2 hover:text-light-200"
+              title="Edit this thread."
+              onClick={() => setEditModalShow(!editModalShow)}
+            />
+          )}
         </div>
       </div>
       <div className="flex-grow overflow-y-auto">
