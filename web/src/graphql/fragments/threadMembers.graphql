@@ -2,6 +2,9 @@ fragment threadMembersSnippet on ThreadMembers {
   id
   threadId
   userId
+  user {
+    ...userSnippet
+  }
   isAdmin
   unread
   lastActivity

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import { HiDotsVertical } from 'react-icons/hi';
-import { ImCross } from 'react-icons/im';
+import { ImArrowUp, ImCross } from 'react-icons/im';
 import { Popup } from 'react-tiny-modals';
 import { MeQuery, ThreadMembers, ThreadQuery, ThreadsQuery } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
@@ -16,7 +16,7 @@ export interface MemberListItemProps {
 const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, thread }) => {
   const { user } = member;
   const friends = me.me?.friends;
-  const isFriend = !!friends?.find((friend) => friend.friend.id === user.id);
+  const isFriend = !!friends?.find((friend) => friend.friend.id === user?.id);
 
   const threads = myThreads?.threads;
   const isAdmin = threads?.find((t) => t.threadId === thread?.thread.data?.id)?.isAdmin;
@@ -31,38 +31,57 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">
-                <div className=" text-light font-roboto">{user.username}</div>
+                <div className=" text-light font-roboto">{user?.username}</div>
                 <div className="flex flex-row items-center">
                   <Popup
                     position={['left', 'bottom', 'top', 'right']}
-                    onClickOutside={({ setShow }) => setShow(false)}
+                    closeOnClickOutside={true}
                     content={() => (
                       <div className="w-auto h-auto bg-dark-200 cursor-default select-none rounded-md p-3">
                         <div className="w-56">
                           <ul>
-                            <li className="text-light-300 text-sm font-opensans text-left px-2 py-1 font-bold">
-                              {user.username}
+                            <li className="text-light-300 text-sm font-opensans text-left px-2 py-1">
+                              <span className="font-bold">{user?.username}</span>
+                              {thread?.thread.data?.creatorId === user?.id
+                                ? ' (creator)'
+                                : member.isAdmin
+                                ? ' (admin)'
+                                : ''}
                             </li>
                             <li className="text-light-300 text-sm font-opensans text-left px-2 py-1">
                               Member since {formatTime(member.createdAt, { fullDate: true })}
                             </li>
-                            {!isFriend && me.me?.id !== user.id && (
-                              <li
-                                className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                onClick={() => {}}
-                              >
-                                <BsFillPersonPlusFill size={20} style={{ marginRight: '5px' }} />
-                                Add friend
-                              </li>
-                            )}
-                            {isAdmin && me.me?.id !== user.id && (
-                              <li
-                                className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                onClick={() => {}}
-                              >
-                                <ImCross size={18} style={{ marginRight: '5px' }} />
-                                Remove from thread
-                              </li>
+
+                            {!thread?.thread.data?.isDm && (
+                              <div>
+                                {!isFriend && me.me?.id !== user?.id && (
+                                  <li
+                                    className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
+                                    onClick={() => {}}
+                                  >
+                                    <BsFillPersonPlusFill size={20} style={{ marginRight: '5px' }} />
+                                    Add friend
+                                  </li>
+                                )}
+                                {isAdmin && me.me?.id !== user?.id && (
+                                  <li
+                                    className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
+                                    onClick={() => {}}
+                                  >
+                                    <ImCross size={18} style={{ marginRight: '5px' }} />
+                                    Remove from thread
+                                  </li>
+                                )}
+                                {thread?.thread.data?.creatorId === me.me?.id && me.me?.id !== user?.id && (
+                                  <li
+                                    className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
+                                    onClick={() => {}}
+                                  >
+                                    <ImArrowUp size={18} style={{ marginRight: '5px' }} />
+                                    Promote
+                                  </li>
+                                )}
+                              </div>
                             )}
                           </ul>
                         </div>

@@ -20,6 +20,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile 
   const [tab, setTab] = useState<number>(1);
   const meData = useMeQuery();
   const { data: threads } = useThreadsQuery();
+
   return (
     <div
       className="bg-dark-200 mt-12 border-l-2 border-dark-50 absolute right-0 overflow-x-hidden flex flex-col"

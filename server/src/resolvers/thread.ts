@@ -80,7 +80,7 @@ export class ThreadResolver {
     if (userId === req.session.userId) {
       const threads = await ThreadMembers.find({
         where: { userId },
-        relations: ['user', 'thread', 'thread.members', 'thread.members.user']
+        relations: ['user', 'thread', 'thread.creator', 'thread.members', 'thread.members.user']
       });
       const updatedThreads = await Promise.all(
         threads.map(async (thread) => {

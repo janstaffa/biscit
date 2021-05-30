@@ -353,7 +353,7 @@ export type MessageSnippetFragment = (
 
 export type ThreadSnippetFragment = (
   { __typename?: 'Thread' }
-  & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+  & Pick<Thread, 'id' | 'isDm' | 'name' | 'creatorId' | 'lastActivity' | 'createdAt' | 'updatedAt'>
   & { lastMessage?: Maybe<(
     { __typename?: 'Message' }
     & MessageSnippetFragment
@@ -363,12 +363,19 @@ export type ThreadSnippetFragment = (
   )>, media?: Maybe<Array<(
     { __typename?: 'File' }
     & FileSnippetFragment
-  )>> }
+  )>>, creator?: Maybe<(
+    { __typename?: 'User' }
+    & UserSnippetFragment
+  )> }
 );
 
 export type ThreadMembersSnippetFragment = (
   { __typename?: 'ThreadMembers' }
   & Pick<ThreadMembers, 'id' | 'threadId' | 'userId' | 'isAdmin' | 'unread' | 'lastActivity' | 'createdAt' | 'updatedAt'>
+  & { user: (
+    { __typename?: 'User' }
+    & UserSnippetFragment
+  ) }
 );
 
 export type UserSnippetFragment = (
@@ -658,21 +665,7 @@ export type ThreadQuery = (
     { __typename?: 'ThreadResponse' }
     & { data?: Maybe<(
       { __typename?: 'Thread' }
-      & Pick<Thread, 'id' | 'isDm' | 'name' | 'lastActivity' | 'createdAt' | 'updatedAt'>
-      & { lastMessage?: Maybe<(
-        { __typename?: 'Message' }
-        & MessageSnippetFragment
-      )>, media?: Maybe<Array<(
-        { __typename?: 'File' }
-        & FileSnippetFragment
-      )>>, members: Array<(
-        { __typename?: 'ThreadMembers' }
-        & Pick<ThreadMembers, 'id' | 'isAdmin' | 'unread' | 'lastActivity' | 'createdAt'>
-        & { user: (
-          { __typename?: 'User' }
-          & UserSnippetFragment
-        ) }
-      )> }
+      & ThreadSnippetFragment
     )>, errors: Array<(
       { __typename?: 'GQLValidationError' }
       & ErrorSnippetFragment
@@ -782,13 +775,16 @@ export const ThreadMembersSnippetFragmentDoc = `
   id
   threadId
   userId
+  user {
+    ...userSnippet
+  }
   isAdmin
   unread
   lastActivity
   createdAt
   updatedAt
 }
-    `;
+    ${UserSnippetFragmentDoc}`;
 export const ThreadSnippetFragmentDoc = `
     fragment threadSnippet on Thread {
   id
@@ -803,13 +799,18 @@ export const ThreadSnippetFragmentDoc = `
   media {
     ...fileSnippet
   }
+  creatorId
+  creator {
+    ...userSnippet
+  }
   lastActivity
   createdAt
   updatedAt
 }
     ${MessageSnippetFragmentDoc}
 ${ThreadMembersSnippetFragmentDoc}
-${FileSnippetFragmentDoc}`;
+${FileSnippetFragmentDoc}
+${UserSnippetFragmentDoc}`;
 export const AcceptRequestDocument = `
     mutation AcceptRequest($options: RequestAcceptInput!) {
   FriendRequestAccept(options: $options) {
@@ -1124,37 +1125,14 @@ export const ThreadDocument = `
     query Thread($options: ThreadInput!) {
   thread(options: $options) {
     data {
-      id
-      isDm
-      name
-      lastMessage {
-        ...messageSnippet
-      }
-      lastActivity
-      media {
-        ...fileSnippet
-      }
-      createdAt
-      updatedAt
-      members {
-        id
-        isAdmin
-        unread
-        lastActivity
-        createdAt
-        user {
-          ...userSnippet
-        }
-      }
+      ...threadSnippet
     }
     errors {
       ...errorSnippet
     }
   }
 }
-    ${MessageSnippetFragmentDoc}
-${FileSnippetFragmentDoc}
-${UserSnippetFragmentDoc}
+    ${ThreadSnippetFragmentDoc}
 ${ErrorSnippetFragmentDoc}`;
 export const useThreadQuery = <
       TData = ThreadQuery,

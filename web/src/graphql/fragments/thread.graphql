@@ -11,6 +11,10 @@ fragment threadSnippet on Thread {
   media {
     ...fileSnippet
   }
+  creatorId
+  creator {
+    ...userSnippet
+  }
   lastActivity
   createdAt
   updatedAt
