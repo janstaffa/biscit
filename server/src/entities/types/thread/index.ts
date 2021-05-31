@@ -41,3 +41,15 @@ export class AddMemberInput {
   @Field(() => [String])
   newMembers: string[];
 }
+
+@InputType()
+export class ChangeAdminInput {
+  @Field()
+  threadId: string;
+
+  @Field()
+  userId: string;
+
+  @Field()
+  value: boolean;
+}

@@ -26,6 +26,12 @@ export type BooleanResponse = {
   errors: Array<GqlValidationError>;
 };
 
+export type ChangeAdminInput = {
+  threadId: Scalars['String'];
+  userId: Scalars['String'];
+  value: Scalars['Boolean'];
+};
+
 export type CreateThreadInput = {
   threadName: Scalars['String'];
   members?: Maybe<Array<Scalars['String']>>;
@@ -145,6 +151,7 @@ export type Mutation = {
   EditThread: BooleanResponse;
   RemoveMember: BooleanResponse;
   AddMembers: BooleanResponse;
+  ChangeAdmin: BooleanResponse;
   UserRegister: BooleanResponse;
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
@@ -209,6 +216,11 @@ export type MutationRemoveMemberArgs = {
 
 export type MutationAddMembersArgs = {
   options: AddMemberInput;
+};
+
+
+export type MutationChangeAdminArgs = {
+  options: ChangeAdminInput;
 };
 
 
@@ -459,6 +471,23 @@ export type CancelRequestMutationVariables = Exact<{
 export type CancelRequestMutation = (
   { __typename?: 'Mutation' }
   & { FriendRequestCancel: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
+);
+
+export type ChangeAdminMutationVariables = Exact<{
+  options: ChangeAdminInput;
+}>;
+
+
+export type ChangeAdminMutation = (
+  { __typename?: 'Mutation' }
+  & { ChangeAdmin: (
     { __typename?: 'BooleanResponse' }
     & Pick<BooleanResponse, 'data'>
     & { errors: Array<(
@@ -949,6 +978,24 @@ export const useCancelRequestMutation = <
     >(options?: UseMutationOptions<CancelRequestMutation, TError, CancelRequestMutationVariables, TContext>) => 
     useMutation<CancelRequestMutation, TError, CancelRequestMutationVariables, TContext>(
       useGQLRequest<CancelRequestMutation, CancelRequestMutationVariables>(CancelRequestDocument),
+      options
+    );
+export const ChangeAdminDocument = `
+    mutation ChangeAdmin($options: ChangeAdminInput!) {
+  ChangeAdmin(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useChangeAdminMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<ChangeAdminMutation, TError, ChangeAdminMutationVariables, TContext>) => 
+    useMutation<ChangeAdminMutation, TError, ChangeAdminMutationVariables, TContext>(
+      useGQLRequest<ChangeAdminMutation, ChangeAdminMutationVariables>(ChangeAdminDocument),
       options
     );
 export const CreateThreadDocument = `

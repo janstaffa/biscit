@@ -6,6 +6,7 @@ import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import {
   AddMemberInput,
+  ChangeAdminInput,
   CreateThreadInput,
   EditThreadInput,
   RemoveMemberInput,
@@ -367,6 +368,50 @@ export class ThreadResolver {
         const exists = alreadyMembers.find((member) => newMember === member.userId);
         if (exists) continue;
         await ThreadMembers.create({ userId: newMember, threadId: options.threadId }).save();
+      }
+      return {
+        data: true,
+        errors
+      };
+    }
+    return {
+      data: false,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async ChangeAdmin(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: ChangeAdminInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const thread = await Thread.findOne({
+      id: options.threadId,
+      creatorId: userId
+    });
+
+    if (!thread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "This thread doesn't exist, or it wasn't created by you."
+        })
+      );
+    }
+
+    if (errors.length === 0) {
+      const updated = await ThreadMembers.update(
+        { threadId: options.threadId, userId: options.userId },
+        { isAdmin: options.value }
+      );
+
+      if (updated.affected === 1) {
         return {
           data: true,
           errors

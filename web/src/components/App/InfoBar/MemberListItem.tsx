@@ -4,6 +4,7 @@ import { HiDotsVertical } from 'react-icons/hi';
 import { ImArrowDown, ImArrowUp, ImCross } from 'react-icons/im';
 import { UseMutateFunction } from 'react-query';
 import { Popup } from 'react-tiny-modals';
+import { genericErrorMessage } from '../../../constants';
 import {
   Exact,
   MeQuery,
@@ -11,7 +12,8 @@ import {
   RemoveMemberMutation,
   ThreadMembers,
   ThreadQuery,
-  ThreadsQuery
+  ThreadsQuery,
+  useChangeAdminMutation
 } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast, successToast } from '../../../utils/toasts';
@@ -40,6 +42,22 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
   const threads = myThreads?.threads;
   const isAdmin = threads?.find((t) => t.threadId === thread?.thread.data?.id)?.isAdmin;
 
+  const { mutate: changeAdmin } = useChangeAdminMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    },
+    onSuccess: (d, { options: { value } }) => {
+      if (d.ChangeAdmin.data) {
+        successToast(`${value ? 'Added' : 'Removed'} admin ${value ? 'to' : 'from'} ${member.user.username}.`);
+      }
+      if (d.ChangeAdmin.errors.length > 0) {
+        for (const error of d.ChangeAdmin.errors) {
+          errorToast(error.details?.message);
+        }
+      }
+    }
+  });
   return (
     <li className="list-none">
       <div className="py-1 px-2 rounded-sm flex flex-row items-center hover:bg-dark-100 hover:text-light-hover">
@@ -118,7 +136,9 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                     {member.isAdmin ? (
                                       <li
                                         className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                        onClick={() => {}}
+                                        onClick={async () => {
+                                          await changeAdmin({ options: { threadId, userId: user.id, value: false } });
+                                        }}
                                       >
                                         <ImArrowDown size={18} style={{ marginRight: '5px' }} />
                                         Remove admin
@@ -126,7 +146,9 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                     ) : (
                                       <li
                                         className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                        onClick={() => {}}
+                                        onClick={async () => {
+                                          await changeAdmin({ options: { threadId, userId: user.id, value: true } });
+                                        }}
                                       >
                                         <ImArrowUp size={18} style={{ marginRight: '5px' }} />
                                         Make admin

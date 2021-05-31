@@ -1,0 +1,8 @@
+mutation ChangeAdmin($options: ChangeAdminInput!) {
+  ChangeAdmin(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
