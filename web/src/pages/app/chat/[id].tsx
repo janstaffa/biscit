@@ -19,12 +19,13 @@ import { genericErrorMessage } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
+  useEditThreadMutation,
   useThreadQuery,
   useThreadsQuery
 } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
-import { errorToast } from '../../../utils/toasts';
+import { errorToast, successToast } from '../../../utils/toasts';
 import withAuth from '../../../utils/withAuth';
 
 const Chat: NextPage = () => {
@@ -65,9 +66,15 @@ const Chat: NextPage = () => {
     }
   );
 
+  const { mutate: editThread } = useEditThreadMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
-  const [editThreadName, setEditThreadName] = useState<string>(data?.thread.data?.name || '');
+  const [editThreadNewName, setEditThreadNewName] = useState<string>(data?.thread.data?.name || '');
 
   const [resendMessage, setResendMessage] = useState<MessageSnippetFragment | null>(null);
   const [resendThreads, setResendThreads] = useState<string[]>([]);
@@ -237,7 +244,7 @@ const Chat: NextPage = () => {
         isOpen={editModalShow}
         zIndex={100}
         backOpacity={0.5}
-        onOpen={() => setEditThreadName(data?.thread.data?.name || '')}
+        onOpen={() => setEditThreadNewName(data?.thread.data?.name || '')}
       >
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">
@@ -262,8 +269,8 @@ const Chat: NextPage = () => {
               autoCapitalize="off"
               spellCheck="false"
               maxLength={100}
-              value={editThreadName}
-              onChange={(e) => setEditThreadName(e.target.value)}
+              value={editThreadNewName}
+              onChange={(e) => setEditThreadNewName(e.target.value)}
             />
             <p className="text-light-300 mt-1 text-sm">max 100 characters</p>
             <div className="w-full flex flex-row justify-end mt-6">
@@ -273,7 +280,28 @@ const Chat: NextPage = () => {
               >
                 Cancel
               </button>
-              <SubmitButton onClick={async () => {}}>Save</SubmitButton>
+              <SubmitButton
+                onClick={async () => {
+                  await editThread(
+                    { options: { threadId, newName: editThreadNewName } },
+                    {
+                      onSuccess: (d) => {
+                        if (d.EditThread.data) {
+                          successToast(`Thread name changed to ${editThreadNewName}`);
+                          setEditModalShow(false);
+                        }
+                        if (d.EditThread.errors.length > 0) {
+                          for (const error of d.EditThread.errors) {
+                            errorToast(error.details?.message);
+                          }
+                        }
+                      }
+                    }
+                  );
+                }}
+              >
+                Save
+              </SubmitButton>
             </div>
           </div>
         </div>{' '}

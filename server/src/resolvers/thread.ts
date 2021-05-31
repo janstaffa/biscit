@@ -4,7 +4,7 @@ import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
-import { CreateThreadInput, ThreadInput } from '../entities/types/thread';
+import { CreateThreadInput, EditThreadInput, RemoveMemberInput, ThreadInput } from '../entities/types/thread';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
@@ -189,6 +189,128 @@ export class ThreadResolver {
     return {
       data: id,
       errors: []
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async EditThread(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: EditThreadInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const thread = await Thread.findOne({
+      id: options.threadId,
+      creatorId: userId
+    });
+
+    const errors: GQLValidationError[] = [];
+
+    if (!thread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "This thread doesn't exist, or it wasn't created by you."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    if (!options.newName || !/\S/.test(options.newName)) {
+      errors.push(
+        new GQLValidationError({
+          field: 'newName',
+          value: options.newName,
+          message: 'New thread name not provided.'
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+    const updated = await Thread.update({ id: options.threadId }, { name: options.newName });
+    if (updated.affected === 1) {
+      return {
+        data: true,
+        errors
+      };
+    }
+    return {
+      data: false,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async RemoveMember(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: RemoveMemberInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const thread = await Thread.findOne({
+      id: options.threadId,
+      creatorId: userId
+    });
+
+    if (!thread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "This thread doesn't exist, or it wasn't created by you."
+        })
+      );
+    }
+
+    if (!options.userId) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: options.userId,
+          message: 'UserID was not provided.'
+        })
+      );
+    }
+
+    if (options.userId === userId) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: options.userId,
+          message: "You can't remove yourself from the thread."
+        })
+      );
+    }
+
+    if (errors.length === 0) {
+      const updated = await ThreadMembers.delete({ threadId: options.threadId, userId: options.userId });
+      if (updated.affected === 1) {
+        return {
+          data: true,
+          errors
+        };
+      }
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: options.userId,
+          message: "This user isn't a member of this thread.."
+        })
+      );
+    }
+    return {
+      data: false,
+      errors
     };
   }
 }

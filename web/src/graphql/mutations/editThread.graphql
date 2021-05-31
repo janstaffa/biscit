@@ -1,0 +1,8 @@
+mutation EditThread($options: EditThreadInput!) {
+  EditThread(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

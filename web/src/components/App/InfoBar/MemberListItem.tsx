@@ -70,17 +70,16 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                     Add friend
                                   </li>
                                 )}
-                                {isAdmin && !member.isAdmin && (
-                                  <li
-                                    className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                    onClick={() => {}}
-                                  >
-                                    <ImCross size={18} style={{ marginRight: '5px' }} />
-                                    Remove from thread
-                                  </li>
-                                )}
                                 {thread?.thread.data?.creatorId === me.me?.id && (
                                   <>
+                                    <li
+                                      className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
+                                      onClick={() => {}}
+                                    >
+                                      <ImCross size={18} style={{ marginRight: '5px' }} />
+                                      Remove from thread
+                                    </li>
+
                                     {member.isAdmin ? (
                                       <li
                                         className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
