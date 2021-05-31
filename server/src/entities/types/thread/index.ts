@@ -32,3 +32,12 @@ export class RemoveMemberInput {
   @Field()
   userId: string;
 }
+
+@InputType()
+export class AddMemberInput {
+  @Field()
+  threadId: string;
+
+  @Field(() => [String])
+  newMembers: string[];
+}

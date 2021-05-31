@@ -14,12 +14,15 @@ import ImageGallery from '../../../components/App/Chat/ImageGallery';
 import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
+import FriendListItem from '../../../components/App/Threads/FriendListItem';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
 import { genericErrorMessage } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
+  useAddMembersMutation,
   useEditThreadMutation,
+  useMeQuery,
   useThreadQuery,
   useThreadsQuery
 } from '../../../generated/graphql';
@@ -56,6 +59,7 @@ const Chat: NextPage = () => {
     }
   );
 
+  const { data: meData, isLoading } = useMeQuery();
   const { data: loadedThreads } = useThreadsQuery(
     {},
     {
@@ -72,9 +76,17 @@ const Chat: NextPage = () => {
       errorToast(genericErrorMessage);
     }
   });
+  const { mutate: addMembers } = useAddMembersMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
   const [editThreadNewName, setEditThreadNewName] = useState<string>(data?.thread.data?.name || '');
+  const [addMemberModalShow, setAddMemberModalShow] = useState<boolean>(false);
+  const [toAddMembers, setToAddMembers] = useState<string[]>([]);
 
   const [resendMessage, setResendMessage] = useState<MessageSnippetFragment | null>(null);
   const [resendThreads, setResendThreads] = useState<string[]>([]);
@@ -119,6 +131,10 @@ const Chat: NextPage = () => {
   }, [galleryFile]);
 
   const [showChatInfo, setShowChatInfo] = useState<boolean>(false);
+
+  const availableNewThreadMembers = meData?.me?.friends?.filter((friend) => {
+    return !data?.thread.data?.members.find((member) => member.userId === friend.friend.id);
+  });
   return (
     <>
       <Head>
@@ -163,8 +179,10 @@ const Chat: NextPage = () => {
             <ChatInfoBar
               show={showChatInfo}
               thread={data}
+              threadId={threadId}
               setGalleryFile={setGalleryFile}
               setEditModalShow={setEditModalShow}
+              setAddMemberModalShow={setAddMemberModalShow}
               editModalShow={editModalShow}
             />
           </div>
@@ -304,7 +322,86 @@ const Chat: NextPage = () => {
               </SubmitButton>
             </div>
           </div>
-        </div>{' '}
+        </div>
+      </Modal>
+      <Modal isOpen={addMemberModalShow} backOpacity={0.5}>
+        <div className="bg-dark-200 p-5 rounded-xl w-96">
+          <div className="w-full h-10 flex flex-row justify-between">
+            <div className="text-light-300 text-lg font-roboto">Add members</div>
+            <div>
+              <IoMdClose
+                className="text-2xl text-light-300 hover:text-light cursor-pointer"
+                onClick={() => setAddMemberModalShow(false)}
+              />
+            </div>
+          </div>
+          <div className="w-full flex-grow">
+            <div>
+              {availableNewThreadMembers && availableNewThreadMembers.length > 0 && (
+                <p className="text-light-300 font-opensans text-md mb-1">Choose members (they must be your friends)</p>
+              )}
+              <ul className="w-full max-h-72 overflow-auto overflow-x-hidden">
+                {availableNewThreadMembers && availableNewThreadMembers.length > 0 ? (
+                  availableNewThreadMembers.map((friendship) => {
+                    const { friend } = friendship;
+                    return (
+                      <FriendListItem
+                        friend={friend}
+                        key={friendship.id}
+                        onChecked={(checked) => {
+                          if (checked) {
+                            setToAddMembers([...toAddMembers, friend.id]);
+                            return;
+                          }
+                          const currentToAddMembers = [...toAddMembers];
+                          const newToAddMembers = currentToAddMembers.filter((resendThread) => {
+                            if (resendThread === friend.id) return false;
+                            return true;
+                          });
+                          setToAddMembers(newToAddMembers);
+                        }}
+                      />
+                    );
+                  })
+                ) : (
+                  <div className="text-light-400 text-sm">No friends that you can add found.</div>
+                )}
+              </ul>
+            </div>
+
+            <div className="w-full flex flex-row justify-end mt-6">
+              <button
+                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
+                onClick={() => setAddMemberModalShow(false)}
+              >
+                Cancel
+              </button>
+              <SubmitButton
+                onClick={async () => {
+                  if (toAddMembers.length === 0) return;
+                  await addMembers(
+                    { options: { threadId, newMembers: toAddMembers } },
+                    {
+                      onSuccess: (d) => {
+                        if (d.AddMembers.data) {
+                          successToast(`${toAddMembers.length} new members were added to this thread.`);
+                          setAddMemberModalShow(false);
+                        }
+                        if (d.AddMembers.errors.length > 0) {
+                          for (const error of d.AddMembers.errors) {
+                            errorToast(error.details?.message);
+                          }
+                        }
+                      }
+                    }
+                  );
+                }}
+              >
+                Add
+              </SubmitButton>
+            </div>
+          </div>
+        </div>
       </Modal>
     </>
   );

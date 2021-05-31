@@ -2,18 +2,37 @@ import React from 'react';
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import { HiDotsVertical } from 'react-icons/hi';
 import { ImArrowDown, ImArrowUp, ImCross } from 'react-icons/im';
+import { UseMutateFunction } from 'react-query';
 import { Popup } from 'react-tiny-modals';
-import { MeQuery, ThreadMembers, ThreadQuery, ThreadsQuery } from '../../../generated/graphql';
+import {
+  Exact,
+  MeQuery,
+  RemoveMemberInput,
+  RemoveMemberMutation,
+  ThreadMembers,
+  ThreadQuery,
+  ThreadsQuery
+} from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
+import { errorToast, successToast } from '../../../utils/toasts';
 
 export interface MemberListItemProps {
   member: ThreadMembers;
   me: MeQuery;
   myThreads: ThreadsQuery | undefined;
   thread: ThreadQuery | undefined;
+  threadId: string;
+  removeMember: UseMutateFunction<
+    RemoveMemberMutation,
+    unknown,
+    Exact<{
+      options: RemoveMemberInput;
+    }>,
+    unknown
+  >;
 }
 
-const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, thread }) => {
+const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, thread, threadId, removeMember }) => {
   const { user } = member;
   const friends = me.me?.friends;
   const isFriend = !!friends?.find((friend) => friend.friend.id === user?.id);
@@ -74,7 +93,23 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                   <>
                                     <li
                                       className="text-red-600 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                      onClick={() => {}}
+                                      onClick={async () => {
+                                        await removeMember(
+                                          { options: { threadId, userId: user.id } },
+                                          {
+                                            onSuccess: (d) => {
+                                              if (d.RemoveMember.data) {
+                                                successToast(`${user.username} was removed from this thread.`);
+                                              }
+                                              if (d.RemoveMember.errors.length > 0) {
+                                                for (const error of d.RemoveMember.errors) {
+                                                  errorToast(error.details?.message);
+                                                }
+                                              }
+                                            }
+                                          }
+                                        );
+                                      }}
                                     >
                                       <ImCross size={18} style={{ marginRight: '5px' }} />
                                       Remove from thread

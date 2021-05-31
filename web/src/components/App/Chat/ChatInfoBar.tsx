@@ -13,12 +13,22 @@ import InfoBarTab from '../InfoBar/InfoBarTab';
 export interface ChatInfoBarProps {
   show: boolean;
   thread: ThreadQuery | undefined;
+  threadId: string;
   setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
   setEditModalShow: React.Dispatch<React.SetStateAction<boolean>>;
+  setAddMemberModalShow: React.Dispatch<React.SetStateAction<boolean>>;
   editModalShow: boolean;
 }
 
-const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile, setEditModalShow, editModalShow }) => {
+const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
+  show,
+  thread,
+  threadId,
+  setGalleryFile,
+  setEditModalShow,
+  setAddMemberModalShow,
+  editModalShow
+}) => {
   const [tab, setTab] = useState<number>(1);
   const meData = useMeQuery();
   const { data: threads } = useThreadsQuery();
@@ -82,7 +92,9 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({ show, thread, setGalleryFile,
       <div className="flex-grow overflow-y-auto">
         <InfoBarTab
           thread={thread}
+          threadId={threadId}
           setGalleryFile={setGalleryFile}
+          setAddMemberModalShow={setAddMemberModalShow}
           tab={tab}
           me={meData.data as MeQuery}
           myThreads={threads as ThreadsQuery | undefined}

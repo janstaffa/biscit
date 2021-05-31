@@ -4,7 +4,13 @@ import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
-import { CreateThreadInput, EditThreadInput, RemoveMemberInput, ThreadInput } from '../entities/types/thread';
+import {
+  AddMemberInput,
+  CreateThreadInput,
+  EditThreadInput,
+  RemoveMemberInput,
+  ThreadInput
+} from '../entities/types/thread';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
@@ -307,6 +313,65 @@ export class ThreadResolver {
           message: "This user isn't a member of this thread.."
         })
       );
+    }
+    return {
+      data: false,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async AddMembers(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: AddMemberInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const thread = await Thread.findOne({
+      id: options.threadId,
+      creatorId: userId
+    });
+
+    if (!thread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "This thread doesn't exist, or it wasn't created by you."
+        })
+      );
+    }
+
+    if (!options.newMembers || options.newMembers.length === 0) {
+      errors.push(
+        new GQLValidationError({
+          field: 'newMembers',
+          value: options.newMembers.join(','),
+          message: 'newMembers were not provided.'
+        })
+      );
+    }
+
+    if (errors.length === 0) {
+      const alreadyMembers = await createQueryBuilder(ThreadMembers, 'member')
+        .where('member.threadId = :threadId AND member.userId IN (:...ids)', {
+          threadId: options.threadId,
+          ids: options.newMembers
+        })
+        .getMany();
+
+      for (const newMember of options.newMembers) {
+        const exists = alreadyMembers.find((member) => newMember === member.userId);
+        if (exists) continue;
+        await ThreadMembers.create({ userId: newMember, threadId: options.threadId }).save();
+        return {
+          data: true,
+          errors
+        };
+      }
     }
     return {
       data: false,

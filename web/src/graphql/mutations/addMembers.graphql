@@ -1,0 +1,8 @@
+mutation AddMembers($options: AddMemberInput!) {
+  AddMembers(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
