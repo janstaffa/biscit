@@ -6,7 +6,7 @@ import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
 import { Modal } from 'react-tiny-modals';
-import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../..';
+import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage, SocketThreadMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
 import {
   MeQuery,
@@ -79,7 +79,7 @@ const LeftSidebar: React.FC = () => {
   const { data: meData, isLoading } = useMeQuery();
   const meDataRef = useRef<MeQuery | undefined>();
   meDataRef.current = meData;
-  const { data: loadedThreads } = useThreadsQuery(
+  const { data: loadedThreads, isFetched } = useThreadsQuery(
     {},
     {
       onError: (err) => {
@@ -88,7 +88,6 @@ const LeftSidebar: React.FC = () => {
       }
     }
   );
-
   const [threadSearchQuery, setThreadSearchQuery] = useState<string | null>(null);
 
   useEffect(() => {
@@ -171,6 +170,28 @@ const LeftSidebar: React.FC = () => {
       };
     }
   }, [threadId]);
+
+  useEffect(() => {
+    const ws = socket.connect();
+    if (isServer() || !ws) return;
+
+    const handleMessage = async (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+
+      if (incoming.code === 3009) {
+        queryClient.invalidateQueries('Threads');
+        queryClient.invalidateQueries([
+          'Thread',
+          { options: { threadId: (incoming as SocketThreadMessage).threadId } }
+        ]);
+      }
+    };
+    ws.addEventListener('message', handleMessage as (e) => void);
+    return () => {
+      ws.removeEventListener('message', handleMessage as (e) => void);
+    };
+  }, [isFetched]);
 
   useEffect(() => {
     if (!isLoading && meData && meData?.me) {

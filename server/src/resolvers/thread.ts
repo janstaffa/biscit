@@ -1,3 +1,4 @@
+import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
 import { File } from '../entities/File';
@@ -13,10 +14,15 @@ import {
   ThreadInput
 } from '../entities/types/thread';
 import { isAuth } from '../middleware/isAuth';
+import { SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType, StringResponse, ThreadResponse } from './types';
+
+const pubClient = createClient({
+  url: process.env.REDIS_URL
+});
 
 @Resolver(Thread)
 export class ThreadResolver {
@@ -243,6 +249,14 @@ export class ThreadResolver {
     }
     const updated = await Thread.update({ id: options.threadId }, { name: options.newName });
     if (updated.affected === 1) {
+      thread.name = options.newName;
+      const payload: SocketThreadMessage = {
+        code: THREAD_CHANGE_CODE,
+        threadId: options.threadId
+      };
+
+      pubClient.publish(options.threadId, JSON.stringify(payload));
+
       return {
         data: true,
         errors
@@ -302,6 +316,13 @@ export class ThreadResolver {
     if (errors.length === 0) {
       const updated = await ThreadMembers.delete({ threadId: options.threadId, userId: options.userId });
       if (updated.affected === 1) {
+        const payload: SocketThreadMessage = {
+          code: THREAD_CHANGE_CODE,
+          threadId: options.threadId
+        };
+
+        pubClient.publish(options.threadId, JSON.stringify(payload));
+
         return {
           data: true,
           errors
@@ -369,6 +390,12 @@ export class ThreadResolver {
         if (exists) continue;
         await ThreadMembers.create({ userId: newMember, threadId: options.threadId }).save();
       }
+      const payload: SocketThreadMessage = {
+        code: THREAD_CHANGE_CODE,
+        threadId: options.threadId
+      };
+
+      pubClient.publish(options.threadId, JSON.stringify(payload));
       return {
         data: true,
         errors
@@ -412,6 +439,13 @@ export class ThreadResolver {
       );
 
       if (updated.affected === 1) {
+        const payload: SocketThreadMessage = {
+          code: THREAD_CHANGE_CODE,
+          threadId: options.threadId
+        };
+
+        pubClient.publish(options.threadId, JSON.stringify(payload));
+
         return {
           data: true,
           errors

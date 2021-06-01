@@ -43,3 +43,7 @@ export interface attachment {
   id: string;
   name: string;
 }
+
+export interface IncomingThreadUpdateMessage extends SocketThreadMessage {
+  updatedThread: Thread;
+}

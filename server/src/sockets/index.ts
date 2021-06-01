@@ -7,6 +7,7 @@ import WebSocket from 'ws';
 import { browserOrigin } from '../constants';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
+import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { handleMessage } from './handleMessage';
@@ -38,6 +39,10 @@ export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {
   hasMore: boolean;
 }
 
+export interface ThreadUpdateMessage extends SocketThreadMessage {
+  updatedThread: Thread;
+}
+
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -47,6 +52,7 @@ export const DELETE_MESSAGE_CODE = 3007;
 export const ERROR_MESSAGE_CODE = 3001;
 export const AUTH_CODE = 3004;
 export const READY_CODE = 3005;
+export const THREAD_CHANGE_CODE = 3009;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;

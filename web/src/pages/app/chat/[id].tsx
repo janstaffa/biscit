@@ -324,7 +324,7 @@ const Chat: NextPage = () => {
           </div>
         </div>
       </Modal>
-      <Modal isOpen={addMemberModalShow} backOpacity={0.5}>
+      <Modal isOpen={addMemberModalShow} backOpacity={0.5} onClose={() => setToAddMembers([])}>
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">
             <div className="text-light-300 text-lg font-roboto">Add members</div>
@@ -384,8 +384,13 @@ const Chat: NextPage = () => {
                     {
                       onSuccess: (d) => {
                         if (d.AddMembers.data) {
-                          successToast(`${toAddMembers.length} new members were added to this thread.`);
+                          successToast(
+                            `${toAddMembers.length} new member${
+                              toAddMembers.length > 1 ? 's were' : ' was'
+                            } added to this thread.`
+                          );
                           setAddMemberModalShow(false);
+                          setToAddMembers([]);
                         }
                         if (d.AddMembers.errors.length > 0) {
                           for (const error of d.AddMembers.errors) {
