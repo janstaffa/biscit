@@ -119,7 +119,7 @@ export class UserResolver {
     });
 
     let errors = (await validateSchema(RegisterSchema, options)) || [];
-    if (errors) return { data: false, errors };
+    if (errors && errors.length > 0) return { data: false, errors };
 
     const { username, email, password } = options;
     const check = await User.find({ where: [{ username }, { email }] });

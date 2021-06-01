@@ -100,7 +100,8 @@ export type FriendRequest = {
 };
 
 export type FriendRequestInput = {
-  username: Scalars['String'];
+  username?: Maybe<Scalars['String']>;
+  userId?: Maybe<Scalars['String']>;
 };
 
 export type FriendRequestResponse = {

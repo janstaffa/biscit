@@ -7,9 +7,11 @@ import { Popup } from 'react-tiny-modals';
 import { genericErrorMessage } from '../../../constants';
 import {
   Exact,
+  FriendRequestInput,
   MeQuery,
   RemoveMemberInput,
   RemoveMemberMutation,
+  SendRequestMutation,
   ThreadMembers,
   ThreadQuery,
   ThreadsQuery,
@@ -32,9 +34,25 @@ export interface MemberListItemProps {
     }>,
     unknown
   >;
+  addFriend: UseMutateFunction<
+    SendRequestMutation,
+    unknown,
+    Exact<{
+      options: FriendRequestInput;
+    }>,
+    unknown
+  >;
 }
 
-const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, thread, threadId, removeMember }) => {
+const MemberListItem: React.FC<MemberListItemProps> = ({
+  member,
+  me,
+  myThreads,
+  thread,
+  threadId,
+  removeMember,
+  addFriend
+}) => {
   const { user } = member;
   const friends = me.me?.friends;
   const isFriend = !!friends?.find((friend) => friend.friend.id === user?.id);
@@ -101,7 +119,23 @@ const MemberListItem: React.FC<MemberListItemProps> = ({ member, me, myThreads, 
                                 {!isFriend && (
                                   <li
                                     className="text-lime-100 font-opensans p-2 hover:bg-dark-100 cursor-pointer flex flex-row items-center"
-                                    onClick={() => {}}
+                                    onClick={async () => {
+                                      await addFriend(
+                                        { options: { userId: user.id } },
+                                        {
+                                          onSuccess: (d) => {
+                                            if (d.FriendRequestSend.data) {
+                                              successToast(`Friends request sent to ${member.user.username}`);
+                                            }
+                                            if (d.FriendRequestSend.errors.length > 0) {
+                                              for (const error of d.FriendRequestSend.errors) {
+                                                errorToast(error.details?.message);
+                                              }
+                                            }
+                                          }
+                                        }
+                                      );
+                                    }}
                                   >
                                     <BsFillPersonPlusFill size={20} style={{ marginRight: '5px' }} />
                                     Add friend

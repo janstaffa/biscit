@@ -15,8 +15,11 @@ export class RequestCancelInput {
 }
 @InputType()
 export class FriendRequestInput {
-  @Field()
-  username: string;
+  @Field(() => String, { nullable: true })
+  username?: string;
+
+  @Field(() => String, { nullable: true })
+  userId?: string;
 }
 
 @InputType()

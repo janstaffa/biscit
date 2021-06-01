@@ -257,6 +257,14 @@ export class ThreadResolver {
 
       pubClient.publish(options.threadId, JSON.stringify(payload));
 
+      await Thread.update(
+        {
+          id: options.threadId,
+          creatorId: userId
+        },
+        { lastActivity: new Date() }
+      );
+
       return {
         data: true,
         errors
@@ -322,6 +330,14 @@ export class ThreadResolver {
         };
 
         pubClient.publish(options.threadId, JSON.stringify(payload));
+
+        await Thread.update(
+          {
+            id: options.threadId,
+            creatorId: userId
+          },
+          { lastActivity: new Date() }
+        );
 
         return {
           data: true,
@@ -396,6 +412,15 @@ export class ThreadResolver {
       };
 
       pubClient.publish(options.threadId, JSON.stringify(payload));
+
+      await Thread.update(
+        {
+          id: options.threadId,
+          creatorId: userId
+        },
+        { lastActivity: new Date() }
+      );
+
       return {
         data: true,
         errors
@@ -445,6 +470,14 @@ export class ThreadResolver {
         };
 
         pubClient.publish(options.threadId, JSON.stringify(payload));
+
+        await Thread.update(
+          {
+            id: options.threadId,
+            creatorId: userId
+          },
+          { lastActivity: new Date() }
+        );
 
         return {
           data: true,

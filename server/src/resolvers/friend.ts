@@ -26,10 +26,24 @@ export class FriendResolver {
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
 
-    const reciever = await User.findOne({
-      where: { username: options.username }
-    });
     const errors: GQLValidationError[] = [];
+
+    if (!options.username && !options.userId) {
+      errors.push(
+        new GQLValidationError({
+          field: 'username',
+          value: '',
+          message: "You must provide the user's username or ID."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+    const reciever = await User.findOne({
+      where: [{ username: options.username }, { id: options.userId }]
+    });
     if (reciever) {
       const friend = await Friend.findOne({
         where: { userId, friendId: reciever.id }
@@ -38,7 +52,7 @@ export class FriendResolver {
         errors.push(
           new GQLValidationError({
             field: 'username',
-            value: options.username,
+            value: options.username || '',
             message: 'You are already friends with this user.'
           })
         );
@@ -55,7 +69,7 @@ export class FriendResolver {
         errors.push(
           new GQLValidationError({
             field: 'username',
-            value: options.username,
+            value: options.username || '',
             message: 'You have already send a friend request to this user.'
           })
         );
@@ -72,7 +86,7 @@ export class FriendResolver {
       errors.push(
         new GQLValidationError({
           field: 'username',
-          value: options.username,
+          value: options.username || '',
           message: "This user doesn't exist."
         })
       );

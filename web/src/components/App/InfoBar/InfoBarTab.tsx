@@ -7,7 +7,8 @@ import {
   ThreadMembers,
   ThreadQuery,
   ThreadsQuery,
-  useRemoveMemberMutation
+  useRemoveMemberMutation,
+  useSendRequestMutation
 } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast } from '../../../utils/toasts';
@@ -39,6 +40,13 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
   const admins = t?.members.filter((m) => m.isAdmin);
 
   const { mutate: removeMember } = useRemoveMemberMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
+
+  const { mutate: addFriend } = useSendRequestMutation({
     onError: (err) => {
       console.error(err);
       errorToast(genericErrorMessage);
@@ -88,6 +96,7 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
                   thread={thread}
                   threadId={threadId}
                   removeMember={removeMember}
+                  addFriend={addFriend}
                   key={member.id}
                 />
               ))}
