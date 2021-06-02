@@ -53,3 +53,15 @@ export class ChangeAdminInput {
   @Field()
   value: boolean;
 }
+
+@InputType()
+export class DeleteThreadInput {
+  @Field()
+  threadId: string;
+}
+
+@InputType()
+export class LeaveThreadInput {
+  @Field()
+  threadId: string;
+}

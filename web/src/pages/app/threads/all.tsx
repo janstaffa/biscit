@@ -2,13 +2,15 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import React from 'react';
 import ThreadsLayout from '../../../components/App/Threads/ThreadsLayout';
+import ThreadTab from '../../../components/App/Threads/ThreadTab';
 import SplashScreen from '../../../components/SplashScreen';
 import { genericErrorMessage } from '../../../constants';
-import { useThreadsQuery } from '../../../generated/graphql';
+import { useMeQuery, useThreadsQuery } from '../../../generated/graphql';
 import { errorToast } from '../../../utils/toasts';
 import withAuth from '../../../utils/withAuth';
 
 const AllFriends: NextPage = () => {
+  const { data: meData } = useMeQuery();
   const { data: loadedThreads, isLoading } = useThreadsQuery(
     {},
     {
@@ -35,7 +37,7 @@ const AllFriends: NextPage = () => {
                 {threads.map((thread) => {
                   const { thread: t } = thread;
 
-                  return <div key={t.id}>{t.name}</div>;
+                  return <ThreadTab thread={t} myId={meData?.me?.id} key={t.id} />;
                 })}
               </div>
             </div>

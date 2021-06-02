@@ -1,0 +1,8 @@
+mutation DeleteThread($options: DeleteThreadInput!) {
+  DeleteThread(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

@@ -1,7 +1,9 @@
 import { Field, ObjectType } from 'type-graphql';
 import {
+  AfterRemove,
   BaseEntity,
   BeforeInsert,
+  BeforeRemove,
   Column,
   CreateDateColumn,
   Entity,
@@ -28,6 +30,14 @@ export class File extends BaseEntity {
     }
   }
 
+  @BeforeRemove()
+  private async removeFile() {
+    console.log('test', this.id);
+  }
+  @AfterRemove()
+  private async removeFilea() {
+    console.log('test 2', this.id);
+  }
   @Field()
   @Column()
   size: number;

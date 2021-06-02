@@ -81,12 +81,14 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
             <>
               <div className="sticky left-0 top-0 w-full py-2 bg-dark-300 z-10 text-light-200 text-lg mb-3 font-opensans flex flex-row justify-between items-center">
                 Members:
-                <BsFillPersonPlusFill
-                  size={20}
-                  style={{ marginRight: '5px' }}
-                  className="cursor-pointer text-light-300 hover:text-light"
-                  onClick={() => setAddMemberModalShow(true)}
-                />
+                {t?.creatorId === me.me?.id && (
+                  <BsFillPersonPlusFill
+                    size={20}
+                    style={{ marginRight: '5px' }}
+                    className="cursor-pointer text-light-300 hover:text-light"
+                    onClick={() => setAddMemberModalShow(true)}
+                  />
+                )}
               </div>
               {members.map((member) => (
                 <MemberListItem
@@ -139,10 +141,10 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
               </li>
               <hr className="bg-dark-50 h-px border-none my-2" />
               <li>
-                sent attachments: <span className="font-bold">{t?.media?.length}</span>
+                sent messages: <span className="font-bold">{t?.messagesCount}</span>
               </li>
               <li>
-                sent messages: <span className="font-bold">{t?.messagesCount}</span>
+                sent attachments: <span className="font-bold">{t?.media?.length}</span>
               </li>
             </ul>
           </div>

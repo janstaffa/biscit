@@ -9,7 +9,9 @@ import {
   AddMemberInput,
   ChangeAdminInput,
   CreateThreadInput,
+  DeleteThreadInput,
   EditThreadInput,
+  LeaveThreadInput,
   RemoveMemberInput,
   ThreadInput
 } from '../entities/types/thread';
@@ -102,9 +104,9 @@ export class ThreadResolver {
           const response = membership;
           if (membership.thread.isDm) {
             const otherUser = membership.thread.members.filter((member) => {
-              return member.user.id !== userId;
+              return member.userId !== userId;
             });
-
+            console.log(membership.thread.members);
             response.thread.name = otherUser[0].user.username;
           }
           const lastMessage = await createQueryBuilder(Message, 'message')
@@ -484,6 +486,105 @@ export class ThreadResolver {
           errors
         };
       }
+    }
+    return {
+      data: false,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async DeleteThread(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: DeleteThreadInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const thread = await Thread.findOne({
+      id: options.threadId,
+      creatorId: userId
+    });
+
+    if (!thread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "This thread doesn't exist, or it wasn't created by you."
+        })
+      );
+    }
+
+    if (errors.length === 0 && thread) {
+      await thread.remove();
+      const payload: SocketThreadMessage = {
+        code: THREAD_CHANGE_CODE,
+        threadId: options.threadId
+      };
+
+      pubClient.publish(options.threadId, JSON.stringify(payload));
+
+      return {
+        data: true,
+        errors
+      };
+    }
+    return {
+      data: false,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async LeaveThread(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: LeaveThreadInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const membership = await ThreadMembers.findOne({
+      where: { threadId: options.threadId, userId },
+      relations: ['thread']
+    });
+
+    if (!membership) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "You aren't a member of this thread."
+        })
+      );
+    }
+
+    if (membership && membership.thread?.creatorId === userId) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: "You can't leave your own thread."
+        })
+      );
+    }
+    if (errors.length === 0 && membership) {
+      await membership.remove();
+      const payload: SocketThreadMessage = {
+        code: THREAD_CHANGE_CODE,
+        threadId: options.threadId
+      };
+
+      pubClient.publish(options.threadId, JSON.stringify(payload));
+
+      return {
+        data: true,
+        errors
+      };
     }
     return {
       data: false,

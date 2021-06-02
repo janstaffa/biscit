@@ -5,10 +5,7 @@ import { BsFillPersonDashFill } from 'react-icons/bs';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
 import { Popup } from 'react-tiny-modals';
-import { genericErrorMessage } from '../../../constants';
-import { User, useRemoveFriendMutation } from '../../../generated/graphql';
-import { queryClient } from '../../../utils/createQueryClient';
-import { errorToast } from '../../../utils/toasts';
+import { User } from '../../../generated/graphql';
 export interface FriendTabProps {
   friendId: string;
   friend: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
@@ -17,18 +14,6 @@ export interface FriendTabProps {
 
 const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend: { username, bio, status }, threadId }) => {
   const router = useRouter();
-  const { mutate: removeFriend } = useRemoveFriendMutation({
-    onSuccess: (data) => {
-      if (!data.FriendRemove.data) {
-        errorToast(genericErrorMessage);
-      }
-      queryClient.invalidateQueries('Me');
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
 
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
@@ -58,9 +43,7 @@ const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend: { username, bio
                       <ul>
                         <li
                           className="text-red-600 font-opensans text-center p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
-                          onClick={() => {
-                            removeFriend({ options: { friendId } });
-                          }}
+                          onClick={() => {}}
                         >
                           <BsFillPersonDashFill size={20} style={{ marginRight: '5px' }} />
                           Remove friend

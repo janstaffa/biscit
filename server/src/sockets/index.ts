@@ -163,6 +163,7 @@ export const socketController = (server: Server) => {
         console.log('connection closed');
         closeConnection(ws);
         subClient.removeAllListeners();
+        subClient.unsubscribe();
         clearTimeout(elapsed);
         clearInterval(heartbeat);
       };

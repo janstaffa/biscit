@@ -16,12 +16,12 @@ import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import FriendListItem from '../../../components/App/Threads/FriendListItem';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
+import EditThreadModal from '../../../components/Modals/EditThreadModal';
 import { genericErrorMessage } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
   useAddMembersMutation,
-  useEditThreadMutation,
   useMeQuery,
   useThreadQuery,
   useThreadsQuery
@@ -70,12 +70,6 @@ const Chat: NextPage = () => {
     }
   );
 
-  const { mutate: editThread } = useEditThreadMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
   const { mutate: addMembers } = useAddMembersMutation({
     onError: (err) => {
       console.error(err);
@@ -84,7 +78,6 @@ const Chat: NextPage = () => {
   });
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
-  const [editThreadNewName, setEditThreadNewName] = useState<string>(data?.thread.data?.name || '');
   const [addMemberModalShow, setAddMemberModalShow] = useState<boolean>(false);
   const [toAddMembers, setToAddMembers] = useState<string[]>([]);
 
@@ -258,72 +251,7 @@ const Chat: NextPage = () => {
           </div>
         </div>
       </Modal>
-      <Modal
-        isOpen={editModalShow}
-        zIndex={100}
-        backOpacity={0.5}
-        onOpen={() => setEditThreadNewName(data?.thread.data?.name || '')}
-      >
-        <div className="bg-dark-200 p-5 rounded-xl w-96">
-          <div className="w-full h-10 flex flex-row justify-between">
-            <div className="text-light-300 text-lg font-roboto">Edit thread</div>
-            <div>
-              <IoMdClose
-                className="text-2xl text-light-300 hover:text-light cursor-pointer"
-                onClick={() => setEditModalShow(false)}
-              />
-            </div>
-          </div>
-          <div className="w-full flex-grow">
-            <div className="w-full h-auto flex flex-col justify-center items-center mb-3">
-              <div className="w-28 h-28 bg-white rounded-full"></div>
-            </div>
-            <p className="text-light-300 font-opensans text-md mb-1">Thread name</p>
-            <input
-              type="text"
-              className="w-full h-9 rounded-md bg-dark-100 focus:bg-dark-50 outline-none px-3 text-light-200"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck="false"
-              maxLength={100}
-              value={editThreadNewName}
-              onChange={(e) => setEditThreadNewName(e.target.value)}
-            />
-            <p className="text-light-300 mt-1 text-sm">max 100 characters</p>
-            <div className="w-full flex flex-row justify-end mt-6">
-              <button
-                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
-                onClick={() => setEditModalShow(false)}
-              >
-                Cancel
-              </button>
-              <SubmitButton
-                onClick={async () => {
-                  await editThread(
-                    { options: { threadId, newName: editThreadNewName } },
-                    {
-                      onSuccess: (d) => {
-                        if (d.EditThread.data) {
-                          successToast(`Thread name changed to ${editThreadNewName}`);
-                          setEditModalShow(false);
-                        }
-                        if (d.EditThread.errors.length > 0) {
-                          for (const error of d.EditThread.errors) {
-                            errorToast(error.details?.message);
-                          }
-                        }
-                      }
-                    }
-                  );
-                }}
-              >
-                Save
-              </SubmitButton>
-            </div>
-          </div>
-        </div>
-      </Modal>
+      <EditThreadModal isOpen={editModalShow} setIsOpen={setEditModalShow} thread={data?.thread.data} />
       <Modal isOpen={addMemberModalShow} backOpacity={0.5} onClose={() => setToAddMembers([])}>
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">
