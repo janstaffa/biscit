@@ -134,10 +134,7 @@ export class MessageResolver {
           ),
           async (err) => {
             try {
-              if (err) {
-                console.error(err);
-                return;
-              }
+              if (err) throw err;
               await File.delete({ id });
             } catch (e) {
               console.error(e);

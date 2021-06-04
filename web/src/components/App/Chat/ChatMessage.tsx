@@ -12,6 +12,7 @@ import {
   useDeleteMessageMutation,
   useUpdateMessageMutation
 } from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
 import { formatMessage } from '../../../utils/formatMessage';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast } from '../../../utils/toasts';
@@ -52,6 +53,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         data.DeleteMessage.errors.forEach((err) => {
           errorToast(err.details?.message);
         });
+        return;
+      }
+      if (message.media && message.media.length > 0) {
+        queryClient.invalidateQueries(['Thread', { options: { threadId: message.threadId } }]);
       }
     },
     onError: (err) => {

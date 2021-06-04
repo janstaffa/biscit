@@ -104,7 +104,6 @@ export const handleMessage = async (
                         userId: user.id,
                         threadId
                       }).save();
-                      console.log('copied a file ', file.id, newId);
                       resolve(newId);
                     } catch (e) {
                       console.error(e);

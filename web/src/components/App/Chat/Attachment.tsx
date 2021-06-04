@@ -70,12 +70,17 @@ const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile, fullWidth
   if (iconDisplay) {
     display = (
       <div
-        className="my-1 p-4 rounded-lg bg-dark-200 flex flex-row items-center"
+        className="my-1 p-4 rounded-lg bg-dark-200 flex flex-row items-center justify-between"
         style={{ width: fullWidth ? '100%' : '13rem' }}
       >
-        <div>{iconDisplay}</div>
-        <div className="text-light-200 ml-1.5 truncate flex flex-col justify-center text-sm font-roboto">
-          {file.fileName}
+        <div className="flex flex-row">
+          <div>{iconDisplay}</div>
+          <div
+            className="text-light-200 ml-1.5 truncate flex flex-col justify-center text-sm font-roboto"
+            style={{ maxWidth: fullWidth ? '250px' : '110px' }}
+          >
+            {file.fileName}
+          </div>
         </div>
         <div className="w-10 h-full flex flex-col justify-center items-center">
           <HiDownload

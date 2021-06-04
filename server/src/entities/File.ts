@@ -1,7 +1,10 @@
+import fs from 'fs';
+import path from 'path';
 import { Field, ObjectType } from 'type-graphql';
 import {
   BaseEntity,
   BeforeInsert,
+  BeforeRemove,
   Column,
   CreateDateColumn,
   Entity,
@@ -26,6 +29,25 @@ export class File extends BaseEntity {
     if (!this.id) {
       this.id = await getId(File, 'id');
     }
+  }
+
+  @BeforeRemove()
+  private async removeFile() {
+    console.log('here', this);
+    fs.unlink(
+      path.join(
+        __dirname,
+        '../../uploaded',
+        this.id.replace(/\./g, '') + (this.format ? '.' + this.format.replace(/\./g, '') : '')
+      ),
+      async (err) => {
+        try {
+          if (err) throw err;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    );
   }
 
   @Field()
