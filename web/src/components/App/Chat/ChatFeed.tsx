@@ -56,13 +56,6 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     if (isServer() || !ws) return;
     setIsLoadingMessages(false);
 
-    // const queryData = queryClient.getQueryData(`ThreadMessages-${threadId}`);
-    // if (!queryData) {
-    //   fetchNextPage({ pageParam: undefined });
-    // } else {
-    //   console.log('called');
-    // }
-
     const handleMessage = (e) => {
       const { data: m } = e;
       const incoming = JSON.parse(m);
@@ -77,6 +70,9 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           pages.pages[0].messages.data?.push(message);
           setShouldScroll(true);
           queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+        }
+        if (message.media) {
+          queryClient.invalidateQueries(['Thread', { options: { threadId } }]);
         }
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;

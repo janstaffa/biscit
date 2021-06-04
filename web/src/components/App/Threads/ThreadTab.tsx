@@ -64,7 +64,7 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
               <Popup
                 position={['left', 'bottom', 'top', 'right']}
                 onClickOutside={({ setShow }) => setShow(false)}
-                content={() => (
+                content={({ setShow }) => (
                   <div className="w-auto h-auto bg-dark-300 cursor-default select-none rounded-md p-3">
                     <div className="w-44">
                       <ul>
@@ -83,7 +83,12 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
                           <li
                             className="text-red-600 font-opensans text-center p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                             onClick={() => {
-                              deleteThread({ options: { threadId: thread.id } });
+                              const ok = confirm('Are you sure, you want to delete this thread?');
+                              if (ok) {
+                                deleteThread({ options: { threadId: thread.id } });
+                                return;
+                              }
+                              setShow(false);
                             }}
                           >
                             <RiDeleteBin6Line size={20} style={{ marginRight: '5px' }} />

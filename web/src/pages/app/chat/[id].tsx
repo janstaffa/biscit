@@ -88,11 +88,17 @@ const Chat: NextPage = () => {
   const handleResend = () => {
     const ws = socket.connect();
     if (resendMessage && ws) {
+      console.log(resendMessage);
+      if (resendMessage.media?.length === 0 && (!resendMessage.content || !/\S/.test(resendMessage.content))) {
+        return;
+      }
+
       resendThreads.forEach((resendThread) => {
         const payload = {
           code: 3000,
           threadId: resendThread,
           content: resendMessage.content,
+          media: resendMessage.media?.map((file) => file.id),
           resendId: resendMessage.id
         } as OutgoingSocketChatMessage;
         socket.send(JSON.stringify(payload));

@@ -106,7 +106,6 @@ export class ThreadResolver {
             const otherUser = membership.thread.members.filter((member) => {
               return member.userId !== userId;
             });
-            console.log(membership.thread.members);
             response.thread.name = otherUser[0].user.username;
           }
           const lastMessage = await createQueryBuilder(Message, 'message')

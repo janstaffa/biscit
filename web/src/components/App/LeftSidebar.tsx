@@ -5,6 +5,7 @@ import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
+import { VscSearchStop } from 'react-icons/vsc';
 import { Modal } from 'react-tiny-modals';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage, SocketThreadMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
@@ -241,22 +242,36 @@ const LeftSidebar: React.FC = () => {
                 maxHeight: 'calc(100% - 96px)'
               }}
             >
-              {threadList.map((membership, i) => {
-                if (router.query.id === membership.threadId) {
-                  threadList[i].unread = 0;
-                }
-                return (
-                  <ThreadButton
-                    name={membership.thread.name || ''}
-                    time={formatTime(membership.thread.lastActivity)}
-                    threadId={membership.threadId}
-                    latestMessage={membership.thread.lastMessage}
-                    unread={membership.unread > 0}
-                    active={membership.threadId === threadId}
-                    key={membership.threadId}
-                  />
-                );
-              })}
+              {threadList.length > 0 ? (
+                threadList.map((membership, i) => {
+                  if (router.query.id === membership.threadId) {
+                    threadList[i].unread = 0;
+                  }
+                  return (
+                    <ThreadButton
+                      name={membership.thread.name || ''}
+                      time={formatTime(membership.thread.lastActivity)}
+                      threadId={membership.threadId}
+                      latestMessage={membership.thread.lastMessage}
+                      unread={membership.unread > 0}
+                      active={membership.threadId === threadId}
+                      key={membership.threadId}
+                    />
+                  );
+                })
+              ) : threadSearchQuery ? (
+                <div className="text-light-300 flex flex-col items-center pt-10 text-center">
+                  <VscSearchStop size={40} />
+                  <div className="mt-1">No threads match your search.</div>
+                </div>
+              ) : (
+                <div className="text-light-300 flex flex-col items-center pt-10 text-center">
+                  <VscSearchStop size={40} />
+                  <div className="mt-1">
+                    You arent a member of any threads, create a thread or add a friend to start chatting.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="absolute w-full h-24 bg-dark-300 bottom-0">

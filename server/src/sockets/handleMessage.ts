@@ -1,4 +1,6 @@
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
+import path from 'path';
 import { RedisClient } from 'redis';
 import { createQueryBuilder } from 'typeorm';
 import WebSocket from 'ws';
@@ -74,6 +76,48 @@ export const handleMessage = async (
     try {
       const messageId = await getId(Message, 'id');
 
+      let realMedia = media;
+      if (resendId && media && media.length > 0) {
+        const files = await File.findByIds(media);
+        if (files.length > 0) {
+          realMedia = await Promise.all(
+            files.map(async (file) => {
+              return new Promise<string>(async (resolve, reject) => {
+                const newId = await getId(File, 'id');
+                fs.copyFile(
+                  path.join(
+                    __dirname,
+                    '../../uploaded',
+                    file.id.replace(/\./g, '') + (file.format ? '.' + file.format.replace(/\./g, '') : '')
+                  ),
+                  path.join(
+                    __dirname,
+                    '../../uploaded',
+                    newId.replace(/\./g, '') + (file.format ? '.' + file.format.replace(/\./g, '') : '')
+                  ),
+                  async (err) => {
+                    try {
+                      if (err) throw err;
+                      await File.create({
+                        ...file,
+                        id: newId,
+                        userId: user.id,
+                        threadId
+                      }).save();
+                      console.log('copied a file ', file.id, newId);
+                      resolve(newId);
+                    } catch (e) {
+                      console.error(e);
+                      reject(e);
+                    }
+                  }
+                );
+              });
+            })
+          );
+        }
+      }
+
       const newMessage = await Message.create({
         id: messageId,
         content,
@@ -86,7 +130,7 @@ export const handleMessage = async (
           !resendId && replyingToId
             ? await Message.findOne({ where: { id: replyingToId }, relations: ['user'] })
             : undefined,
-        mediaIds: media,
+        mediaIds: realMedia,
         createdAt: new Date(),
         updatedAt: new Date()
       });

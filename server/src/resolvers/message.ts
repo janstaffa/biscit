@@ -138,7 +138,7 @@ export class MessageResolver {
                 console.error(err);
                 return;
               }
-              await File.remove(files);
+              await File.delete({ id });
             } catch (e) {
               console.error(e);
             }
