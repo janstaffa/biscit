@@ -6,8 +6,11 @@ export const gqlEndpoint = __prod__ ? '' : serverURL + '/graphql';
 export const currentUrl = () => (isServer() ? null : window.location);
 export const genericErrorMessage = 'Something went wrong, please try again later.';
 export const webSocketURL = 'ws://localhost:9000/socket';
-export const fileUploadURL = serverURL + '/upload';
+export const attachmentUploadURL = serverURL + '/upload/attachment';
+export const profilepUploadURL = serverURL + '/upload/profilep';
+
 export const fileApiURL = serverURL + '/files';
+export const profilepApiURL = serverURL + '/files/profilep';
 
 export const imageRegExp = /png|jpe?g|gif|bmp/;
 export const documentRegExp = /docx?|odt|pages|html?|txt/;

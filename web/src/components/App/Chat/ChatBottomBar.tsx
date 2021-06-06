@@ -11,7 +11,7 @@ import { MessageSnippetFragment } from '../../../generated/graphql';
 import { socket } from '../../../utils/createWSconnection';
 import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
-import { uploadFile } from '../../../utils/uploadFile';
+import { uploadAttachment } from '../../../utils/uploadFile';
 import AttachmentBar from './AttachmentBar';
 import FileDropZone from './FileDropZone';
 export interface ChatBottomBarProps {
@@ -256,7 +256,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
                         errorToast('Only valid files are accepted.');
                         return;
                       }
-                      const newAttachment = await uploadFile(file, threadId);
+                      const newAttachment = await uploadAttachment(file, threadId);
                       setAttachments([...attachmentRef.current, newAttachment]);
                     }
                   }

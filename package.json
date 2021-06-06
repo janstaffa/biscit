@@ -17,5 +17,6 @@
   "homepage": "https://github.com/janstaffa/biscit#readme",
   "devDependencies": {
     "pre-commit": "^1.2.2"
-  }
+  },
+  "dependencies": {}
 }

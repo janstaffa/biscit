@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { attachment } from '../../..';
 import { errorToast } from '../../../utils/toasts';
-import { uploadFile } from '../../../utils/uploadFile';
+import { uploadAttachment } from '../../../utils/uploadFile';
 
 export interface FileDropZoneProps {
   attachments: attachment[];
@@ -48,7 +48,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments
             errorToast('Invalid file.');
             continue;
           }
-          promises.push(uploadFile(file, threadId));
+          promises.push(uploadAttachment(file, threadId));
         }
       }
       const newAttachments = await Promise.all(promises);

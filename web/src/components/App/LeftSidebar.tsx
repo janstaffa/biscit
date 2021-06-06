@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
@@ -6,6 +7,7 @@ import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
 import { VscSearchStop } from 'react-icons/vsc';
+import ClipLoader from 'react-spinners/ClipLoader';
 import { Modal } from 'react-tiny-modals';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage, SocketThreadMessage } from '../..';
 import { currentUrl, genericErrorMessage } from '../../constants';
@@ -77,10 +79,10 @@ const LeftSidebar: React.FC = () => {
       errorToast(genericErrorMessage);
     }
   });
-  const { data: meData, isLoading } = useMeQuery();
+  const { data: meData } = useMeQuery();
   const meDataRef = useRef<MeQuery | undefined>();
   meDataRef.current = meData;
-  const { data: loadedThreads, isFetched } = useThreadsQuery(
+  const { data: loadedThreads, isFetched, isLoading, isFetching } = useThreadsQuery(
     {},
     {
       onError: (err) => {
@@ -242,7 +244,11 @@ const LeftSidebar: React.FC = () => {
                 maxHeight: 'calc(100% - 96px)'
               }}
             >
-              {threadList.length > 0 ? (
+              {isLoading || isFetching ? (
+                <div className="flex flex-col items-center w-full h-full pt-5">
+                  <ClipLoader color="#e09f3e" size={25} />
+                </div>
+              ) : threadList.length > 0 ? (
                 threadList.map((membership, i) => {
                   if (router.query.id === membership.threadId) {
                     threadList[i].unread = 0;
@@ -309,7 +315,9 @@ const LeftSidebar: React.FC = () => {
                         );
                       }}
                     />
-                    <MdSettings className="hover:text-light-200 mx-1" />
+                    <Link href="/app/settings">
+                      <MdSettings className="hover:text-light-200 mx-1" />
+                    </Link>
                   </div>
                 </div>
               </div>
