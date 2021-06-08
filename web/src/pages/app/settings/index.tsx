@@ -1,6 +1,7 @@
 import Cropper from 'cropperjs';
 import { NextPage } from 'next';
 import React, { useRef, useState } from 'react';
+import { FaUser } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { MdAddAPhoto } from 'react-icons/md';
 import { Modal } from 'react-tiny-modals';
@@ -9,6 +10,7 @@ import SettingsLayout from '../../../components/App/Settings/SettingsLayout';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
 import { profilepApiURL } from '../../../constants';
 import { useMeQuery } from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast } from '../../../utils/toasts';
 import { uploadProfilePicture } from '../../../utils/uploadFile';
 import withAuth from '../../../utils/withAuth';
@@ -23,6 +25,8 @@ const Settings: NextPage = () => {
   const cropper = useRef<Cropper>();
   const profilePictureDisplay = useRef<HTMLImageElement | null>(null);
 
+  const profilePictureId = meData?.me?.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <>
       <SettingsLayout>
@@ -62,17 +66,25 @@ const Settings: NextPage = () => {
               <div className="mx-3">
                 <div className="flex flex-row h-32">
                   <div
-                    className="w-32 h-32 bg-white rounded-full cursor-pointer"
+                    className="w-32 h-32 bg-white rounded-full cursor-pointer relative"
                     onClick={() => fileInput.current?.click()}
                     onMouseOver={() => setIsHoveringFile(true)}
                     onMouseLeave={() => setIsHoveringFile(false)}
                   >
-                    <img className="w-full h-full rounded-full" ref={profilePictureDisplay} />
+                    {profilePictureSrc ? (
+                      <img
+                        src={profilePictureSrc || ''}
+                        className="w-full h-full rounded-full"
+                        ref={profilePictureDisplay}
+                      />
+                    ) : (
+                      <FaUser size={30} className="text-dark-100" />
+                    )}
                     <div
-                      className="w-full h-full rounded-full  flex-col items-center justify-center"
+                      className="w-full h-full rounded-full  flex-col items-center justify-center absolute top-0"
                       style={{ backgroundColor: 'rgba(0,0,0,0.5)', display: isHoveringFile ? 'flex' : 'none' }}
                     >
-                      <MdAddAPhoto size={30} className="text-dark-50" />
+                      <MdAddAPhoto size={30} className="text-light-400" />
                     </div>
                     <input
                       type="file"
@@ -91,7 +103,9 @@ const Settings: NextPage = () => {
                           if (cropArea.current && reader.result && typeof reader.result === 'string') {
                             cropArea.current.src = reader.result;
                             cropper.current = new Cropper(cropArea.current, {
-                              aspectRatio: 1 / 1
+                              aspectRatio: 1 / 1,
+                              rotatable: false,
+                              viewMode: 1
                             });
                           }
                         };
@@ -268,6 +282,7 @@ const Settings: NextPage = () => {
 
                       if (newImage.id && profilePictureDisplay.current) {
                         profilePictureDisplay.current.src = profilepApiURL + '/' + newImage.id;
+                        queryClient.invalidateQueries('Me');
                       }
 
                       setImageModalShow(false);

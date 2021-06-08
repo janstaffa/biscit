@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { FaUser } from 'react-icons/fa';
 import { GoReply } from 'react-icons/go';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdRefresh } from 'react-icons/io';
 import { MdEdit } from 'react-icons/md';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { Popup } from 'react-tiny-modals';
-import { genericErrorMessage } from '../../../constants';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
@@ -91,6 +92,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     });
   }, []);
 
+  const profilePictureId = message.user.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <div
       className={
@@ -104,7 +107,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       }}
     >
       <div className="h-16 w-16 flex flex-col justify-center items-center">
-        <div className="w-12 h-12 bg-white rounded-full"></div>
+        <div className="w-12 h-12 bg-light-400 rounded-full flex flex-col justify-center items-center">
+          {profilePictureSrc ? (
+            <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
+          ) : (
+            <FaUser size={30} className="text-dark-100" />
+          )}
+        </div>
       </div>
       <div className="flex-1 flex flex-col px-2 py-1">
         <div className="flex flex-row">

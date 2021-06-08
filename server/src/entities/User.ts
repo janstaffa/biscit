@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   Entity,
   OneToMany,
+  OneToOne,
   PrimaryColumn,
   UpdateDateColumn
 } from 'typeorm';
@@ -14,6 +15,7 @@ import { File } from './File';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
 import { Message } from './Message';
+import { ProfilePicture } from './ProfilePicture';
 import { Thread } from './Thread';
 import { ThreadMembers } from './ThreadMembers';
 
@@ -48,6 +50,14 @@ export class User extends BaseEntity {
   @Field(() => String)
   @Column({ default: 'offline' })
   status: string;
+
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
+  profile_pictureId: string;
+
+  @Field(() => ProfilePicture, { nullable: true })
+  @OneToOne(() => ProfilePicture, (profile_picture) => profile_picture.user)
+  profile_picture: ProfilePicture;
 
   //bio field
   @Field(() => String, { nullable: true })

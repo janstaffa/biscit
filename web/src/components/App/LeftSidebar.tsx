@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
-import { FaSearch, FaUserFriends } from 'react-icons/fa';
+import { FaSearch, FaUser, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
@@ -10,7 +10,7 @@ import { VscSearchStop } from 'react-icons/vsc';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { Modal } from 'react-tiny-modals';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage, SocketThreadMessage } from '../..';
-import { currentUrl, genericErrorMessage } from '../../constants';
+import { currentUrl, genericErrorMessage, profilepApiURL } from '../../constants';
 import {
   MeQuery,
   Message,
@@ -202,6 +202,9 @@ const LeftSidebar: React.FC = () => {
       if (meData?.me?.bio) setStatusInput(meData?.me?.bio);
     }
   }, [isLoading, meData, loadedThreads]);
+
+  const profilePictureId = meData?.me?.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
@@ -283,7 +286,17 @@ const LeftSidebar: React.FC = () => {
           <div className="absolute w-full h-24 bg-dark-300 bottom-0">
             <div className="w-full h-full flex flex-row items-center">
               <div className="w-16 h-full flex flex-col justify-center items-center">
-                <div className="w-12 h-12 rounded-full bg-light"></div>
+                <div
+                  className="w-12 h-12 rounded-full bg-light cursor-pointer"
+                  title="Account settings."
+                  onClick={() => router.push('/app/settings')}
+                >
+                  {profilePictureSrc ? (
+                    <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
+                  ) : (
+                    <FaUser size={30} className="text-dark-100" />
+                  )}
+                </div>
               </div>
               <div className="w-full flex-1 px-2">
                 <div className="flex flex-row justify-between items-center">
@@ -299,6 +312,7 @@ const LeftSidebar: React.FC = () => {
                   <div className="flex flex-row text-light-300 text-2xl px-2 cursor-pointer ">
                     <GoSignOut
                       className="hover:text-light-200 mx-1"
+                      title="Sign out."
                       onClick={() => {
                         logout(
                           {},
@@ -316,7 +330,7 @@ const LeftSidebar: React.FC = () => {
                       }}
                     />
                     <Link href="/app/settings">
-                      <MdSettings className="hover:text-light-200 mx-1" />
+                      <MdSettings className="hover:text-light-200 mx-1" title="Settings" />
                     </Link>
                   </div>
                 </div>

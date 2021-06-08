@@ -30,5 +30,8 @@ query Me {
       }
       createdAt
     }
+    profile_picture {
+      ...profilePictureSnippet
+    }
   }
 }

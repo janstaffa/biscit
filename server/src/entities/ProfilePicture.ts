@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToOne,
   PrimaryColumn,
   UpdateDateColumn
 } from 'typeorm';
@@ -27,25 +27,6 @@ export class ProfilePicture extends BaseEntity {
     }
   }
 
-  //   @BeforeRemove()
-  //   private async removeFile() {
-  //     console.log('here', this);
-  //     fs.unlink(
-  //       path.join(
-  //         __dirname,
-  //         '../../uploaded',
-  //         this.id.replace(/\./g, '') + (this.format ? '.' + this.format.replace(/\./g, '') : '')
-  //       ),
-  //       async (err) => {
-  //         try {
-  //           if (err) throw err;
-  //         } catch (e) {
-  //           console.error(e);
-  //         }
-  //       }
-  //     );
-  //   }
-
   @Field()
   @Column()
   size: number;
@@ -63,7 +44,7 @@ export class ProfilePicture extends BaseEntity {
   userId: string;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.files, { onDelete: 'CASCADE' })
+  @OneToOne(() => User, (user) => user.profile_picture, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 

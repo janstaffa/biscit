@@ -6,4 +6,7 @@ fragment userSnippet on User {
   bio
   createdAt
   updatedAt
+  profile_picture {
+    ...profilePictureSnippet
+  }
 }

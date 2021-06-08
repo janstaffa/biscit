@@ -16,6 +16,7 @@ import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpiration } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
+import { ProfilePicture } from '../entities/ProfilePicture';
 import { LoginInput, RegisterInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
@@ -65,6 +66,13 @@ export class UserResolver {
       return friends;
     }
     return null;
+  }
+
+  @FieldResolver()
+  @UseMiddleware(isAuth)
+  async profile_picture(@Root() user: User): Promise<ProfilePicture | undefined> {
+    if (!user.profile_pictureId) return;
+    return await ProfilePicture.findOne({ where: { id: user.profile_pictureId } });
   }
 
   @Query(() => User, { nullable: true })

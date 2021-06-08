@@ -1,0 +1,9 @@
+fragment profilePictureSnippet on ProfilePicture {
+  id
+  fileName
+  size
+  format
+  userId
+  createdAt
+  updatedAt
+}

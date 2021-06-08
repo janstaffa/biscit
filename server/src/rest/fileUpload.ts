@@ -6,6 +6,7 @@ import path from 'path';
 import sharp from 'sharp';
 import { File } from '../entities/File';
 import { ProfilePicture } from '../entities/ProfilePicture';
+import { User } from '../entities/User';
 import { getId } from '../utils/generateId';
 
 export const fileUploadController = (app: Express) => {
@@ -108,10 +109,9 @@ export const fileUploadController = (app: Express) => {
           size: file.size
         });
 
-        if (!width || !height || !top || !left || width < 0 || height < 0 || top < 0 || left < 0) {
+        if (width < 0 || height < 0 || top < 0 || left < 0) {
           return res.send({ error: 'Dimension parameters must be provided.' });
         }
-        console.log('HERE', file.data);
         sharp(file.data)
           .extract({
             width: Math.floor(width),
@@ -128,8 +128,34 @@ export const fileUploadController = (app: Express) => {
           )
           .then(async () => {
             try {
-              console.log('HERE 2');
+              const user = await User.findOne({ where: { id: userId }, relations: ['profile_picture'] });
+              if (!user) return;
+
+              if (user?.profile_picture) {
+                await new Promise((resolve, reject) =>
+                  fs.unlink(
+                    path.join(
+                      __dirname,
+                      '../../uploaded/profilepics',
+                      user.profile_picture.id.replace(/\./g, '') +
+                        (user.profile_picture.format ? '.' + user.profile_picture.format.replace(/\./g, '') : '')
+                    ),
+                    async (err) => {
+                      try {
+                        if (err) throw err;
+                        await ProfilePicture.delete({ id: user.profile_picture.id });
+                        resolve(true);
+                      } catch (e) {
+                        console.error(e);
+                        reject(e);
+                      }
+                    }
+                  )
+                );
+              }
               await newFile.save();
+              user.profile_pictureId = newFile.id;
+              await user.save();
               res.send({ status: 'success', fileId: newFile.id });
             } catch (e) {
               console.error(e);
