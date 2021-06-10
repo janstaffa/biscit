@@ -279,7 +279,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
           </div>
           <Popup
             position={['top', 'left', 'right', 'bottom']}
-            onClickOutside={({ show, setShow }) => setShow(!show)}
+            closeOnClickOutside={true}
             outerPadding={5}
             align={'end'}
             content={() => (

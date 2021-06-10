@@ -5,6 +5,7 @@ query Me {
     email
     status
     bio
+    tag
     friend_requests {
       incoming {
         id

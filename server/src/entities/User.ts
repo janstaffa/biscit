@@ -12,6 +12,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { getTag } from '../utils/generateTag';
 import { File } from './File';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
@@ -29,10 +30,15 @@ export class User extends BaseEntity {
   id!: string;
 
   @BeforeInsert()
-  private async generateId() {
+  private async generateIds() {
     this.id = await getId(User, 'id');
+    this.tag = await getTag(User, 'tag');
   }
 
+  //tag field
+  @Field(() => String)
+  @Column({ unique: true })
+  tag!: string;
   //username field
   @Field(() => String)
   @Column({ unique: true })

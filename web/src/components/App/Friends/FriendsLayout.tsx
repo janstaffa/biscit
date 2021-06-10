@@ -1,7 +1,12 @@
 import React, { ReactNode, useEffect, useState } from 'react';
 import { FaUserFriends } from 'react-icons/fa';
-import { currentUrl } from '../../../constants';
+import { IoMdClose } from 'react-icons/io';
+import { Modal } from 'react-tiny-modals';
+import { currentUrl, genericErrorMessage } from '../../../constants';
+import { useSendRequestMutation } from '../../../generated/graphql';
+import { errorToast, successToast } from '../../../utils/toasts';
 import NavLink from '../../Buttons/NavLink';
+import SubmitButton from '../../Buttons/SubmitButton';
 import ContentNav from '../ContentNav';
 import Layout from '../Layout';
 
@@ -16,35 +21,128 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
     setCurrentPath(currentUrl()?.pathname);
   }, [currentUrl()]);
 
+  const [modalShow, setModalShow] = useState<boolean>(false);
+  const [newFriendInput, setNewFriendInput] = useState<string>();
+
+  const { mutate: sendRequest } = useSendRequestMutation({
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
+
   return (
-    <Layout>
-      <ContentNav>
-        <div className="flex flex-row items-center h-full select-none">
-          <div className="border-r border-light-300 px-4 mr-2">
-            <FaUserFriends className="text-light-300 text-2xl" />
+    <>
+      <Layout>
+        <ContentNav>
+          <div className="flex flex-row items-center h-full select-none">
+            <div className="border-r border-light-300 px-4 mr-2">
+              <FaUserFriends className="text-light-300 text-2xl" />
+            </div>
+            <NavLink href="/app/friends/all" active={currentPath === '/app/friends/all'}>
+              All
+            </NavLink>
+            <NavLink href="/app/friends/online" active={currentPath === '/app/friends/online'}>
+              Online
+            </NavLink>
+            <NavLink href="/app/friends/pending" active={currentPath === '/app/friends/pending'}>
+              Pending
+            </NavLink>
+            <div
+              className={
+                'border-lime-300 border-2 text-lime-200 font-bold mx-2 px-3 rounded-full cursor-pointer ml-5' +
+                (currentPath === '/app/friends/add' ? ' bg-dark-50' : ' hover:bg-dark-50 bg-dark-100')
+              }
+              onClick={() => setModalShow(true)}
+            >
+              Add friend
+            </div>
           </div>
-          <NavLink href="/app/friends/all" active={currentPath === '/app/friends/all'}>
-            All
-          </NavLink>
-          <NavLink href="/app/friends/online" active={currentPath === '/app/friends/online'}>
-            Online
-          </NavLink>
-          <NavLink href="/app/friends/pending" active={currentPath === '/app/friends/pending'}>
-            Pending
-          </NavLink>
-          <NavLink
-            href="/app/friends/add"
-            className={
-              'border-lime-300 border-2 text-lime-200 font-bold mx-2 px-3 rounded-full cursor-pointer ml-5' +
-              (currentPath === '/app/friends/add' ? ' bg-dark-50' : ' hover:bg-dark-50 bg-dark-100')
-            }
-          >
-            Add friend
-          </NavLink>
+        </ContentNav>
+        <div className="w-full h-full overflow-hidden relative">{children} </div>
+      </Layout>
+      <Modal isOpen={modalShow} backOpacity={0.5}>
+        <div className="bg-dark-200 p-5 rounded-xl w-96">
+          <div className="w-full h-10 flex flex-row justify-between">
+            <div className="text-light-300 text-lg font-roboto">Send a friend request</div>
+            <div>
+              <IoMdClose
+                className="text-2xl text-light-300 hover:text-light cursor-pointer"
+                onClick={() => setModalShow(false)}
+              />
+            </div>
+          </div>
+          <div className="w-full flex-grow">
+            <div className="my-2">
+              <p className="text-light-400 font-opensans text-sm mb-1">
+                Enter the username of the person you want to add followed by his tag.
+              </p>
+              <input
+                type="text"
+                className="w-full h-9 rounded-md bg-dark-100 focus:bg-dark-50 outline-none px-3 text-light-200"
+                placeholder="babel#123456"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                maxLength={100}
+                value={newFriendInput}
+                onChange={(e) => setNewFriendInput(e.target.value)}
+              />
+            </div>
+            <div className="w-full flex flex-row justify-end mt-6">
+              <button
+                className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
+                onClick={() => setModalShow(false)}
+              >
+                Cancel
+              </button>
+              <SubmitButton
+                onClick={async () => {
+                  if (!newFriendInput || !/\S/.test(newFriendInput)) return;
+                  if (!newFriendInput.includes('#')) {
+                    errorToast('You must include a # before the users tag.');
+                    return;
+                  }
+
+                  const inputArr = newFriendInput.split('#');
+                  if (
+                    inputArr.length <= 1 ||
+                    !/[0-9]/.test(inputArr[inputArr.length - 1]) ||
+                    inputArr[inputArr.length - 1].length !== 6
+                  ) {
+                    errorToast('Invalid format. Please try again.');
+                    return;
+                  }
+                  await sendRequest(
+                    { options: { usernameAndTag: newFriendInput } },
+                    {
+                      onSuccess: (data) => {
+                        if (data.FriendRequestSend.errors.length > 0) {
+                          data.FriendRequestSend.errors.forEach((err) => {
+                            errorToast(err.details?.message);
+                          });
+                          return;
+                        } else {
+                          if (data.FriendRequestSend.data) {
+                            successToast(`Friends request sent to ${newFriendInput}.`);
+                          } else {
+                            errorToast(genericErrorMessage);
+                          }
+                        }
+                        setModalShow(false);
+                      }
+                    }
+                  );
+                }}
+              >
+                Create
+              </SubmitButton>
+            </div>
+          </div>
         </div>
-      </ContentNav>
-      <div className="w-full h-full overflow-hidden relative">{children} </div>
-    </Layout>
+      </Modal>
+    </>
   );
 };
 

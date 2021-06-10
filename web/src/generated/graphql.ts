@@ -104,7 +104,7 @@ export type FriendRequest = {
 };
 
 export type FriendRequestInput = {
-  username?: Maybe<Scalars['String']>;
+  usernameAndTag?: Maybe<Scalars['String']>;
   userId?: Maybe<Scalars['String']>;
 };
 
@@ -386,6 +386,7 @@ export type UpdateStatusInput = {
 export type User = {
   __typename?: 'User';
   id: Scalars['String'];
+  tag: Scalars['String'];
   username: Scalars['String'];
   email: Scalars['String'];
   status: Scalars['String'];
@@ -473,7 +474,7 @@ export type ThreadMembersSnippetFragment = (
 
 export type UserSnippetFragment = (
   { __typename?: 'User' }
-  & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'createdAt' | 'updatedAt'>
+  & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'tag' | 'createdAt' | 'updatedAt'>
   & { profile_picture?: Maybe<(
     { __typename?: 'ProfilePicture' }
     & ProfilePictureSnippetFragment
@@ -802,7 +803,7 @@ export type MeQuery = (
   { __typename?: 'Query' }
   & { me?: Maybe<(
     { __typename?: 'User' }
-    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>
+    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'tag'>
     & { friend_requests: (
       { __typename?: 'FriendRequestResponse' }
       & { incoming: Array<(
@@ -929,6 +930,7 @@ export const UserSnippetFragmentDoc = `
   email
   status
   bio
+  tag
   createdAt
   updatedAt
   profile_picture {
@@ -1382,6 +1384,7 @@ export const MeDocument = `
     email
     status
     bio
+    tag
     friend_requests {
       incoming {
         id

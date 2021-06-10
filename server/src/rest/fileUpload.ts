@@ -235,7 +235,7 @@ export const fileUploadController = (app: Express) => {
       `,
       [userId]
     );
-    if (!members.find((member) => member.userId === file.userId)) {
+    if (!members.find((member) => member.userId === file.userId) && file.userId !== userId) {
       return res.send({ error: 'You are not allowed to view this file.' });
     }
 

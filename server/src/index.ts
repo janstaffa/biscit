@@ -33,6 +33,7 @@ dotenv.config();
   });
   await conn.runMigrations();
 
+  // await User.delete({});
   const app = express();
 
   app.get('/', (_, res) => {

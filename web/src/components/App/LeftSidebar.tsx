@@ -298,7 +298,10 @@ const LeftSidebar: React.FC = () => {
               <div className="w-full flex-1 px-2">
                 <div className="flex flex-row justify-between items-center">
                   <div className="flex flex-col">
-                    <div className=" text-light font-roboto">{meData?.me?.username}</div>
+                    <div className=" text-light font-roboto">
+                      {meData?.me?.username}
+                      <span className="text-light-400 ml-1 text-sm">#{meData?.me?.tag}</span>
+                    </div>
                     <div
                       className="w-48 font-roboto text-sm truncate cursor-pointer text-light-300 hover:text-light-200"
                       onClick={() => setModalShow(true)}

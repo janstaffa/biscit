@@ -120,8 +120,9 @@ const Settings: NextPage = () => {
                       }}
                     />
                   </div>
-                  <div className="flex flex-col justify-center items-center  text-xl text-light-200 px-3">
-                    {meData?.me?.username}
+                  <div className="flex flex-row justify-center items-center text-light-200 px-3">
+                    <span className="text-xl">{meData?.me?.username}</span>
+                    <span className="text-light-400 ml-2  text-base">#{meData?.me?.tag}</span>
                   </div>
                 </div>
                 <div className="w-2/5 mt-3">
