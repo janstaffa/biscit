@@ -25,7 +25,6 @@ import {
 import { useAuth } from '../../providers/AuthProvider';
 import { queryClient } from '../../utils/createQueryClient';
 import { socket } from '../../utils/createWSconnection';
-import { formatTime } from '../../utils/formatTime';
 import { isServer } from '../../utils/isServer';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
@@ -258,10 +257,8 @@ const LeftSidebar: React.FC = () => {
                   }
                   return (
                     <ThreadButton
-                      name={membership.thread.name || ''}
-                      time={formatTime(membership.thread.lastActivity)}
+                      thread={membership.thread}
                       threadId={membership.threadId}
-                      latestMessage={membership.thread.lastMessage}
                       unread={membership.unread > 0}
                       active={membership.threadId === threadId}
                       key={membership.threadId}
@@ -287,7 +284,7 @@ const LeftSidebar: React.FC = () => {
             <div className="w-full h-full flex flex-row items-center">
               <div className="w-16 h-full flex flex-col justify-center items-center">
                 <div
-                  className="w-12 h-12 rounded-full bg-light cursor-pointer"
+                  className="w-12 h-12 rounded-full bg-light-400 cursor-pointer flex flex-col justify-center items-center"
                   title="Account settings."
                   onClick={() => router.push('/app/settings')}
                 >

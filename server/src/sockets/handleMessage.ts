@@ -61,7 +61,8 @@ export const handleMessage = async (
     }
   }
 
-  const senderUser = await User.findOne({ where: { id: user.id } });
+  const senderUser = await User.findOne({ where: { id: user.id }, relations: ['profile_picture'] });
+
   if (!senderUser) {
     const payload = { code: ERROR_MESSAGE_CODE, message: "It seems like, you don't exist!" };
     ws.send(JSON.stringify(payload));
@@ -153,12 +154,24 @@ export const handleMessage = async (
 
       await Thread.update({ id: threadId }, { lastActivity: new Date() });
 
+      const pickedSender = (({
+        id,
+        username,
+        status,
+        bio,
+        threads,
+        email,
+        profile_picture,
+        updatedAt,
+        createdAt
+      }: User) => ({ id, username, status, bio, threads, email, profile_picture, updatedAt, createdAt }))(senderUser);
+
       const payload: SocketChatMessage = {
         threadId,
         code: CHAT_MESSAGE_CODE,
         message: {
           ...newMessage,
-          user: senderUser
+          user: pickedSender
         } as Message
       };
 

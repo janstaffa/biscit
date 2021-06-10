@@ -39,7 +39,6 @@ export const uploadProfilePicture = async (
         const response = data;
         if (response.error) {
           errorToast(response.error);
-          reject(response.error);
           return;
         }
         if (response.fileId) {

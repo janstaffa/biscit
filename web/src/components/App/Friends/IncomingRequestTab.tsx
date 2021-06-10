@@ -1,12 +1,12 @@
 import React from 'react';
-import { FaRegCheckCircle, FaRegTimesCircle } from 'react-icons/fa';
-import { genericErrorMessage } from '../../../constants';
-import { FriendRequest, useAcceptRequestMutation, User } from '../../../generated/graphql';
+import { FaRegCheckCircle, FaRegTimesCircle, FaUser } from 'react-icons/fa';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
+import { FriendRequest, useAcceptRequestMutation, UserSnippetFragment } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
 export interface IncomingRequestTabProps {
   request: Pick<FriendRequest, 'id' | 'createdAt'> & {
-    sender: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
+    sender: UserSnippetFragment;
   };
 }
 
@@ -34,11 +34,19 @@ const IncomingRequestTab: React.FC<IncomingRequestTabProps> = ({ request: { id, 
     }
   });
 
+  const profilePictureId = sender.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
-          <div className="w-11 h-11 rounded-full bg-light"></div>
+          <div className="w-11 h-11 rounded-full bg-light-400 flex flex-col justify-center items-center">
+            {profilePictureSrc ? (
+              <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
+            ) : (
+              <FaUser size={30} />
+            )}
+          </div>
         </div>
         <div className="w-full flex-1 px-2">
           <div className="flex flex-row w-full justify-between">

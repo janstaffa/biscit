@@ -11,6 +11,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { Thread } from './Thread';
 import { User } from './User';
 
 @ObjectType()
@@ -39,14 +40,23 @@ export class ProfilePicture extends BaseEntity {
   @Column({ nullable: true })
   format: string;
 
-  @Field(() => String)
-  @Column()
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
   userId: string;
 
-  @Field(() => User)
+  @Field(() => User, { nullable: true })
   @OneToOne(() => User, (user) => user.profile_picture, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
+  threadId: string;
+
+  @Field(() => Thread, { nullable: true })
+  @OneToOne(() => Thread, (thread) => thread.thread_picture, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'threadId' })
+  thread: Thread;
 
   //createdAt field
   @Field(() => String)

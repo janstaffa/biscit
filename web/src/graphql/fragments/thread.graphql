@@ -15,6 +15,9 @@ fragment threadSnippet on Thread {
   creator {
     ...userSnippet
   }
+  thread_picture {
+    ...profilePictureSnippet
+  }
   messagesCount
   lastActivity
   createdAt

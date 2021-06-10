@@ -4,8 +4,11 @@ import { UploadedFile } from 'express-fileupload';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { getConnection } from 'typeorm';
+import { validProfilePictureUploadRegExp } from '../constants';
 import { File } from '../entities/File';
 import { ProfilePicture } from '../entities/ProfilePicture';
+import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { getId } from '../utils/generateId';
 
@@ -79,6 +82,9 @@ export const fileUploadController = (app: Express) => {
     if (!(req.files?.file as UploadedFile).mimetype.includes('image/')) {
       return res.send({ error: 'Uploaded file is not an image.' });
     }
+    if (!validProfilePictureUploadRegExp.test((req.files?.file as UploadedFile).mimetype)) {
+      return res.send({ error: 'Invalid format.' });
+    }
     if (!Array.isArray(req.files.file) && !req.files.file.truncated) {
       //@ts-ignore
       const userId = req.session.userId;
@@ -131,7 +137,8 @@ export const fileUploadController = (app: Express) => {
               const user = await User.findOne({ where: { id: userId }, relations: ['profile_picture'] });
               if (!user) return;
 
-              if (user?.profile_picture) {
+              if (user.profile_pictureId && user.profile_picture) {
+                console.log('already exists');
                 await new Promise((resolve, reject) =>
                   fs.unlink(
                     path.join(
@@ -143,26 +150,29 @@ export const fileUploadController = (app: Express) => {
                     async (err) => {
                       try {
                         if (err) throw err;
-                        await ProfilePicture.delete({ id: user.profile_picture.id });
+                        await ProfilePicture.delete({ id: user.profile_pictureId });
                         resolve(true);
                       } catch (e) {
                         console.error(e);
+                        if (e.errno === -4058) {
+                          return res.send({ error: 'This file was not found.' });
+                        }
                         reject(e);
                       }
                     }
                   )
                 );
               }
+
               await newFile.save();
-              user.profile_pictureId = newFile.id;
-              await user.save();
+              await User.update({ id: user.id }, { profile_pictureId: newFile.id });
+
               res.send({ status: 'success', fileId: newFile.id });
             } catch (e) {
               console.error(e);
             }
           })
           .catch((err) => {
-            console.log('error');
             console.error(err);
           });
       };
@@ -216,13 +226,17 @@ export const fileUploadController = (app: Express) => {
     }
 
     const file = await ProfilePicture.findOne({ where: { id: fileId } });
-
     if (!file) {
       return res.send({ error: 'This file was not found.' });
     }
-
-    if (file.userId !== userId) {
-      return res.send({ error: "This file wasn't uploaded by you." });
+    const members: ThreadMembers[] = await getConnection().query(
+      `
+        SELECT * FROM thread_members WHERE "threadId" IN (SELECT "threadId" FROM thread_members WHERE "userId" = $1)
+      `,
+      [userId]
+    );
+    if (!members.find((member) => member.userId === file.userId)) {
+      return res.send({ error: 'You are not allowed to view this file.' });
     }
 
     res.sendFile(path.join(__dirname, '../../uploaded/profilepics/', file.id + '.' + file.format), file.fileName);

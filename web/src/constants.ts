@@ -11,6 +11,7 @@ export const profilepUploadURL = serverURL + '/upload/profilep';
 
 export const fileApiURL = serverURL + '/files';
 export const profilepApiURL = serverURL + '/files/profilep';
+export const validProfilePictureUploadRegExp = /jpeg|png|webp|avif|tiff|svg/;
 
 export const imageRegExp = /png|jpe?g|gif|bmp/;
 export const documentRegExp = /docx?|odt|pages|html?|txt/;

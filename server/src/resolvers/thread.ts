@@ -1,8 +1,9 @@
 import { createClient } from 'redis';
-import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
+import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
 import { File } from '../entities/File';
 import { Message } from '../entities/Message';
+import { ProfilePicture } from '../entities/ProfilePicture';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import {
@@ -28,6 +29,23 @@ const pubClient = createClient({
 
 @Resolver(Thread)
 export class ThreadResolver {
+  @FieldResolver()
+  @UseMiddleware(isAuth)
+  async thread_picture(@Root() thread: Thread, @Ctx() { req, res }: ContextType): Promise<ProfilePicture | undefined> {
+    const userId = req.session.userId;
+    if (thread.isDm) {
+      const otherUser = thread.members.find((member) => member.userId !== userId);
+      if (!otherUser?.user.profile_picture) return;
+      otherUser.user.profile_picture.threadId = thread.id;
+      otherUser.user.profile_picture.thread = thread;
+
+      return otherUser.user.profile_picture;
+    }
+    if (!thread.thread_pictureId) return;
+
+    return await ProfilePicture.findOne({ where: { id: thread.thread_pictureId } });
+  }
+
   @Query(() => ThreadResponse)
   @UseMiddleware(isAuth)
   async thread(@Ctx() { req, res }: ContextType, @Arg('options') options: ThreadInput): Promise<ResponseType<Thread>> {

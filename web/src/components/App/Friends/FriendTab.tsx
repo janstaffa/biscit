@@ -2,24 +2,49 @@ import { useRouter } from 'next/router';
 import React from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
 import { BsFillPersonDashFill } from 'react-icons/bs';
+import { FaUser } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
 import { Popup } from 'react-tiny-modals';
-import { User } from '../../../generated/graphql';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
+import { useRemoveFriendMutation, UserSnippetFragment } from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
+import { errorToast } from '../../../utils/toasts';
 export interface FriendTabProps {
   friendId: string;
-  friend: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
+  friend: UserSnippetFragment;
   threadId: string;
 }
 
-const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend: { username, bio, status }, threadId }) => {
+const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend, friend: { username, bio, status }, threadId }) => {
   const router = useRouter();
 
+  const { mutate: removeFriend } = useRemoveFriendMutation({
+    onSuccess: (data) => {
+      if (!data.FriendRemove.data) {
+        errorToast(genericErrorMessage);
+      }
+      queryClient.invalidateQueries('Me');
+    },
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
+
+  const profilePictureId = friend.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
-          <div className="w-11 h-11 rounded-full bg-light"></div>
+          <div className="w-11 h-11 rounded-full bg-light-400 flex flex-col justify-center items-center">
+            {profilePictureSrc ? (
+              <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
+            ) : (
+              <FaUser size={30} />
+            )}
+          </div>
         </div>
         <div className="w-full flex-1 px-2">
           <div className="flex flex-row w-full justify-between">
@@ -43,7 +68,9 @@ const FriendTab: React.FC<FriendTabProps> = ({ friendId, friend: { username, bio
                       <ul>
                         <li
                           className="text-red-600 font-opensans text-center p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
-                          onClick={() => {}}
+                          onClick={() => {
+                            removeFriend({ options: { friendId } });
+                          }}
                         >
                           <BsFillPersonDashFill size={20} style={{ marginRight: '5px' }} />
                           Remove friend

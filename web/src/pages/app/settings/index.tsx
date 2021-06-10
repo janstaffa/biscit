@@ -1,6 +1,7 @@
 import Cropper from 'cropperjs';
 import { NextPage } from 'next';
-import React, { useRef, useState } from 'react';
+import Head from 'next/head';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaUser } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { MdAddAPhoto } from 'react-icons/md';
@@ -8,7 +9,7 @@ import { Modal } from 'react-tiny-modals';
 import '../../../../node_modules/cropperjs/dist/cropper.css';
 import SettingsLayout from '../../../components/App/Settings/SettingsLayout';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
-import { profilepApiURL } from '../../../constants';
+import { profilepApiURL, validProfilePictureUploadRegExp } from '../../../constants';
 import { useMeQuery } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast } from '../../../utils/toasts';
@@ -26,9 +27,15 @@ const Settings: NextPage = () => {
   const profilePictureDisplay = useRef<HTMLImageElement | null>(null);
 
   const profilePictureId = meData?.me?.profile_picture?.id;
-  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
+  const [profilePictureSrc, setProfilePictureSrc] = useState<string | undefined>();
+  useEffect(() => {
+    setProfilePictureSrc(profilePictureId && profilepApiURL + '/' + profilePictureId);
+  }, [profilePictureId]);
   return (
     <>
+      <Head>
+        <title>Biscit | Settings</title>
+      </Head>
       <SettingsLayout>
         <div className="w-full h-full flex flex-row">
           <div className="w-64 bg-dark-300 text-light-300 flex flex-row justify-center pt-5">
@@ -66,7 +73,7 @@ const Settings: NextPage = () => {
               <div className="mx-3">
                 <div className="flex flex-row h-32">
                   <div
-                    className="w-32 h-32 bg-white rounded-full cursor-pointer relative"
+                    className="w-32 h-32 bg-light-400 rounded-full cursor-pointer relative flex flex-col justify-center items-center"
                     onClick={() => fileInput.current?.click()}
                     onMouseOver={() => setIsHoveringFile(true)}
                     onMouseLeave={() => setIsHoveringFile(false)}
@@ -78,7 +85,7 @@ const Settings: NextPage = () => {
                         ref={profilePictureDisplay}
                       />
                     ) : (
-                      <FaUser size={30} className="text-dark-100" />
+                      <FaUser size={60} className="text-dark-100" />
                     )}
                     <div
                       className="w-full h-full rounded-full  flex-col items-center justify-center absolute top-0"
@@ -90,7 +97,7 @@ const Settings: NextPage = () => {
                       type="file"
                       className="hidden"
                       ref={fileInput}
-                      accept=".jpeg,.png,.webp,.avif,.tiff,.gif,.svg"
+                      accept=".jpeg,.png,.webp,.avif,.tiff,.svg"
                       onChange={(e) => {
                         if (!e.target.files || e.target.files.length !== 1) {
                           return errorToast(
@@ -265,12 +272,15 @@ const Settings: NextPage = () => {
               </button>
               <SubmitButton
                 onClick={async () => {
-                  console.log(cropper.current?.getData());
                   const files = fileInput.current?.files;
                   if (files && files?.length > 0) {
                     const file = files[0];
                     const dimensions = cropper.current?.getData();
                     if (file && dimensions) {
+                      if (!validProfilePictureUploadRegExp.test(file.type)) {
+                        errorToast('Invalid image file uploaded');
+                        return;
+                      }
                       const { width, height, x, y } = dimensions;
                       if (width < 0 || height < 0 || x < 0 || y < 0) return;
                       const newImage = await uploadProfilePicture(file, {
@@ -281,7 +291,7 @@ const Settings: NextPage = () => {
                       });
 
                       if (newImage.id && profilePictureDisplay.current) {
-                        profilePictureDisplay.current.src = profilepApiURL + '/' + newImage.id;
+                        setProfilePictureSrc(profilepApiURL + '/' + newImage.id);
                         queryClient.invalidateQueries('Me');
                       }
 

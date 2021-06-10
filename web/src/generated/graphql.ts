@@ -265,8 +265,10 @@ export type ProfilePicture = {
   size: Scalars['Float'];
   fileName: Scalars['String'];
   format?: Maybe<Scalars['String']>;
-  userId: Scalars['String'];
-  user: User;
+  userId?: Maybe<Scalars['String']>;
+  user?: Maybe<User>;
+  threadId?: Maybe<Scalars['String']>;
+  thread?: Maybe<Thread>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };
@@ -329,6 +331,8 @@ export type Thread = {
   lastMessage?: Maybe<Message>;
   lastActivity: Scalars['DateTime'];
   media?: Maybe<Array<File>>;
+  thread_pictureId?: Maybe<Scalars['String']>;
+  thread_picture?: Maybe<ProfilePicture>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };
@@ -452,6 +456,9 @@ export type ThreadSnippetFragment = (
   )>>, creator?: Maybe<(
     { __typename?: 'User' }
     & UserSnippetFragment
+  )>, thread_picture?: Maybe<(
+    { __typename?: 'ProfilePicture' }
+    & ProfilePictureSnippetFragment
   )> }
 );
 
@@ -1012,6 +1019,9 @@ export const ThreadSnippetFragmentDoc = `
   creator {
     ...userSnippet
   }
+  thread_picture {
+    ...profilePictureSnippet
+  }
   messagesCount
   lastActivity
   createdAt
@@ -1020,7 +1030,8 @@ export const ThreadSnippetFragmentDoc = `
     ${MessageSnippetFragmentDoc}
 ${ThreadMembersSnippetFragmentDoc}
 ${FileSnippetFragmentDoc}
-${UserSnippetFragmentDoc}`;
+${UserSnippetFragmentDoc}
+${ProfilePictureSnippetFragmentDoc}`;
 export const AcceptRequestDocument = `
     mutation AcceptRequest($options: RequestAcceptInput!) {
   FriendRequestAccept(options: $options) {

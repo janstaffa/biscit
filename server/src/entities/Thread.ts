@@ -11,12 +11,14 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryColumn,
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
 import { File } from './File';
 import { Message } from './Message';
+import { ProfilePicture } from './ProfilePicture';
 import { ThreadMembers } from './ThreadMembers';
 import { User } from './User';
 
@@ -96,6 +98,14 @@ export class Thread extends BaseEntity {
   @Field(() => [File], { nullable: true })
   @OneToMany(() => File, (file) => file.thread, { nullable: true })
   media: File[];
+
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
+  thread_pictureId: string;
+
+  @Field(() => ProfilePicture, { nullable: true })
+  @OneToOne(() => ProfilePicture, (profile_picture) => profile_picture.thread)
+  thread_picture: ProfilePicture;
 
   //createdAt field
   @Field(() => String)

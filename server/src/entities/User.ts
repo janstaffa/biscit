@@ -5,6 +5,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   OneToMany,
   OneToOne,
   PrimaryColumn,
@@ -56,7 +57,8 @@ export class User extends BaseEntity {
   profile_pictureId: string;
 
   @Field(() => ProfilePicture, { nullable: true })
-  @OneToOne(() => ProfilePicture, (profile_picture) => profile_picture.user)
+  @OneToOne(() => ProfilePicture, (profile_picture) => profile_picture.user, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'profile_pictureId' })
   profile_picture: ProfilePicture;
 
   //bio field
