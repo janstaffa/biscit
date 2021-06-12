@@ -58,7 +58,11 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, a
 
   useEffect(() => {
     if (thread.lastMessage) {
-      setDisplayMessage(thread.lastMessage.content);
+      let lastMessage = thread.lastMessage.content;
+      if (!thread.isDm) {
+        lastMessage = thread.lastMessage.user.username + ': ' + thread.lastMessage.content;
+      }
+      setDisplayMessage(lastMessage);
       setCurrentLatestMessage(thread.lastMessage.content);
     }
   }, [thread.lastMessage]);

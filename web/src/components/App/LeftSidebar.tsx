@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
-import { FaSearch, FaUser, FaUserFriends } from 'react-icons/fa';
+import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
@@ -23,11 +23,13 @@ import {
   useUpdateStatusMutation
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
+import { useTokenStore } from '../../stores/useTokenStore';
 import { queryClient } from '../../utils/createQueryClient';
 import { socket } from '../../utils/createWSconnection';
 import { isServer } from '../../utils/isServer';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
+import ProfilePicture from './ProfilePicture';
 import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 
@@ -36,6 +38,7 @@ const LeftSidebar: React.FC = () => {
   const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
 
   const { setAuthenticated } = useAuth();
+  const { setToken } = useTokenStore();
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [statusInput, setStatusInput] = useState<string>('');
   const [currentPath, setCurrentPath] = useState<string>();
@@ -287,17 +290,13 @@ const LeftSidebar: React.FC = () => {
           <div className="absolute w-full h-24 bg-dark-300 bottom-0">
             <div className="w-full h-full flex flex-row items-center">
               <div className="w-16 h-full flex flex-col justify-center items-center">
-                <div
-                  className="w-12 h-12 rounded-full bg-light-400 cursor-pointer flex flex-col justify-center items-center"
-                  title="Account settings."
+                <ProfilePicture
+                  online={meData?.me?.status === 'online'}
+                  size="48px"
+                  src={profilePictureSrc}
+                  className="cursor-pointer"
                   onClick={() => router.push('/app/settings')}
-                >
-                  {profilePictureSrc ? (
-                    <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
-                  ) : (
-                    <FaUser size={30} className="text-dark-100" />
-                  )}
-                </div>
+                />
               </div>
               <div className="w-full flex-1 px-2">
                 <div className="flex flex-row justify-between items-center">
@@ -325,6 +324,8 @@ const LeftSidebar: React.FC = () => {
                               if (data.UserLogout) {
                                 setAuthenticated(false);
                                 queryClient.removeQueries();
+                                socket.close();
+                                setToken(null);
                                 router.replace('/');
                               } else {
                                 errorToast(genericErrorMessage);

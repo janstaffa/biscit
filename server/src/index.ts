@@ -18,6 +18,7 @@ import { MessageResolver } from './resolvers/message';
 import { ThreadResolver } from './resolvers/thread';
 import { UserResolver } from './resolvers/user';
 import { fileUploadController } from './rest/fileUpload';
+import { getFilesController } from './rest/getFiles';
 import { socketController } from './sockets';
 import { ContextType } from './types';
 dotenv.config();
@@ -118,6 +119,7 @@ dotenv.config();
     })
   );
   fileUploadController(app);
+  getFilesController(app);
 
   server.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);

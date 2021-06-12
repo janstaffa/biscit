@@ -67,6 +67,7 @@ export const handleMessage = async (
     const payload = { code: ERROR_MESSAGE_CODE, message: "It seems like, you don't exist!" };
     ws.send(JSON.stringify(payload));
     closeConnection(ws);
+    await User.update({ id: user.id }, { status: 'offline' });
     subClient.removeAllListeners();
 
     return;

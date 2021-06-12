@@ -139,33 +139,35 @@ export const socketController = (server: Server) => {
     async (ws: WebSocket, req: http.IncomingMessage, user: User, subClient: RedisClient, pubClient: RedisClient) => {
       console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
 
-      const heartbeat = setInterval(() => {
+      await User.update({ id: user.id }, { status: 'online' });
+      const heartbeat = setInterval(async () => {
         if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
           clearInterval(heartbeat);
-          closeConnectionAndClear();
+          await closeConnectionAndClear();
 
           return;
         }
-        ws.ping('ping', false, (err) => {
+        ws.ping('ping', false, async (err) => {
           if (err) {
             console.error(err);
-            closeConnectionAndClear();
+            await closeConnectionAndClear();
             clearInterval(heartbeat);
           }
         });
       }, HEARTBEAT_INTERVAL);
 
-      const elapsed = setTimeout(() => {
-        closeConnectionAndClear();
+      const elapsed = setTimeout(async () => {
+        await closeConnectionAndClear();
       }, ELAPSED_TIME);
 
-      const closeConnectionAndClear = () => {
+      const closeConnectionAndClear = async () => {
         console.log('connection closed');
         closeConnection(ws);
         subClient.removeAllListeners();
         subClient.unsubscribe();
         clearTimeout(elapsed);
         clearInterval(heartbeat);
+        await User.update({ id: user.id }, { status: 'offline' });
       };
 
       let sentMessages = 0;
@@ -201,8 +203,8 @@ export const socketController = (server: Server) => {
         elapsed.refresh();
       });
 
-      ws.on('close', () => {
-        closeConnectionAndClear();
+      ws.on('close', async () => {
+        await closeConnectionAndClear();
       });
 
       try {
