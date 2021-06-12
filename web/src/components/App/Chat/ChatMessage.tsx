@@ -10,6 +10,7 @@ import { genericErrorMessage, profilepApiURL } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
+  ThreadSnippetFragment,
   useDeleteMessageMutation,
   useUpdateMessageMutation
 } from '../../../generated/graphql';
@@ -26,6 +27,7 @@ export interface ChatMessageProps {
   replyMessage: MessageSnippetFragment | null;
   onReady?: () => void;
   setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
+  thread: ThreadSnippetFragment | undefined;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({
@@ -35,7 +37,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   replyCall,
   replyMessage,
   onReady,
-  setGalleryFile
+  setGalleryFile,
+  thread
 }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
@@ -195,7 +198,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     </li>
                   )}
                   <hr className="bg-dark-50 h-px border-none mt-1" />
-                  {message.userId === myId && (
+                  {(message.userId === myId || thread?.creatorId === myId) && (
                     <>
                       <li
                         className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
@@ -207,7 +210,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         <RiDeleteBin6Line size={20} style={{ marginRight: '5px' }} />
                         Delete
                       </li>
-                      {message.content && (
+                      {message.content && message.userId === myId && (
                         <li
                           className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
                           onClick={() => {

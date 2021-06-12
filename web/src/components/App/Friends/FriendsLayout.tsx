@@ -131,12 +131,13 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
                           }
                         }
                         setModalShow(false);
+                        setNewFriendInput('');
                       }
                     }
                   );
                 }}
               >
-                Create
+                Send
               </SubmitButton>
             </div>
           </div>

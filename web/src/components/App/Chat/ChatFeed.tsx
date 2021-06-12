@@ -7,7 +7,9 @@ import {
   MessageSnippetFragment,
   ThreadMessagesQuery,
   ThreadMessagesResponse,
-  useMeQuery
+  ThreadSnippetFragment,
+  useMeQuery,
+  useThreadQuery
 } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
@@ -34,6 +36,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   setGalleryFile
 }) => {
   const { data: meData } = useMeQuery();
+  const { data: threadData } = useThreadQuery({ options: { threadId } });
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
 
@@ -245,6 +248,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                         replyMessage={replyMessage}
                         onReady={() => handleMessageReady()}
                         setGalleryFile={setGalleryFile}
+                        thread={threadData?.thread.data as ThreadSnippetFragment}
                       />
                     </div>
                   );
@@ -261,6 +265,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                 replyMessage={replyMessage}
                 onReady={() => handleMessageReady()}
                 setGalleryFile={setGalleryFile}
+                thread={threadData?.thread.data as ThreadSnippetFragment}
               />
             );
           });

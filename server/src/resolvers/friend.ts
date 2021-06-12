@@ -97,6 +97,20 @@ export class FriendResolver {
           errors
         };
       }
+
+      if (!reciever.allowFriendRequests) {
+        errors.push(
+          new GQLValidationError({
+            field: 'usernameAndTag',
+            value: '',
+            message: "This user doesn't accept friend requests."
+          })
+        );
+        return {
+          data: false,
+          errors
+        };
+      }
       await FriendRequest.create({
         senderId: userId,
         recieverId: reciever.id

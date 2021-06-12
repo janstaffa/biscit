@@ -121,7 +121,11 @@ const LeftSidebar: React.FC = () => {
         });
         if (thisThread) {
           threads.splice(threads.indexOf(thisThread), 1);
-          if (thisThread.threadId !== threadId && (message as Message).userId !== meDataRef.current?.me?.id) {
+          if (
+            thisThread.threadId !== threadId &&
+            (message as Message).userId !== meDataRef.current?.me?.id &&
+            meDataRef.current?.me?.setAsUnread
+          ) {
             thisThread.unread++;
           }
           thisThread.thread.lastMessage = message as Message;

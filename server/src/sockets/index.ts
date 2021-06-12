@@ -221,7 +221,10 @@ export const socketController = (server: Server) => {
         if (parsed.code === 3000) {
           const { message, threadId } = parsed as SocketChatMessage;
           if (message.userId !== user.id) {
-            await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+            const latestUser = await User.findOne({ where: { id: user.id } });
+            if (latestUser && latestUser.setAsUnread) {
+              await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+            }
           }
         }
         ws.send(message);

@@ -67,9 +67,7 @@ const Settings: NextPage = () => {
     }
   }, [meData]);
 
-  useEffect(() => {
-    console.log(userDetails);
-  }, [userDetails]);
+  const blinkScreen = useRef<HTMLDivElement | null>(null);
   return (
     <>
       <Head>
@@ -199,7 +197,33 @@ const Settings: NextPage = () => {
               <h2 className="text-light-300 text-lg font-opensans mb-1">Customization:</h2>
               <div className="mx-3">
                 <div className="flex flex-row items-center">
-                  <input type="checkbox" className="mr-2" />
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={false}
+                    onClick={() => {
+                      const audio = new Audio('/you-are-an-idiot.mp3');
+                      let counter = 0;
+                      audio.play();
+                      alert('YOU ARE AN IDIOT!');
+                      const interval = setInterval(() => {
+                        if (!blinkScreen.current) return;
+                        let display;
+                        if (counter % 2 === 0) {
+                          display = 'none';
+                        } else {
+                          display = 'block';
+                        }
+                        blinkScreen.current.style.display = display;
+                        counter++;
+                      }, 100);
+                      setTimeout(() => {
+                        clearInterval(interval);
+                        if (blinkScreen.current) blinkScreen.current.style.display = 'none';
+                      }, 5000);
+                    }}
+                    title="Just don't. :)"
+                  />
                   <div className="text-light-300 text-lg">Light mode</div>
                 </div>
               </div>
@@ -339,6 +363,7 @@ const Settings: NextPage = () => {
           </div>
         </div>
       </Modal>
+      <div className="w-screen h-screen absolute top-0 left-0 bg-white z-50 hidden" ref={blinkScreen}></div>
     </>
   );
 };

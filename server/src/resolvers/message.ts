@@ -103,11 +103,12 @@ export class MessageResolver {
     const userId = req.session.userId;
 
     const message = await Message.findOne({
-      where: { userId, id: options.messageId }
+      where: { id: options.messageId },
+      relations: ['thread']
     });
     const errors: GQLValidationError[] = [];
 
-    if (!message) {
+    if (message?.userId !== userId && message?.thread.creatorId !== userId) {
       errors.push(
         new GQLValidationError({
           field: 'messageId',

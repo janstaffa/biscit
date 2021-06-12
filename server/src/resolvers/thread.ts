@@ -16,6 +16,7 @@ import {
   RemoveMemberInput,
   ThreadInput
 } from '../entities/types/thread';
+import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
 import { ContextType } from '../types';
@@ -222,12 +223,24 @@ export class ThreadResolver {
     if (options.members) {
       members = [...members, ...options.members];
     }
+    const errors: GQLValidationError[] = [];
     for (const member of members) {
+      const userToAdd = await User.findOne({ where: { id: member } });
+      if (userToAdd && userToAdd?.allowThreads) {
+        errors.push(
+          new GQLValidationError({
+            field: 'members',
+            value: members.join(','),
+            message: userToAdd?.username + " cant't be added to threads."
+          })
+        );
+        continue;
+      }
       await ThreadMembers.create({ threadId: id, userId: member, isAdmin: member === userId ? true : false }).save();
     }
     return {
       data: id,
-      errors: []
+      errors
     };
   }
 
@@ -430,6 +443,17 @@ export class ThreadResolver {
       for (const newMember of options.newMembers) {
         const exists = alreadyMembers.find((member) => newMember === member.userId);
         if (exists) continue;
+        const userToAdd = await User.findOne({ where: { id: newMember } });
+        if (!userToAdd?.allowThreads) {
+          errors.push(
+            new GQLValidationError({
+              field: 'newMembers',
+              value: options.newMembers.join(','),
+              message: userToAdd?.username + " cant't be added to threads."
+            })
+          );
+          continue;
+        }
         await ThreadMembers.create({ userId: newMember, threadId: options.threadId }).save();
       }
       const payload: SocketThreadMessage = {
@@ -448,7 +472,7 @@ export class ThreadResolver {
       );
 
       return {
-        data: true,
+        data: errors.length === 0 ? true : false,
         errors
       };
     }
