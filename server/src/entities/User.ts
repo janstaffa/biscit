@@ -94,6 +94,22 @@ export class User extends BaseEntity {
   @OneToMany(() => File, (file) => file.user)
   files: File[];
 
+  @Field(() => Boolean)
+  @Column({ default: true })
+  soundNotifications: boolean;
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  setAsUnread: boolean;
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  allowFriendRequests: boolean;
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  allowThreads: boolean;
+
   //createdAt field
   @Field(() => String)
   @CreateDateColumn()

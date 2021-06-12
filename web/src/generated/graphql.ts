@@ -167,6 +167,7 @@ export type Mutation = {
   UserLogin: BooleanResponse;
   UserLogout: Scalars['Boolean'];
   UserUpdateStatus: Scalars['Boolean'];
+  UserUpdateSettings: BooleanResponse;
 };
 
 
@@ -257,6 +258,11 @@ export type MutationUserLoginArgs = {
 
 export type MutationUserUpdateStatusArgs = {
   options: UpdateStatusInput;
+};
+
+
+export type MutationUserUpdateSettingsArgs = {
+  options: UpdateSettingsInput;
 };
 
 export type ProfilePicture = {
@@ -379,6 +385,15 @@ export type UpdateMessageMutationInput = {
   newContent: Scalars['String'];
 };
 
+export type UpdateSettingsInput = {
+  newUsername?: Maybe<Scalars['String']>;
+  newEmail?: Maybe<Scalars['String']>;
+  soundNotifications?: Maybe<Scalars['Boolean']>;
+  setAsUnread?: Maybe<Scalars['Boolean']>;
+  allowFriendRequests?: Maybe<Scalars['Boolean']>;
+  allowThreads?: Maybe<Scalars['Boolean']>;
+};
+
 export type UpdateStatusInput = {
   status: Scalars['String'];
 };
@@ -395,6 +410,10 @@ export type User = {
   bio?: Maybe<Scalars['String']>;
   friends?: Maybe<Array<Friend>>;
   myThreads: Array<Thread>;
+  soundNotifications: Scalars['Boolean'];
+  setAsUnread: Scalars['Boolean'];
+  allowFriendRequests: Scalars['Boolean'];
+  allowThreads: Scalars['Boolean'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
@@ -786,6 +805,23 @@ export type UpdateMessageMutation = (
   ) }
 );
 
+export type UpdateSettingsMutationVariables = Exact<{
+  options: UpdateSettingsInput;
+}>;
+
+
+export type UpdateSettingsMutation = (
+  { __typename?: 'Mutation' }
+  & { UserUpdateSettings: (
+    { __typename?: 'BooleanResponse' }
+    & Pick<BooleanResponse, 'data'>
+    & { errors: Array<(
+      { __typename?: 'GQLValidationError' }
+      & ErrorSnippetFragment
+    )> }
+  ) }
+);
+
 export type UpdateStatusMutationVariables = Exact<{
   options: UpdateStatusInput;
 }>;
@@ -803,7 +839,7 @@ export type MeQuery = (
   { __typename?: 'Query' }
   & { me?: Maybe<(
     { __typename?: 'User' }
-    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'tag'>
+    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'tag' | 'setAsUnread' | 'allowThreads' | 'allowFriendRequests' | 'soundNotifications'>
     & { friend_requests: (
       { __typename?: 'FriendRequestResponse' }
       & { incoming: Array<(
@@ -1363,6 +1399,24 @@ export const useUpdateMessageMutation = <
       useGQLRequest<UpdateMessageMutation, UpdateMessageMutationVariables>(UpdateMessageDocument),
       options
     );
+export const UpdateSettingsDocument = `
+    mutation UpdateSettings($options: UpdateSettingsInput!) {
+  UserUpdateSettings(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
+    ${ErrorSnippetFragmentDoc}`;
+export const useUpdateSettingsMutation = <
+      TError = unknown,
+      TContext = unknown
+    >(options?: UseMutationOptions<UpdateSettingsMutation, TError, UpdateSettingsMutationVariables, TContext>) => 
+    useMutation<UpdateSettingsMutation, TError, UpdateSettingsMutationVariables, TContext>(
+      useGQLRequest<UpdateSettingsMutation, UpdateSettingsMutationVariables>(UpdateSettingsDocument),
+      options
+    );
 export const UpdateStatusDocument = `
     mutation UpdateStatus($options: UpdateStatusInput!) {
   UserUpdateStatus(options: $options)
@@ -1385,6 +1439,10 @@ export const MeDocument = `
     status
     bio
     tag
+    setAsUnread
+    allowThreads
+    allowFriendRequests
+    soundNotifications
     friend_requests {
       incoming {
         id

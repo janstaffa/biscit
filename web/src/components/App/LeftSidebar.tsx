@@ -320,6 +320,7 @@ const LeftSidebar: React.FC = () => {
                             onSuccess: (data) => {
                               if (data.UserLogout) {
                                 setAuthenticated(false);
+                                queryClient.removeQueries();
                                 router.replace('/');
                               } else {
                                 errorToast(genericErrorMessage);

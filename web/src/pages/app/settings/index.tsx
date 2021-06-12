@@ -9,14 +9,33 @@ import { Modal } from 'react-tiny-modals';
 import '../../../../node_modules/cropperjs/dist/cropper.css';
 import SettingsLayout from '../../../components/App/Settings/SettingsLayout';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
-import { profilepApiURL, validProfilePictureUploadRegExp } from '../../../constants';
-import { useMeQuery } from '../../../generated/graphql';
+import { genericErrorMessage, profilepApiURL, validProfilePictureUploadRegExp } from '../../../constants';
+import { useMeQuery, useUpdateSettingsMutation } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
-import { errorToast } from '../../../utils/toasts';
+import { errorToast, successToast } from '../../../utils/toasts';
 import { uploadProfilePicture } from '../../../utils/uploadFile';
 import withAuth from '../../../utils/withAuth';
 const Settings: NextPage = () => {
   const { data: meData } = useMeQuery();
+
+  const { mutate: updateSettings } = useUpdateSettingsMutation({
+    onSuccess: (data) => {
+      if (data.UserUpdateSettings.data) {
+        successToast('Settings updated succesfully.');
+      }
+      if (data.UserUpdateSettings.errors.length > 0) {
+        data.UserUpdateSettings.errors.forEach((err) => {
+          errorToast(err.details?.message);
+        });
+        return;
+      }
+      queryClient.invalidateQueries('Me');
+    },
+    onError: (err) => {
+      console.error(err);
+      errorToast(genericErrorMessage);
+    }
+  });
 
   const fileInput = useRef<HTMLInputElement | null>(null);
   const [isHoveringFile, setIsHoveringFile] = useState<boolean>(false);
@@ -31,6 +50,26 @@ const Settings: NextPage = () => {
   useEffect(() => {
     setProfilePictureSrc(profilePictureId && profilepApiURL + '/' + profilePictureId);
   }, [profilePictureId]);
+
+  const [userDetails, setUserDetails] = useState<{
+    username?: string;
+    email?: string;
+    setAsUnread?: boolean;
+    allowThreads?: boolean;
+    allowFriendRequests?: boolean;
+    soundNotifications?: boolean;
+  }>({});
+
+  useEffect(() => {
+    if (meData?.me) {
+      const { email, username, setAsUnread, allowFriendRequests, allowThreads, soundNotifications } = meData.me;
+      setUserDetails({ email, username, setAsUnread, allowFriendRequests, allowThreads, soundNotifications });
+    }
+  }, [meData]);
+
+  useEffect(() => {
+    console.log(userDetails);
+  }, [userDetails]);
   return (
     <>
       <Head>
@@ -58,11 +97,6 @@ const Settings: NextPage = () => {
               <li>
                 <a href="#privacy" className="text-light-300">
                   Privacy
-                </a>
-              </li>
-              <li>
-                <a href="#communication" className="text-light-300">
-                  Communication
                 </a>
               </li>
             </ul>
@@ -138,7 +172,8 @@ const Settings: NextPage = () => {
                       autoCorrect="off"
                       autoCapitalize="off"
                       spellCheck="false"
-                      value={meData?.me?.username}
+                      value={userDetails.username}
+                      onChange={(e) => setUserDetails({ ...userDetails, username: e.target.value })}
                     />
                   </div>
                   <div className="flex flex-col py-1">
@@ -153,22 +188,8 @@ const Settings: NextPage = () => {
                       autoCorrect="off"
                       autoCapitalize="off"
                       spellCheck="false"
-                      value={meData?.me?.email}
-                    />
-                  </div>
-                  <div className="flex flex-col py-1">
-                    <label htmlFor="settings-phone" className="text-light-300 text-md">
-                      Phone
-                    </label>
-                    <input
-                      type="text"
-                      name="settings-phone"
-                      className="w-full bg-dark-50 outline-none text-light-200 rounded-md px-3 py-1"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                      spellCheck="false"
-                      // value={meData?.me?.username}
+                      value={userDetails.email}
+                      onChange={(e) => setUserDetails({ ...userDetails, email: e.target.value })}
                     />
                   </div>
                 </div>
@@ -187,11 +208,21 @@ const Settings: NextPage = () => {
               <h2 className="text-light-300 text-lg font-opensans mb-1">Notifications:</h2>
               <div className="mx-3">
                 <div className="flex flex-row items-center">
-                  <input type="checkbox" className="mr-2" />
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={userDetails.soundNotifications}
+                    onChange={(e) => setUserDetails({ ...userDetails, soundNotifications: e.target.checked })}
+                  />
                   <div className="text-light-300 text-lg">Sound notifications</div>
                 </div>
                 <div className="flex flex-row items-center">
-                  <input type="checkbox" className="mr-2" />
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={userDetails.setAsUnread}
+                    onChange={(e) => setUserDetails({ ...userDetails, setAsUnread: e.target.checked })}
+                  />
                   <div className="text-light-300 text-lg">Set as unread when not present</div>
                 </div>
               </div>
@@ -201,50 +232,51 @@ const Settings: NextPage = () => {
               <h2 className="text-light-300 text-lg font-opensans">Privacy:</h2>
               <div className="mx-3">
                 <div className="flex flex-row items-center">
-                  <input type="checkbox" className="mr-2" />
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={userDetails.allowFriendRequests}
+                    onChange={(e) => {
+                      setUserDetails({ ...userDetails, allowFriendRequests: e.target.checked });
+                    }}
+                  />
                   <div className="text-light-300 text-lg">Allowed to recieve friend requests</div>
                 </div>
                 <div className="flex flex-row items-center">
-                  <input type="checkbox" className="mr-2" />
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={userDetails.allowThreads}
+                    onChange={(e) => setUserDetails({ ...userDetails, allowThreads: e.target.checked })}
+                  />
                   <div className="text-light-300 text-lg">Allowed to be added to threads</div>
                 </div>
               </div>
             </div>
-
-            <div id="communication" className="w-full h-auto bg-dark-200 rounded-lg my-5 p-3">
-              <h2 className="text-light-300 text-lg font-opensans">Communication:</h2>
-              <div className="mx-3">
-                <div className="w-2/5">
-                  <div className="flex flex-col py-1">
-                    <label htmlFor="settings-volume" className="text-light-300 text-md">
-                      Master volume
-                    </label>
-                    <input name="settings-volume" type="range" className="w-full" />
-                  </div>
-                  <div className="flex flex-col py-1">
-                    <label htmlFor="settings-mic" className="text-light-300 text-md">
-                      Microphone
-                    </label>
-                    <select name="settings-mic" className="outline-none">
-                      <option value="">Microphone 1</option>
-                      <option value="">Microphone 2</option>
-                      <option value="">Microphone 3</option>
-                      <option value="">Microphone 4</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col py-1">
-                    <label htmlFor="settings-mic" className="text-light-300 text-md">
-                      Camera
-                    </label>
-                    <select name="settings-mic" className="outline-none">
-                      <option value="">Camera 1</option>
-                      <option value="">Camera 2</option>
-                      <option value="">Camera 3</option>
-                      <option value="">Camera 4</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+            <div className="w-full flex flex-row justify-center items-center">
+              <SubmitButton
+                onClick={() => {
+                  updateSettings({
+                    options: {
+                      newUsername: meData?.me?.username !== userDetails.username ? userDetails.username : null,
+                      newEmail: meData?.me?.email !== userDetails.email ? userDetails.email : null,
+                      allowFriendRequests:
+                        meData?.me?.allowFriendRequests !== userDetails.allowFriendRequests
+                          ? userDetails.allowFriendRequests
+                          : null,
+                      allowThreads:
+                        meData?.me?.allowThreads !== userDetails.allowThreads ? userDetails.allowThreads : null,
+                      setAsUnread: meData?.me?.setAsUnread !== userDetails.setAsUnread ? userDetails.setAsUnread : null,
+                      soundNotifications:
+                        meData?.me?.soundNotifications !== userDetails.soundNotifications
+                          ? userDetails.soundNotifications
+                          : null
+                    }
+                  });
+                }}
+              >
+                Save
+              </SubmitButton>
             </div>
           </div>
         </div>

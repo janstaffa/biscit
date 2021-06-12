@@ -6,6 +6,10 @@ query Me {
     status
     bio
     tag
+    setAsUnread
+    allowThreads
+    allowFriendRequests
+    soundNotifications
     friend_requests {
       incoming {
         id

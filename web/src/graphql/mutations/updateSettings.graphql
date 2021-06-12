@@ -1,0 +1,8 @@
+mutation UpdateSettings($options: UpdateSettingsInput!) {
+  UserUpdateSettings(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

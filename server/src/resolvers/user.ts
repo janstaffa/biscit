@@ -17,7 +17,7 @@ import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpira
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
 import { ProfilePicture } from '../entities/ProfilePicture';
-import { LoginInput, RegisterInput, UpdateStatusInput } from '../entities/types/user';
+import { LoginInput, RegisterInput, UpdateSettingsInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
@@ -248,10 +248,77 @@ export class UserResolver {
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: UpdateStatusInput
   ): Promise<boolean> {
-    const userId = req.session.userId!;
+    const userId = req.session.userId;
     const response = await User.update(userId, { bio: options.status });
     if (!response.affected || response.affected === 0) return false;
 
     return true;
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async UserUpdateSettings(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: UpdateSettingsInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const updateUser: any = {};
+    if (options.newEmail && /\S/.test(options.newEmail)) {
+      const isEmail = yup.string().email('This email is invalid.');
+      const errs = await validateSchema(isEmail, options.newEmail);
+      if (errs) {
+        errors.push(...errs);
+      } else {
+        const user = await User.findOne({ where: { email: options.newEmail } });
+        if (user) {
+          errors.push(
+            new GQLValidationError({
+              field: 'newEmail',
+              value: options.newEmail,
+              message: 'An account is already registred with this email.'
+            })
+          );
+        }
+      }
+      if (errors.length > 0) {
+        return {
+          data: false,
+          errors
+        };
+      }
+
+      updateUser.email = options.newEmail;
+    }
+    if (options.newUsername && /\S/.test(options.newUsername)) {
+      updateUser.username = options.newUsername;
+    }
+    if (options.soundNotifications !== null) {
+      updateUser.soundNotifications = options.soundNotifications;
+    }
+    if (options.setAsUnread !== null) {
+      updateUser.setAsUnread = options.setAsUnread;
+    }
+    if (options.allowFriendRequests !== null) {
+      updateUser.allowFriendRequests = options.allowFriendRequests;
+    }
+    if (options.allowThreads !== null) {
+      updateUser.allowThreads = options.allowThreads;
+    }
+    const response = await User.update(userId, updateUser);
+    if (!response.affected || response.affected === 0) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: userId,
+          message: 'Something went wrong, please try again later.'
+        })
+      );
+      return { data: false, errors };
+    }
+
+    return { data: true, errors };
   }
 }
