@@ -4,7 +4,7 @@ import { HiDotsVertical } from 'react-icons/hi';
 import { ImArrowDown, ImArrowUp, ImCross } from 'react-icons/im';
 import { UseMutateFunction } from 'react-query';
 import { Popup } from 'react-tiny-modals';
-import { genericErrorMessage } from '../../../constants';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
 import {
   Exact,
   FriendRequestInput,
@@ -19,6 +19,7 @@ import {
 } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast, successToast } from '../../../utils/toasts';
+import ProfilePicture from '../ProfilePicture';
 
 export interface MemberListItemProps {
   member: ThreadMembers;
@@ -76,17 +77,21 @@ const MemberListItem: React.FC<MemberListItemProps> = ({
       }
     }
   });
+
+  const profilePictureId = member.user.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <li className="list-none">
       <div className="py-1 px-2 rounded-sm flex flex-row items-center hover:bg-dark-100 hover:text-light-hover">
         <div className="w-full h-14 flex flex-row items-center py-2">
-          <div className="w-9 h-full flex flex-col justify-center items-center">
-            <div className="w-9 h-9 rounded-full bg-light"></div>
-          </div>
+          <ProfilePicture online={member.user.status === 'online'} size="36px" src={profilePictureSrc} />
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">
-                <div className=" text-light font-roboto">{user?.username}</div>
+                <div className=" text-light font-roboto flex flex-row items-center">
+                  {user?.username}
+                  <span className="text-light-400 ml-1 text-xs">#{member.user.tag}</span>
+                </div>
                 <div className="flex flex-row items-center">
                   <Popup
                     position={['left', 'bottom', 'top', 'right']}
