@@ -1,22 +1,17 @@
 import React from 'react';
 import { FaRegTimesCircle } from 'react-icons/fa';
-import { genericErrorMessage } from '../../../constants';
-import {
-  FriendRequest,
-  useCancelRequestMutation,
-  User,
-} from '../../../generated/graphql';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
+import { FriendRequest, useCancelRequestMutation, UserSnippetFragment } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
+import ProfilePicture from '../ProfilePicture';
 export interface OutgoingRequestTabProps {
   request: Pick<FriendRequest, 'id' | 'createdAt'> & {
-    reciever: Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio'>;
+    reciever: UserSnippetFragment;
   };
 }
 
-const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({
-  request: { id, reciever, createdAt },
-}) => {
+const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({ request: { id, reciever, createdAt } }) => {
   const { mutate: cancelRequest } = useCancelRequestMutation({
     onError: (err) => {
       console.error(err);
@@ -36,14 +31,16 @@ const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({
         }
         queryClient.invalidateQueries('Me');
       }
-    },
+    }
   });
 
+  const profilePictureId = reciever.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
-          <div className="w-11 h-11 rounded-full bg-light"></div>
+          <ProfilePicture size="44px" src={profilePictureSrc} online={reciever.status === 'online'} />
         </div>
         <div className="w-full flex-1 px-2">
           <div className="flex flex-row w-full justify-between">

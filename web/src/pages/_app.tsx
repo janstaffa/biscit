@@ -5,29 +5,38 @@ import React, { useEffect } from 'react';
 import { QueryClientProvider } from 'react-query';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AppWrap from '../components/AppWrap';
 import { AuthProvider } from '../providers/AuthProvider';
 import { useAuthStore } from '../stores/useAuthStore';
 import '../styles/fonts.css';
 import '../styles/globals.css';
 import { queryClient } from '../utils/createQueryClient';
+import { socket } from '../utils/createWSconnection';
 import GetToken from '../utils/GetToken';
 toast.configure();
 
 const _App = ({ Component, pageProps, authenticated }) => {
   const { setAuthenticated } = useAuthStore();
+
   useEffect(() => {
     setAuthenticated(authenticated);
+  }, []);
+
+  useEffect(() => {
+    socket.connect();
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider authenticated={authenticated}>
         <GetToken />
-        <Head>
-          <link rel="icon" href="/logo_browser.gif" />
-        </Head>
-        <Component {...pageProps} />
-        <ToastContainer />
+        <AppWrap>
+          <Head>
+            <link rel="icon" href="/logo_browser.gif" />
+          </Head>
+          <Component {...pageProps} />
+          <ToastContainer />
+        </AppWrap>
       </AuthProvider>
     </QueryClientProvider>
   );

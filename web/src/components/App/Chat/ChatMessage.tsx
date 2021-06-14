@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from 'react';
+import { FaUser } from 'react-icons/fa';
 import { GoReply } from 'react-icons/go';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdRefresh } from 'react-icons/io';
 import { MdEdit } from 'react-icons/md';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { Popup } from 'react-tiny-modals';
-import { genericErrorMessage } from '../../../constants';
-import { MessageSnippetFragment, useDeleteMessageMutation, useUpdateMessageMutation } from '../../../generated/graphql';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
+import {
+  FileSnippetFragment,
+  MessageSnippetFragment,
+  ThreadSnippetFragment,
+  useDeleteMessageMutation,
+  useUpdateMessageMutation
+} from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
+import { formatMessage } from '../../../utils/formatMessage';
 import { formatTime } from '../../../utils/formatTime';
 import { errorToast } from '../../../utils/toasts';
+import Attachment from './Attachment';
 export interface ChatMessageProps {
   message: MessageSnippetFragment;
   myId: string | undefined;
@@ -16,9 +26,20 @@ export interface ChatMessageProps {
   replyCall: () => void;
   replyMessage: MessageSnippetFragment | null;
   onReady?: () => void;
+  setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
+  thread: ThreadSnippetFragment | undefined;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, replyCall, replyMessage, onReady }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({
+  message,
+  myId,
+  resendCall,
+  replyCall,
+  replyMessage,
+  onReady,
+  setGalleryFile,
+  thread
+}) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
       if (!data.UpdateMessage.data) {
@@ -36,6 +57,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
         data.DeleteMessage.errors.forEach((err) => {
           errorToast(err.details?.message);
         });
+        return;
+      }
+      if (message.media && message.media.length > 0) {
+        queryClient.invalidateQueries(['Thread', { options: { threadId: message.threadId } }]);
       }
     },
     onError: (err) => {
@@ -52,7 +77,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (updateFieldValue && /\S/.test(updateFieldValue)) {
+      if ((updateFieldValue && /\S/.test(updateFieldValue)) || message.media) {
         updateMessage({ options: { messageId: message.id, newContent: updateFieldValue } });
         setIsEditing(false);
       } else {
@@ -70,6 +95,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
     });
   }, []);
 
+  const profilePictureId = message.user.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
+
+  const meMember = thread?.members.find((member) => member.userId === myId);
   return (
     <div
       className={
@@ -83,7 +112,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
       }}
     >
       <div className="h-16 w-16 flex flex-col justify-center items-center">
-        <div className="w-12 h-12 bg-white rounded-full"></div>
+        <div className="w-12 h-12 bg-light-400 rounded-full flex flex-col justify-center items-center">
+          {profilePictureSrc ? (
+            <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
+          ) : (
+            <FaUser size={30} className="text-dark-100" />
+          )}
+        </div>
       </div>
       <div className="flex-1 flex flex-col px-2 py-1">
         <div className="flex flex-row">
@@ -107,6 +142,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
             </div>
           )}
         </div>
+        {message.media && (
+          <div className="flex flex-col">
+            {message.media.length > 0 &&
+              message.media.map((file) => {
+                return <Attachment file={file} key={file.id} setGalleryFile={setGalleryFile} />;
+              })}
+          </div>
+        )}
         {isEditing ? (
           <textarea
             autoComplete="off"
@@ -129,9 +172,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
               'text-light-200 font-roboto text-md outline-none resize-none h-auto' +
               (isEditing ? ' bg-dark-200 p-2' : ' bg-dark-100')
             }
-          >
-            {message.content}
-          </div>
+            dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }}
+          ></div>
         )}
       </div>
       <div
@@ -141,7 +183,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
         <Popup
           isOpen={isHovering ? isPopoverOpen : false}
           position={['left', 'bottom', 'top', 'right']}
-          reposition={true}
+          reposition={false}
           onClickOutside={({ setShow }) => setShow(false)}
           onClose={() => setIsPopoverOpen(false)}
           onOpen={() => setIsPopoverOpen(true)}
@@ -158,7 +200,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
                     </li>
                   )}
                   <hr className="bg-dark-50 h-px border-none mt-1" />
-                  {message.userId === myId && (
+                  {(message.userId === myId || thread?.creatorId === myId || meMember?.isAdmin) && (
                     <>
                       <li
                         className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
@@ -170,16 +212,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, myId, resendCall, re
                         <RiDeleteBin6Line size={20} style={{ marginRight: '5px' }} />
                         Delete
                       </li>
-                      <li
-                        className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
-                        onClick={() => {
-                          setShow(false);
-                          setIsEditing(true);
-                        }}
-                      >
-                        <MdEdit size={20} style={{ marginRight: '5px' }} />
-                        Edit
-                      </li>
+                      {message.content && message.userId === myId && (
+                        <li
+                          className="text-light-200 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"
+                          onClick={() => {
+                            setShow(false);
+                            setIsEditing(true);
+                          }}
+                        >
+                          <MdEdit size={20} style={{ marginRight: '5px' }} />
+                          Edit
+                        </li>
+                      )}
                       <hr className="bg-dark-50 h-px border-none" />
                     </>
                   )}

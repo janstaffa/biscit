@@ -1,7 +1,6 @@
 import { Request as Req, Response as Res } from 'express';
-
 declare module 'express-session' {
-  interface SessionData {
+  interface Session {
     userId: string;
   }
 }

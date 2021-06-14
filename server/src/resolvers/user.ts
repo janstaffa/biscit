@@ -12,14 +12,12 @@ import {
   Root,
   UseMiddleware
 } from 'type-graphql';
-import { createQueryBuilder } from 'typeorm';
 import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpiration } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
-import { Message } from '../entities/Message';
-import { ThreadMembers } from '../entities/ThreadMembers';
-import { LoginInput, RegisterInput, UpdateStatusInput } from '../entities/types/user';
+import { ProfilePicture } from '../entities/ProfilePicture';
+import { LoginInput, RegisterInput, UpdateSettingsInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { ContextType } from '../types';
@@ -70,47 +68,11 @@ export class UserResolver {
     return null;
   }
 
-  @Query(() => [ThreadMembers])
+  @FieldResolver()
   @UseMiddleware(isAuth)
-  async threads(@Ctx() { req }: ContextType): Promise<ThreadMembers[] | null> {
-    const userId = req.session.userId;
-    if (userId === req.session.userId) {
-      const threads = await ThreadMembers.find({
-        where: { userId },
-        relations: ['thread', 'thread.members', 'thread.members.user']
-      });
-      const updatedThreads = await Promise.all(
-        threads.map(async (thread) => {
-          const response = thread;
-          if (thread.thread.isDm) {
-            const otherUser = thread.thread.members.filter((member) => {
-              return member.user.id !== userId;
-            });
-
-            response.thread.name = otherUser[0].user.username;
-          }
-          const lastMessage = await createQueryBuilder(Message, 'message')
-            .leftJoinAndSelect('message.user', 'user')
-            .where('message."threadId" = :threadId', {
-              threadId: thread.threadId
-            })
-            .orderBy('message."createdAt"', 'DESC')
-            .getOne();
-
-          if (lastMessage) {
-            response.thread.lastMessage = lastMessage;
-          }
-          return response;
-        })
-      );
-      updatedThreads.sort((a, b) => {
-        if (a.thread.lastActivity < b.thread.lastActivity) return 1;
-        if (a.thread.lastActivity > b.thread.lastActivity) return -1;
-        else return 0;
-      });
-      return updatedThreads;
-    }
-    return null;
+  async profile_picture(@Root() user: User): Promise<ProfilePicture | undefined> {
+    if (!user.profile_pictureId) return;
+    return await ProfilePicture.findOne({ where: { id: user.profile_pictureId } });
   }
 
   @Query(() => User, { nullable: true })
@@ -165,7 +127,7 @@ export class UserResolver {
     });
 
     let errors = (await validateSchema(RegisterSchema, options)) || [];
-    if (errors) return { data: false, errors };
+    if (errors && errors.length > 0) return { data: false, errors };
 
     const { username, email, password } = options;
     const check = await User.find({ where: [{ username }, { email }] });
@@ -286,10 +248,77 @@ export class UserResolver {
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: UpdateStatusInput
   ): Promise<boolean> {
-    const userId = req.session.userId!;
+    const userId = req.session.userId;
     const response = await User.update(userId, { bio: options.status });
     if (!response.affected || response.affected === 0) return false;
 
     return true;
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async UserUpdateSettings(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: UpdateSettingsInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+
+    const errors: GQLValidationError[] = [];
+
+    const updateUser: any = {};
+    if (options.newEmail && /\S/.test(options.newEmail)) {
+      const isEmail = yup.string().email('This email is invalid.');
+      const errs = await validateSchema(isEmail, options.newEmail);
+      if (errs) {
+        errors.push(...errs);
+      } else {
+        const user = await User.findOne({ where: { email: options.newEmail } });
+        if (user) {
+          errors.push(
+            new GQLValidationError({
+              field: 'newEmail',
+              value: options.newEmail,
+              message: 'An account is already registred with this email.'
+            })
+          );
+        }
+      }
+      if (errors.length > 0) {
+        return {
+          data: false,
+          errors
+        };
+      }
+
+      updateUser.email = options.newEmail;
+    }
+    if (options.newUsername && /\S/.test(options.newUsername)) {
+      updateUser.username = options.newUsername;
+    }
+    if (options.soundNotifications !== null) {
+      updateUser.soundNotifications = options.soundNotifications;
+    }
+    if (options.setAsUnread !== null) {
+      updateUser.setAsUnread = options.setAsUnread;
+    }
+    if (options.allowFriendRequests !== null) {
+      updateUser.allowFriendRequests = options.allowFriendRequests;
+    }
+    if (options.allowThreads !== null) {
+      updateUser.allowThreads = options.allowThreads;
+    }
+    const response = await User.update(userId, updateUser);
+    if (!response.affected || response.affected === 0) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: userId,
+          message: 'Something went wrong, please try again later.'
+        })
+      );
+      return { data: false, errors };
+    }
+
+    return { data: true, errors };
   }
 }

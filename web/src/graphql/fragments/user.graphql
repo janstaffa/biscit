@@ -4,4 +4,10 @@ fragment userSnippet on User {
   email
   status
   bio
+  tag
+  createdAt
+  updatedAt
+  profile_picture {
+    ...profilePictureSnippet
+  }
 }

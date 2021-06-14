@@ -1,0 +1,8 @@
+mutation LeaveThread($options: LeaveThreadInput!) {
+  LeaveThread(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

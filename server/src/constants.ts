@@ -5,3 +5,5 @@ export const SALT_ROUNDS = 10;
 export const browserOrigin = __prod__ ? '' : 'http://localhost:3000';
 export const fallbackTokenSecret = 'ADHDhdhdsiaoDOdhdnhasadnbN';
 export const tokenExpiration = '7d';
+
+export const validProfilePictureUploadRegExp = /jpeg|png|webp|avif|tiff|svg/;

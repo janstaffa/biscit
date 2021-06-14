@@ -10,6 +10,7 @@ const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, onChecked }) =>
   const [checked, setChecked] = useState<boolean>(false);
   return (
     <li
+      className="list-none"
       onClick={(e) => {
         onChecked?.(!checked);
         setChecked(!checked);

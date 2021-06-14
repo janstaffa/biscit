@@ -2,6 +2,7 @@ import { ApolloServer } from 'apollo-server-express';
 import cors from 'cors';
 import dotenv from 'dotenv-safe';
 import express from 'express';
+import fileUpload from 'express-fileupload';
 import session from 'express-session';
 import http from 'http';
 import path from 'path';
@@ -11,11 +12,14 @@ import { createConnection, getConnection } from 'typeorm';
 import { TypeormStore } from 'typeorm-store';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Session } from './entities/Session';
+import { FileResolver } from './resolvers/file';
 import { FriendResolver } from './resolvers/friend';
 import { MessageResolver } from './resolvers/message';
 import { ThreadResolver } from './resolvers/thread';
 import { UserResolver } from './resolvers/user';
-import { sockets } from './sockets';
+import { fileUploadController } from './rest/fileUpload';
+import { getFilesController } from './rest/getFiles';
+import { socketController } from './sockets';
 import { ContextType } from './types';
 dotenv.config();
 
@@ -30,6 +34,7 @@ dotenv.config();
   });
   await conn.runMigrations();
 
+  // await User.delete({});
   const app = express();
 
   app.get('/', (_, res) => {
@@ -63,7 +68,7 @@ dotenv.config();
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolver, FriendResolver, ThreadResolver, MessageResolver],
+      resolvers: [UserResolver, FriendResolver, ThreadResolver, MessageResolver, FileResolver],
       validate: false
     }),
     context: ({ req, res }): ContextType => ({
@@ -101,7 +106,20 @@ dotenv.config();
 
   const port = process.env.PORT || 9000;
   const server = http.createServer(app);
-  sockets(server);
+  socketController(server);
+
+  app.use(
+    fileUpload({
+      limits: { fileSize: 1024 * 1024 * 10 },
+      debug: true,
+      limitHandler: (req, res) => {
+        res.send({ error: 'Maximum file upload size is 10MB.' });
+      },
+      abortOnLimit: true
+    })
+  );
+  fileUploadController(app);
+  getFilesController(app);
 
   server.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);

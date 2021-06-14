@@ -16,7 +16,7 @@ import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
 
-@Resolver(User)
+@Resolver(Friend)
 export class FriendResolver {
   @Mutation(() => BooleanResponse)
   @UseMiddleware(isAuth)
@@ -26,10 +26,43 @@ export class FriendResolver {
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
 
-    const reciever = await User.findOne({
-      where: { username: options.username }
-    });
     const errors: GQLValidationError[] = [];
+
+    if (!options.usernameAndTag && !options.userId) {
+      errors.push(
+        new GQLValidationError({
+          field: 'usernameAndTag',
+          value: '',
+          message: "You must provide the user's username and tag."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    const inputArr = options.usernameAndTag?.split('#') || [];
+    if (
+      inputArr.length <= 1 ||
+      !/[0-9]/.test(inputArr[inputArr.length - 1]) ||
+      inputArr[inputArr.length - 1].length !== 6
+    ) {
+      errors.push(
+        new GQLValidationError({
+          field: 'usernameAndTag',
+          value: '',
+          message: 'Invalid format. Please try again.'
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+    const reciever = await User.findOne({
+      where: [{ username: inputArr[0], tag: inputArr[inputArr.length - 1] }, { id: options.userId }]
+    });
     if (reciever) {
       const friend = await Friend.findOne({
         where: { userId, friendId: reciever.id }
@@ -37,8 +70,8 @@ export class FriendResolver {
       if (friend) {
         errors.push(
           new GQLValidationError({
-            field: 'username',
-            value: options.username,
+            field: 'usernameAndTag',
+            value: options.usernameAndTag || '',
             message: 'You are already friends with this user.'
           })
         );
@@ -54,9 +87,23 @@ export class FriendResolver {
       if (request) {
         errors.push(
           new GQLValidationError({
-            field: 'username',
-            value: options.username,
+            field: 'usernameAndTag',
+            value: options.usernameAndTag || '',
             message: 'You have already send a friend request to this user.'
+          })
+        );
+        return {
+          data: false,
+          errors
+        };
+      }
+
+      if (!reciever.allowFriendRequests) {
+        errors.push(
+          new GQLValidationError({
+            field: 'usernameAndTag',
+            value: '',
+            message: "This user doesn't accept friend requests."
           })
         );
         return {
@@ -71,8 +118,8 @@ export class FriendResolver {
     } else {
       errors.push(
         new GQLValidationError({
-          field: 'username',
-          value: options.username,
+          field: 'usernameAndTag',
+          value: options.usernameAndTag || '',
           message: "This user doesn't exist."
         })
       );

@@ -3,10 +3,13 @@ import { InfiniteData } from 'react-query';
 import { ClipLoader } from 'react-spinners';
 import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
 import {
+  FileSnippetFragment,
   MessageSnippetFragment,
   ThreadMessagesQuery,
   ThreadMessagesResponse,
-  useMeQuery
+  ThreadSnippetFragment,
+  useMeQuery,
+  useThreadQuery
 } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
@@ -21,6 +24,7 @@ export interface ChatFeedProps {
   setResendMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
   setReplyMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
   replyMessage: MessageSnippetFragment | null;
+  setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
 }
 
 const ChatFeed: React.FC<ChatFeedProps> = ({
@@ -28,9 +32,11 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   setModalShow,
   setResendMessage,
   setReplyMessage,
-  replyMessage
+  replyMessage,
+  setGalleryFile
 }) => {
   const { data: meData } = useMeQuery();
+  const { data: threadData } = useThreadQuery({ options: { threadId } });
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
 
@@ -48,14 +54,10 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   };
 
   useEffect(() => {
-    scroll(0);
+    setShouldScroll(true);
     const ws = socket.connect();
     if (isServer() || !ws) return;
     setIsLoadingMessages(false);
-
-    if (!queryClient.getQueryData(`ThreadMessages-${threadId}`)) {
-      fetchNextPage();
-    }
 
     const handleMessage = (e) => {
       const { data: m } = e;
@@ -71,6 +73,9 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
           pages.pages[0].messages.data?.push(message);
           setShouldScroll(true);
           queryClient.setQueryData(`ThreadMessages-${incomingThreadId}`, pages);
+        }
+        if (message.media) {
+          queryClient.invalidateQueries(['Thread', { options: { threadId } }]);
         }
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
@@ -150,7 +155,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   useEffect(() => {
     setIsLoadingMessages(true);
-    if (!incomingThreadMessages?.pages) return;
+    if (!incomingThreadMessages?.pages || !incomingThreadMessages.pages[0]?.messages) return;
     const { data: incomingMessages } = incomingThreadMessages.pages[0].messages as ThreadMessagesResponse;
     if (incomingMessages) {
       setIsLoadingMessages(false);
@@ -159,8 +164,9 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
       const feedMessages = feed.querySelectorAll('.message');
       const lastMessageEl = feedMessages[incomingMessages.length];
 
-      if (incomingThreadMessages.pages.length === 1) {
+      if (incomingThreadMessages.pages.length === 1 || shouldScroll) {
         scroll(0);
+        setShouldScroll(false);
       } else if (lastMessageEl) {
         lastMessageEl.scrollIntoView();
       }
@@ -199,68 +205,73 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   };
 
   return (
-    <div className="flex-grow px-3 mt-12 overflow-y-scroll relative" id="chat-feed">
-      {isLoadingMessages && (
-        <div className="w-full h-10 text-center text-light-300 text-lg font-roboto">
-          <ClipLoader color="#e09f3e" size={30} />
-        </div>
-      )}
-      {incomingThreadMessages?.pages?.map((page, pi) => {
-        return page.messages.data?.map((message, i) => {
-          const { id: messageId } = message;
-          const date = new Date(parseInt(message.createdAt));
-          const now = new Date();
-
-          if (datesAreSameDay(date, now)) {
-            let prevMessage = page.messages.data && page.messages.data[i - 1];
-            if (i === 0) {
-              const prevPage = incomingThreadMessages.pages[pi - 1];
-              if (prevPage) {
-                prevMessage = prevPage.messages.data && prevPage.messages.data[prevPage.messages.data.length - 1];
+    <>
+      <div className="flex-grow px-3 mt-12 overflow-y-scroll relative" id="chat-feed">
+        {isLoadingMessages && (
+          <div className="w-full h-10 text-center text-light-300 text-lg font-roboto">
+            <ClipLoader color="#e09f3e" size={30} />
+          </div>
+        )}
+        {incomingThreadMessages?.pages?.map((page, pi) => {
+          return page?.messages.data?.map((message, i) => {
+            const { id: messageId } = message;
+            const date = new Date(parseInt(message.createdAt));
+            const now = new Date();
+            if (datesAreSameDay(date, now)) {
+              let prevMessage = page.messages.data && page.messages.data[i - 1];
+              if (i === 0) {
+                const prevPage = incomingThreadMessages?.pages[pi - 1];
+                if (prevPage) {
+                  prevMessage = prevPage.messages.data && prevPage.messages.data[prevPage.messages.data.length - 1];
+                }
               }
-            }
-            if (prevMessage) {
-              const prevDate = new Date(parseInt(prevMessage.createdAt));
+              if (prevMessage) {
+                const prevDate = new Date(parseInt(prevMessage.createdAt));
 
-              if (!datesAreSameDay(prevDate, now)) {
-                return (
-                  <div key={messageId}>
-                    <div className="text-center my-4">
-                      <hr className="bg-dark-50 h-px border-none" />
-                      <div
-                        className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
-                        style={{ marginTop: '-10px' }}
-                      >
-                        today
+                if (!datesAreSameDay(prevDate, now)) {
+                  return (
+                    <div key={messageId}>
+                      <div className="text-center my-4">
+                        <hr className="bg-dark-50 h-px border-none" />
+                        <div
+                          className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
+                          style={{ marginTop: '-10px' }}
+                        >
+                          today
+                        </div>
                       </div>
+                      <ChatMessage
+                        message={message}
+                        myId={meData?.me?.id}
+                        resendCall={() => handleResendCall(message)}
+                        replyCall={() => handleReplyCall(message)}
+                        replyMessage={replyMessage}
+                        onReady={() => handleMessageReady()}
+                        setGalleryFile={setGalleryFile}
+                        thread={threadData?.thread.data as ThreadSnippetFragment}
+                      />
                     </div>
-                    <ChatMessage
-                      message={message}
-                      myId={meData?.me?.id}
-                      resendCall={() => handleResendCall(message)}
-                      replyCall={() => handleReplyCall(message)}
-                      replyMessage={replyMessage}
-                      onReady={() => handleMessageReady()}
-                    />
-                  </div>
-                );
+                  );
+                }
               }
             }
-          }
-          return (
-            <ChatMessage
-              message={message}
-              myId={meData?.me?.id}
-              key={messageId}
-              resendCall={() => handleResendCall(message)}
-              replyCall={() => handleReplyCall(message)}
-              replyMessage={replyMessage}
-              onReady={() => handleMessageReady()}
-            />
-          );
-        });
-      })}
-    </div>
+            return (
+              <ChatMessage
+                message={message}
+                myId={meData?.me?.id}
+                key={messageId}
+                resendCall={() => handleResendCall(message)}
+                replyCall={() => handleReplyCall(message)}
+                replyMessage={replyMessage}
+                onReady={() => handleMessageReady()}
+                setGalleryFile={setGalleryFile}
+                thread={threadData?.thread.data as ThreadSnippetFragment}
+              />
+            );
+          });
+        })}
+      </div>
+    </>
   );
 };
 

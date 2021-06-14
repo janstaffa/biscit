@@ -70,7 +70,8 @@ export const socket: Socket = {
     }
   },
   send: (payload) => {
-    if (socket.ws) {
+    const ws = socket.connect();
+    if (ws) {
       const parsed = JSON.parse(payload);
       const { token } = useTokenStore.getState();
       if (!token) {
@@ -80,7 +81,7 @@ export const socket: Socket = {
         ...parsed,
         token
       };
-      socket.ws.send(JSON.stringify(newPayload));
+      ws.send(JSON.stringify(newPayload));
     }
   }
 };

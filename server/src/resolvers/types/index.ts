@@ -42,3 +42,12 @@ export class ThreadMessagesResponse {
   @Field(() => [GQLValidationError])
   errors: GQLValidationError[] | [];
 }
+
+@ObjectType()
+export class StringResponse {
+  @Field()
+  data: string;
+
+  @Field(() => [GQLValidationError])
+  errors: GQLValidationError[] | [];
+}

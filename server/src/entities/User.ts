@@ -5,14 +5,20 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   OneToMany,
+  OneToOne,
   PrimaryColumn,
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { getTag } from '../utils/generateTag';
+import { File } from './File';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
 import { Message } from './Message';
+import { ProfilePicture } from './ProfilePicture';
+import { Thread } from './Thread';
 import { ThreadMembers } from './ThreadMembers';
 
 @ObjectType()
@@ -24,10 +30,15 @@ export class User extends BaseEntity {
   id!: string;
 
   @BeforeInsert()
-  private async generateId() {
+  private async generateIds() {
     this.id = await getId(User, 'id');
+    this.tag = await getTag(User, 'tag');
   }
 
+  //tag field
+  @Field(() => String)
+  @Column({ unique: true })
+  tag!: string;
   //username field
   @Field(() => String)
   @Column({ unique: true })
@@ -47,6 +58,15 @@ export class User extends BaseEntity {
   @Column({ default: 'offline' })
   status: string;
 
+  @Field(() => String, { nullable: true })
+  @Column({ nullable: true })
+  profile_pictureId: string;
+
+  @Field(() => ProfilePicture, { nullable: true })
+  @OneToOne(() => ProfilePicture, (profile_picture) => profile_picture.user, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'profile_pictureId' })
+  profile_picture: ProfilePicture;
+
   //bio field
   @Field(() => String, { nullable: true })
   @Column({ length: 100, nullable: true })
@@ -64,8 +84,31 @@ export class User extends BaseEntity {
   @OneToMany(() => ThreadMembers, (thread) => thread.user)
   threads: ThreadMembers[];
 
+  @Field(() => [Thread])
+  @OneToMany(() => Thread, (thread) => thread.creator, { nullable: true })
+  myThreads: Thread[];
+
   @OneToMany(() => Message, (message) => message.user)
   messages: Message[];
+
+  @OneToMany(() => File, (file) => file.user)
+  files: File[];
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  soundNotifications: boolean;
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  setAsUnread: boolean;
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  allowFriendRequests: boolean;
+
+  @Field(() => Boolean)
+  @Column({ default: true })
+  allowThreads: boolean;
 
   //createdAt field
   @Field(() => String)

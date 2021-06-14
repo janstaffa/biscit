@@ -5,6 +5,11 @@ query Me {
     email
     status
     bio
+    tag
+    setAsUnread
+    allowThreads
+    allowFriendRequests
+    soundNotifications
     friend_requests {
       incoming {
         id
@@ -29,6 +34,9 @@ query Me {
         ...userSnippet
       }
       createdAt
+    }
+    profile_picture {
+      ...profilePictureSnippet
     }
   }
 }

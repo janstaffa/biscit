@@ -8,6 +8,17 @@ fragment threadSnippet on Thread {
   members {
     ...threadMembersSnippet
   }
+  media {
+    ...fileSnippet
+  }
+  creatorId
+  creator {
+    ...userSnippet
+  }
+  thread_picture {
+    ...profilePictureSnippet
+  }
+  messagesCount
   lastActivity
   createdAt
   updatedAt

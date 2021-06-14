@@ -1,6 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder, getRepository } from 'typeorm';
+import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import {
@@ -8,7 +11,6 @@ import {
   ThreadMessagesQueryInput,
   UpdateMessageMutationInput
 } from '../entities/types/message';
-import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import { DELETE_MESSAGE_CODE, UPDATE_MESSAGE_CODE } from '../sockets';
 import { ContextType } from '../types';
@@ -23,7 +25,7 @@ pubClient.on('error', (error) => {
   console.error(error);
 });
 
-@Resolver(User)
+@Resolver(Message)
 export class MessageResolver {
   @Query(() => ThreadMessagesResponse)
   @UseMiddleware(isAuth)
@@ -60,7 +62,6 @@ export class MessageResolver {
       .leftJoinAndSelect('message.user', 'user')
       .leftJoinAndSelect('message.replyingTo', 'replyingTo')
       .leftJoinAndSelect('replyingTo.user', 'replyingToUser')
-      // .leftJoinAndSelect('message.replies', 'replies')
       .where('message."threadId" = :threadId', { threadId: options.threadId });
 
     if (options.cursor) {
@@ -70,7 +71,22 @@ export class MessageResolver {
 
     const messages = (await qb.getMany()) as Message[];
 
-    const realMessages = messages.slice(0, realLimit).reverse();
+    const newMessages = (await Promise.all(
+      messages.map(async (message) => {
+        if (message.mediaIds && message.mediaIds.length > 0) {
+          const files = await createQueryBuilder(File, 'file')
+            .leftJoinAndSelect('file.user', 'user')
+            .where('file.id IN (:...ids)', { ids: message.mediaIds })
+            .getMany();
+          return {
+            ...message,
+            media: files
+          };
+        }
+        return message;
+      })
+    )) as Message[];
+    const realMessages = newMessages.slice(0, realLimit).reverse();
     return {
       data: realMessages,
       nextMessage: realMessages[0],
@@ -87,11 +103,27 @@ export class MessageResolver {
     const userId = req.session.userId;
 
     const message = await Message.findOne({
-      where: { userId, id: options.messageId }
+      where: { id: options.messageId },
+      relations: ['thread', 'thread.members']
     });
     const errors: GQLValidationError[] = [];
 
+    const meMember = message?.thread?.members?.find((member) => member.userId === userId);
+
     if (!message) {
+      errors.push(
+        new GQLValidationError({
+          field: 'messageId',
+          value: options.messageId,
+          message: 'This message wasn not found.'
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+    if (message?.userId !== userId && message?.thread.creatorId !== userId && !meMember?.isAdmin) {
       errors.push(
         new GQLValidationError({
           field: 'messageId',
@@ -105,8 +137,29 @@ export class MessageResolver {
       };
     }
 
+    if (message.mediaIds && message.mediaIds.length > 0) {
+      const files = await File.findByIds(message.mediaIds);
+      message.mediaIds.forEach((id) => {
+        const file = files.find((file) => file.id === id);
+        const extension = file?.format;
+        fs.unlink(
+          path.join(
+            __dirname,
+            '../../uploaded',
+            id.replace(/\./g, '') + (extension ? '.' + extension.replace(/\./g, '') : '')
+          ),
+          async (err) => {
+            try {
+              if (err) throw err;
+              await File.delete({ id });
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        );
+      });
+    }
     await Message.remove(message);
-
     const payload = {
       code: DELETE_MESSAGE_CODE,
       threadId: message.threadId,

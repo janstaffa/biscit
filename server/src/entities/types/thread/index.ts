@@ -5,3 +5,63 @@ export class ThreadInput {
   @Field()
   threadId: string;
 }
+
+@InputType()
+export class CreateThreadInput {
+  @Field()
+  threadName: string;
+
+  @Field(() => [String], { nullable: true })
+  members: string[] | null;
+}
+
+@InputType()
+export class EditThreadInput {
+  @Field()
+  threadId: string;
+
+  @Field()
+  newName: string;
+}
+
+@InputType()
+export class RemoveMemberInput {
+  @Field()
+  threadId: string;
+
+  @Field()
+  userId: string;
+}
+
+@InputType()
+export class AddMemberInput {
+  @Field()
+  threadId: string;
+
+  @Field(() => [String])
+  newMembers: string[];
+}
+
+@InputType()
+export class ChangeAdminInput {
+  @Field()
+  threadId: string;
+
+  @Field()
+  userId: string;
+
+  @Field()
+  value: boolean;
+}
+
+@InputType()
+export class DeleteThreadInput {
+  @Field()
+  threadId: string;
+}
+
+@InputType()
+export class LeaveThreadInput {
+  @Field()
+  threadId: string;
+}

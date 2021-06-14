@@ -7,6 +7,7 @@ import WebSocket from 'ws';
 import { browserOrigin } from '../constants';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
+import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { handleMessage } from './handleMessage';
@@ -26,6 +27,7 @@ export interface IncomingSocketChatMessage extends SocketThreadMessage {
   content: string;
   replyingToId?: string;
   resendId?: string;
+  media?: string[];
 }
 
 export interface IncomingLoadMessagesMessage extends SocketThreadMessage {
@@ -37,6 +39,10 @@ export interface OutgoingLoadMessagesMessage extends SocketThreadMessage {
   hasMore: boolean;
 }
 
+export interface ThreadUpdateMessage extends SocketThreadMessage {
+  updatedThread: Thread;
+}
+
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -46,6 +52,7 @@ export const DELETE_MESSAGE_CODE = 3007;
 export const ERROR_MESSAGE_CODE = 3001;
 export const AUTH_CODE = 3004;
 export const READY_CODE = 3005;
+export const THREAD_CHANGE_CODE = 3009;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -57,7 +64,7 @@ export const closeConnection = (ws: WebSocket) => {
   ws.terminate();
 };
 
-export const sockets = (server: Server) => {
+export const socketController = (server: Server) => {
   const wss = new WebSocket.Server({
     noServer: true,
     path: '/socket',
@@ -132,31 +139,35 @@ export const sockets = (server: Server) => {
     async (ws: WebSocket, req: http.IncomingMessage, user: User, subClient: RedisClient, pubClient: RedisClient) => {
       console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
 
-      const heartbeat = setInterval(() => {
+      await User.update({ id: user.id }, { status: 'online' });
+      const heartbeat = setInterval(async () => {
         if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
           clearInterval(heartbeat);
-          closeConnectionAndClear();
+          await closeConnectionAndClear();
 
           return;
         }
-        ws.ping('ping', false, (err) => {
+        ws.ping('ping', false, async (err) => {
           if (err) {
             console.error(err);
-            closeConnectionAndClear();
+            await closeConnectionAndClear();
             clearInterval(heartbeat);
           }
         });
       }, HEARTBEAT_INTERVAL);
 
-      const elapsed = setTimeout(() => {
-        closeConnectionAndClear();
+      const elapsed = setTimeout(async () => {
+        await closeConnectionAndClear();
       }, ELAPSED_TIME);
 
-      const closeConnectionAndClear = () => {
+      const closeConnectionAndClear = async () => {
+        console.log('connection closed');
         closeConnection(ws);
         subClient.removeAllListeners();
+        subClient.unsubscribe();
         clearTimeout(elapsed);
         clearInterval(heartbeat);
+        await User.update({ id: user.id }, { status: 'offline' });
       };
 
       let sentMessages = 0;
@@ -192,8 +203,8 @@ export const sockets = (server: Server) => {
         elapsed.refresh();
       });
 
-      ws.on('close', () => {
-        closeConnectionAndClear();
+      ws.on('close', async () => {
+        await closeConnectionAndClear();
       });
 
       try {
@@ -209,12 +220,16 @@ export const sockets = (server: Server) => {
 
       subClient.on('message', async (channel, message) => {
         const parsed = JSON.parse(message);
-        if (parsed.code === 3000) {
+        if (parsed.code === CHAT_MESSAGE_CODE) {
           const { message, threadId } = parsed as SocketChatMessage;
           if (message.userId !== user.id) {
-            await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+            const latestUser = await User.findOne({ where: { id: user.id } });
+            if (latestUser && latestUser.setAsUnread) {
+              await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+            }
           }
         }
+        console.log('message ', message);
         ws.send(message);
       });
     }

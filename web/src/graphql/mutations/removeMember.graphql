@@ -1,0 +1,8 @@
+mutation RemoveMember($options: RemoveMemberInput!) {
+  RemoveMember(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

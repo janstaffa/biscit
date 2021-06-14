@@ -1,5 +1,8 @@
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
+import path from 'path';
 import { RedisClient } from 'redis';
+import { createQueryBuilder } from 'typeorm';
 import WebSocket from 'ws';
 import {
   CHAT_MESSAGE_CODE,
@@ -12,6 +15,7 @@ import {
   SocketThreadMessage
 } from '.';
 import { fallbackTokenSecret } from '../constants';
+import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
@@ -57,20 +61,63 @@ export const handleMessage = async (
     }
   }
 
-  const senderUser = await User.findOne({ where: { id: user.id } });
+  const senderUser = await User.findOne({ where: { id: user.id }, relations: ['profile_picture'] });
+
   if (!senderUser) {
     const payload = { code: ERROR_MESSAGE_CODE, message: "It seems like, you don't exist!" };
     ws.send(JSON.stringify(payload));
     closeConnection(ws);
+    await User.update({ id: user.id }, { status: 'offline' });
     subClient.removeAllListeners();
 
     return;
   }
 
   if (code === CHAT_MESSAGE_CODE) {
-    const { content, threadId, replyingToId, resendId } = incoming as IncomingSocketChatMessage;
+    const { content, threadId, replyingToId, resendId, media } = incoming as IncomingSocketChatMessage;
     try {
       const messageId = await getId(Message, 'id');
+
+      let realMedia = media;
+      if (resendId && media && media.length > 0) {
+        const files = await File.findByIds(media);
+        if (files.length > 0) {
+          realMedia = await Promise.all(
+            files.map(async (file) => {
+              return new Promise<string>(async (resolve, reject) => {
+                const newId = await getId(File, 'id');
+                fs.copyFile(
+                  path.join(
+                    __dirname,
+                    '../../uploaded',
+                    file.id.replace(/\./g, '') + (file.format ? '.' + file.format.replace(/\./g, '') : '')
+                  ),
+                  path.join(
+                    __dirname,
+                    '../../uploaded',
+                    newId.replace(/\./g, '') + (file.format ? '.' + file.format.replace(/\./g, '') : '')
+                  ),
+                  async (err) => {
+                    try {
+                      if (err) throw err;
+                      await File.create({
+                        ...file,
+                        id: newId,
+                        userId: user.id,
+                        threadId
+                      }).save();
+                      resolve(newId);
+                    } catch (e) {
+                      console.error(e);
+                      reject(e);
+                    }
+                  }
+                );
+              });
+            })
+          );
+        }
+      }
 
       const newMessage = await Message.create({
         id: messageId,
@@ -84,10 +131,20 @@ export const handleMessage = async (
           !resendId && replyingToId
             ? await Message.findOne({ where: { id: replyingToId }, relations: ['user'] })
             : undefined,
+        mediaIds: realMedia,
         createdAt: new Date(),
         updatedAt: new Date()
       });
 
+      if (newMessage.mediaIds && newMessage.mediaIds.length > 0) {
+        const files = await createQueryBuilder(File, 'file')
+          .leftJoinAndSelect('file.user', 'user')
+          .where('file.id IN (:...ids)', { ids: newMessage.mediaIds })
+          .getMany();
+        if (files && files.length > 0) {
+          newMessage.media = files;
+        }
+      }
       const membership = await ThreadMembers.findOne({ where: { userId: user.id, threadId } });
       if (!membership) {
         const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this thread' };
@@ -98,12 +155,24 @@ export const handleMessage = async (
 
       await Thread.update({ id: threadId }, { lastActivity: new Date() });
 
+      const pickedSender = (({
+        id,
+        username,
+        status,
+        bio,
+        threads,
+        email,
+        profile_picture,
+        updatedAt,
+        createdAt
+      }: User) => ({ id, username, status, bio, threads, email, profile_picture, updatedAt, createdAt }))(senderUser);
+
       const payload: SocketChatMessage = {
         threadId,
         code: CHAT_MESSAGE_CODE,
         message: {
           ...newMessage,
-          user: senderUser
+          user: pickedSender
         } as Message
       };
 
