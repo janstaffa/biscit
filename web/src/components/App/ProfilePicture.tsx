@@ -9,7 +9,6 @@ export interface ProfilePictureProps {
 }
 
 const ProfilePicture: React.FC<ProfilePictureProps> = ({ src, size, online, onClick, className }) => {
-  console.log(src);
   return (
     <div
       className={

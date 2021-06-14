@@ -220,7 +220,7 @@ export const socketController = (server: Server) => {
 
       subClient.on('message', async (channel, message) => {
         const parsed = JSON.parse(message);
-        if (parsed.code === 3000) {
+        if (parsed.code === CHAT_MESSAGE_CODE) {
           const { message, threadId } = parsed as SocketChatMessage;
           if (message.userId !== user.id) {
             const latestUser = await User.findOne({ where: { id: user.id } });
@@ -229,6 +229,7 @@ export const socketController = (server: Server) => {
             }
           }
         }
+        console.log('message ', message);
         ws.send(message);
       });
     }

@@ -27,11 +27,15 @@ export const uploadAttachment = (file: File, threadId: string): Promise<{ id: st
 
 export const uploadProfilePicture = async (
   file: File,
-  dimensions: { top: number; left: number; width: number; height: number }
+  dimensions: { top: number; left: number; width: number; height: number },
+  threadId?: string
 ): Promise<{ id: string }> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('dimensions', JSON.stringify(dimensions));
+  if (threadId) {
+    formData.append('threadId', threadId);
+  }
   return new Promise((resolve, reject) => {
     fetch(profilepUploadURL, { method: 'POST', credentials: 'include', body: formData })
       .then((response) => response.json())

@@ -97,6 +97,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const profilePictureId = message.user.profile_picture?.id;
   const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
+
+  const meMember = thread?.members.find((member) => member.userId === myId);
   return (
     <div
       className={
@@ -198,7 +200,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     </li>
                   )}
                   <hr className="bg-dark-50 h-px border-none mt-1" />
-                  {(message.userId === myId || thread?.creatorId === myId) && (
+                  {(message.userId === myId || thread?.creatorId === myId || meMember?.isAdmin) && (
                     <>
                       <li
                         className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"

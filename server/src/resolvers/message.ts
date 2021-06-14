@@ -104,11 +104,26 @@ export class MessageResolver {
 
     const message = await Message.findOne({
       where: { id: options.messageId },
-      relations: ['thread']
+      relations: ['thread', 'thread.members']
     });
     const errors: GQLValidationError[] = [];
 
-    if (message?.userId !== userId && message?.thread.creatorId !== userId) {
+    const meMember = message?.thread?.members?.find((member) => member.userId === userId);
+
+    if (!message) {
+      errors.push(
+        new GQLValidationError({
+          field: 'messageId',
+          value: options.messageId,
+          message: 'This message wasn not found.'
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+    if (message?.userId !== userId && message?.thread.creatorId !== userId && !meMember?.isAdmin) {
       errors.push(
         new GQLValidationError({
           field: 'messageId',

@@ -3,7 +3,6 @@ import { Express } from 'express';
 import path from 'path';
 import { getConnection } from 'typeorm';
 import { File } from '../entities/File';
-import { FriendRequest } from '../entities/FriendRequest';
 import { ProfilePicture } from '../entities/ProfilePicture';
 import { ThreadMembers } from '../entities/ThreadMembers';
 
@@ -46,26 +45,32 @@ export const getFilesController = (app: Express) => {
       return res.send({ error: 'File id was not provided.' });
     }
 
-    const file = await ProfilePicture.findOne({ where: { id: fileId } });
+    const file = await ProfilePicture.findOne({ where: { id: fileId }, relations: ['user', 'user.friend_requests'] });
     if (!file) {
       return res.send({ error: 'This file was not found.' });
     }
-    const members: ThreadMembers[] = await getConnection().query(
-      `
-            SELECT * FROM thread_members WHERE "threadId" IN (SELECT "threadId" FROM thread_members WHERE "userId" = $1)
-          `,
-      [userId]
-    );
 
-    const requests = await FriendRequest.find({
-      where: [
-        { senderId: userId, recieverId: file.userId },
-        { senderId: file.userId, recieverId: userId }
-      ]
-    });
+    if (!file.isThreadPicture) {
+      const members: ThreadMembers[] = await getConnection().query(
+        `
+              SELECT * FROM thread_members WHERE "threadId" IN (SELECT "threadId" FROM thread_members WHERE "userId" = $1)
+            `,
+        [userId]
+      );
 
-    if (!members.find((member) => member.userId === file.userId) && requests.length === 0 && file.userId !== userId) {
-      return res.send({ error: 'You are not allowed to view this file.' });
+      const requests = file.user.friend_requests;
+      if (
+        !members.find((member) => member.userId === file.userId) &&
+        !requests.find((request) => request.senderId === userId || request.recieverId === userId) &&
+        file.userId !== userId
+      ) {
+        return res.send({ error: 'You are not allowed to view this file.' });
+      }
+    } else {
+      const members = await ThreadMembers.find({ where: { threadId: file.threadId } });
+      if (!members.find((member) => member.userId === userId)) {
+        return res.send({ error: 'You are not allowed to view this file.' });
+      }
     }
 
     res.sendFile(path.join(__dirname, '../../uploaded/profilepics/', file.id + '.' + file.format), file.fileName);

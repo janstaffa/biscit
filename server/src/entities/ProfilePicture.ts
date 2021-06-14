@@ -40,6 +40,10 @@ export class ProfilePicture extends BaseEntity {
   @Column({ nullable: true })
   format: string;
 
+  @Field(() => Boolean)
+  @Column({ default: false })
+  isThreadPicture: boolean;
+
   @Field(() => String, { nullable: true })
   @Column({ nullable: true })
   userId: string;

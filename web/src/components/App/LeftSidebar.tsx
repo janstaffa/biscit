@@ -336,7 +336,9 @@ const LeftSidebar: React.FC = () => {
                       }}
                     />
                     <Link href="/app/settings">
-                      <MdSettings className="hover:text-light-200 mx-1" title="Settings" />
+                      <>
+                        <MdSettings className="hover:text-light-200 mx-1" title="Settings" />
+                      </>
                     </Link>
                   </div>
                 </div>
