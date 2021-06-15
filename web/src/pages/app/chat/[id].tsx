@@ -12,6 +12,7 @@ import ChatFeed from '../../../components/App/Chat/ChatFeed';
 import ChatInfoBar from '../../../components/App/Chat/ChatInfoBar';
 import ImageGallery from '../../../components/App/Chat/ImageGallery';
 import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
+import VideoChat from '../../../components/App/Chat/VideoChat';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import FriendListItem from '../../../components/App/Threads/FriendListItem';
@@ -184,6 +185,8 @@ const Chat: NextPage = () => {
               setAddMemberModalShow={setAddMemberModalShow}
               editModalShow={editModalShow}
             />
+            {/* <CallingDialog /> */}
+            <VideoChat />
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
