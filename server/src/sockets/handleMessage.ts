@@ -8,9 +8,12 @@ import {
   CHAT_MESSAGE_CODE,
   CHAT_TYPING_CODE,
   closeConnection,
+  CREATE_CALL_CODE,
   ERROR_MESSAGE_CODE,
+  IncomingCreateCallMessage,
   IncomingSocketChatMessage,
   JOIN_THREAD_CODE,
+  OutgoingCreateCallMessage,
   SocketChatMessage,
   SocketThreadMessage
 } from '.';
@@ -21,6 +24,7 @@ import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { getId } from '../utils/generateId';
+import { pickUser } from '../utils/pickUser';
 
 export type JWTWSTokenType = {
   userId: string;
@@ -75,6 +79,7 @@ export const handleMessage = async (
 
   if (code === CHAT_MESSAGE_CODE) {
     const { content, threadId, replyingToId, resendId, media } = incoming as IncomingSocketChatMessage;
+
     try {
       const messageId = await getId(Message, 'id');
 
@@ -155,24 +160,14 @@ export const handleMessage = async (
 
       await Thread.update({ id: threadId }, { lastActivity: new Date() });
 
-      const pickedSender = (({
-        id,
-        username,
-        status,
-        bio,
-        threads,
-        email,
-        profile_picture,
-        updatedAt,
-        createdAt
-      }: User) => ({ id, username, status, bio, threads, email, profile_picture, updatedAt, createdAt }))(senderUser);
+      const pickedSender = pickUser(senderUser);
 
       const payload: SocketChatMessage = {
         threadId,
         code: CHAT_MESSAGE_CODE,
         message: {
           ...newMessage,
-          user: pickedSender
+          user: pickedSender as User
         } as Message
       };
 
@@ -182,6 +177,7 @@ export const handleMessage = async (
     }
   } else if (code === JOIN_THREAD_CODE) {
     const { threadId } = incoming as SocketThreadMessage;
+    if (!threadId) return;
 
     try {
       const membership = await ThreadMembers.update({ threadId, userId: user.id }, { unread: 0 });
@@ -196,11 +192,33 @@ export const handleMessage = async (
     }
   } else if (code === CHAT_TYPING_CODE) {
     const { threadId } = incoming as SocketThreadMessage;
+    if (!threadId) return;
     try {
       const payload: SocketThreadMessage & { username: string } = {
         code: CHAT_TYPING_CODE,
         threadId,
         username: user.username
+      };
+
+      pubClient.publish(threadId, JSON.stringify(payload));
+    } catch (e) {
+      console.error(e);
+    }
+  } else if (code === CREATE_CALL_CODE) {
+    const { threadId, userId } = incoming as IncomingCreateCallMessage;
+    if (!threadId || !userId) return;
+    try {
+      const member = await ThreadMembers.findOne({
+        where: { userId: userId, threadId },
+        relations: ['user', 'user.profile_picture']
+      });
+      if (!member) return;
+
+      const pickedMember = pickUser(senderUser);
+      const payload: OutgoingCreateCallMessage = {
+        code: CREATE_CALL_CODE,
+        threadId,
+        user: pickedMember as User
       };
 
       pubClient.publish(threadId, JSON.stringify(payload));

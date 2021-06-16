@@ -6,13 +6,13 @@ import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
-import { OutgoingSocketChatMessage } from '../../..';
+import { IncomingCreateCallMessage, OutgoingCreateCallMessage, OutgoingSocketChatMessage } from '../../..';
+import CallingDialog from '../../../components/App/Chat/CallingDialog';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
 import ChatInfoBar from '../../../components/App/Chat/ChatInfoBar';
 import ImageGallery from '../../../components/App/Chat/ImageGallery';
 import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
-import VideoChat from '../../../components/App/Chat/VideoChat';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import FriendListItem from '../../../components/App/Threads/FriendListItem';
@@ -135,6 +135,34 @@ const Chat: NextPage = () => {
   const availableNewThreadMembers = meData?.me?.friends?.filter((friend) => {
     return !data?.thread.data?.members.find((member) => member.userId === friend.friend.id);
   });
+
+  const [isCalling, setIsCalling] = useState<boolean>(false);
+  useEffect(() => {
+    if (!meData?.me) return;
+    const ws = socket.connect();
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+
+      if (incoming.code === 3010) {
+        const { threadId: tID, user } = incoming as IncomingCreateCallMessage;
+        if (tID !== threadId) return;
+
+        if (user.id === meData?.me?.id) {
+          setIsCalling(true);
+        }
+      }
+    };
+    ws?.addEventListener('message', handleMessage);
+  }, [meData?.me]);
+  const createCall = () => {
+    const payload = {
+      code: 3010,
+      threadId,
+      userId: meData?.me?.id
+    } as OutgoingCreateCallMessage;
+    socket.send(JSON.stringify(payload));
+  };
   return (
     <>
       <Head>
@@ -155,7 +183,12 @@ const Chat: NextPage = () => {
                 className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
                 title="Video call"
               />
-              <IoMdCall size={24} className="text-light-300 hover:text-light-hover cursor-pointer mx-2" title="Call" />
+              <IoMdCall
+                size={24}
+                className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
+                title="Call"
+                onClick={() => createCall()}
+              />
               <HiDotsVertical
                 size={26}
                 className="text-light-200 hover:text-light-hover cursor-pointer mx-1"
@@ -185,8 +218,8 @@ const Chat: NextPage = () => {
               setAddMemberModalShow={setAddMemberModalShow}
               editModalShow={editModalShow}
             />
-            {/* <CallingDialog /> */}
-            <VideoChat />
+            {isCalling && <CallingDialog />}
+            {/* <VideoChat /> */}
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>
