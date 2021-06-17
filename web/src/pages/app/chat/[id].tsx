@@ -6,12 +6,7 @@ import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
-import {
-  CancelCallMessage,
-  IncomingCreateCallMessage,
-  OutgoingCreateCallMessage,
-  OutgoingSocketChatMessage
-} from '../../..';
+import { CancelCallMessage, IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../../..';
 import CallingDialog from '../../../components/App/Chat/CallingDialog';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
@@ -23,12 +18,12 @@ import Layout from '../../../components/App/Layout';
 import FriendListItem from '../../../components/App/Threads/FriendListItem';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
 import EditThreadModal from '../../../components/Modals/EditThreadModal';
-import { genericErrorMessage } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
   ThreadSnippetFragment,
   useAddMembersMutation,
+  useCreateCallMutation,
   useMeQuery,
   UserSnippetFragment,
   useThreadQuery,
@@ -54,10 +49,6 @@ const Chat: NextPage = () => {
       options: { threadId }
     },
     {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      },
       onSuccess: (d) => {
         if (d.thread.errors.length > 0) {
           console.error(d.thread.errors);
@@ -68,22 +59,9 @@ const Chat: NextPage = () => {
   );
 
   const { data: meData, isLoading } = useMeQuery();
-  const { data: loadedThreads } = useThreadsQuery(
-    {},
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      }
-    }
-  );
+  const { data: loadedThreads } = useThreadsQuery();
 
-  const { mutate: addMembers } = useAddMembersMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: addMembers } = useAddMembersMutation();
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
   const [addMemberModalShow, setAddMemberModalShow] = useState<boolean>(false);
@@ -171,13 +149,8 @@ const Chat: NextPage = () => {
     };
     ws?.addEventListener('message', handleMessage);
   }, [meData?.me]);
-  const createCall = () => {
-    const payload = {
-      code: 3010,
-      threadId
-    } as OutgoingCreateCallMessage;
-    socket.send(JSON.stringify(payload));
-  };
+
+  const { mutate: createCall } = useCreateCallMutation();
 
   const ringtone = useRef<HTMLAudioElement>();
   useEffect(() => {
@@ -219,7 +192,20 @@ const Chat: NextPage = () => {
                 size={24}
                 className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
                 title="Call"
-                onClick={() => createCall()}
+                onClick={() =>
+                  createCall(
+                    { options: { threadId } },
+                    {
+                      onSuccess: (d) => {
+                        if (!d.CreateCall.data && d.CreateCall.errors.length > 0) {
+                          d.CreateCall.errors.forEach((err) => {
+                            errorToast(err.details?.message);
+                          });
+                        }
+                      }
+                    }
+                  )
+                }
               />
               <HiDotsVertical
                 size={26}

@@ -1,6 +1,5 @@
 import { BsFillPersonPlusFill } from 'react-icons/bs';
 import { MdNotInterested } from 'react-icons/md';
-import { genericErrorMessage } from '../../../constants';
 import {
   FileSnippetFragment,
   MeQuery,
@@ -11,7 +10,6 @@ import {
   useSendRequestMutation
 } from '../../../generated/graphql';
 import { formatTime } from '../../../utils/formatTime';
-import { errorToast } from '../../../utils/toasts';
 import Attachment from '../Chat/Attachment';
 import MemberListItem from './MemberListItem';
 
@@ -39,19 +37,9 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
   const members = t?.members;
   const admins = t?.members.filter((m) => m.isAdmin);
 
-  const { mutate: removeMember } = useRemoveMemberMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: removeMember } = useRemoveMemberMutation();
 
-  const { mutate: addFriend } = useSendRequestMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: addFriend } = useSendRequestMutation();
 
   switch (tab) {
     case 1:

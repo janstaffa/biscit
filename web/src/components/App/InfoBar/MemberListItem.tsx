@@ -4,7 +4,7 @@ import { HiDotsVertical } from 'react-icons/hi';
 import { ImArrowDown, ImArrowUp, ImCross } from 'react-icons/im';
 import { UseMutateFunction } from 'react-query';
 import { Popup } from 'react-tiny-modals';
-import { genericErrorMessage, profilepApiURL } from '../../../constants';
+import { profilepApiURL } from '../../../constants';
 import {
   Exact,
   FriendRequestInput,
@@ -62,10 +62,6 @@ const MemberListItem: React.FC<MemberListItemProps> = ({
   const isAdmin = threads?.find((t) => t.threadId === thread?.thread.data?.id)?.isAdmin;
 
   const { mutate: changeAdmin } = useChangeAdminMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    },
     onSuccess: (d, { options: { value } }) => {
       if (d.ChangeAdmin.data) {
         successToast(`${value ? 'Added' : 'Removed'} admin ${value ? 'to' : 'from'} ${member.user.username}.`);

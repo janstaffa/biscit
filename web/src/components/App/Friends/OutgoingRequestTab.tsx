@@ -13,10 +13,6 @@ export interface OutgoingRequestTabProps {
 
 const OutgoingRequestTab: React.FC<OutgoingRequestTabProps> = ({ request: { id, reciever, createdAt } }) => {
   const { mutate: cancelRequest } = useCancelRequestMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    },
     onSuccess: (data) => {
       if (data.FriendRequestCancel.errors.length > 0) {
         const message = data.FriendRequestCancel.errors[0]?.details?.message;

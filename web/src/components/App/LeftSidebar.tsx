@@ -61,38 +61,15 @@ const LeftSidebar: React.FC = () => {
     setCurrentPath(currentUrl()?.pathname);
   }, [currentUrl()]);
 
-  const { mutate: logout } = useLogoutMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: logout } = useLogoutMutation();
 
-  const { mutate: updateStatus } = useUpdateStatusMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: updateStatus } = useUpdateStatusMutation();
 
-  const { mutate: readMessages } = useReadMessagesMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: readMessages } = useReadMessagesMutation();
   const { data: meData } = useMeQuery();
   const meDataRef = useRef<MeQuery | undefined>();
   meDataRef.current = meData;
-  const { data: loadedThreads, isFetched, isLoading, isFetching } = useThreadsQuery(
-    {},
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      }
-    }
-  );
+  const { data: loadedThreads, isFetched, isLoading, isFetching } = useThreadsQuery();
   const [threadSearchQuery, setThreadSearchQuery] = useState<string | null>(null);
 
   useEffect(() => {

@@ -19,37 +19,23 @@ const RegisterSchema = yup.object().shape({
   username: yup
     .string()
     .required('username is required')
-    .test(
-      'username',
-      "username can't contain a @",
-      (value) => !value?.includes('@')
-    )
+    .test('username', "username can't contain a @", (value) => !value?.includes('@'))
     .min(5, 'username must have at least 5 characters'),
-  email: yup
-    .string()
-    .required('email is required')
-    .email('this email is invalid'),
+  email: yup.string().required('email is required').email('this email is invalid'),
   password: yup
     .string()
     .required('password is required')
     .matches(/[0-9]/, { message: 'password must contain a number' })
     .min(5, 'password must have at least 5 characters'),
-  confirmPassword: yup
-    .string()
-    .test('confirmPassword', "passwords don't match", function (value) {
-      return this.parent.password === value;
-    }),
+  confirmPassword: yup.string().test('confirmPassword', "passwords don't match", function (value) {
+    return this.parent.password === value;
+  })
 });
 
 const Register: NextPage = () => {
   const { setAuthenticated } = useAuth();
 
-  const { mutate: register } = useRegisterMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    },
-  });
+  const { mutate: register } = useRegisterMutation();
   return (
     <>
       <Head>
@@ -65,7 +51,7 @@ const Register: NextPage = () => {
                 username: '',
                 email: '',
                 password: '',
-                confirmPassword: '',
+                confirmPassword: ''
               }}
               validationSchema={RegisterSchema}
               validateOnBlur={false}
@@ -87,7 +73,7 @@ const Register: NextPage = () => {
                           errorToast(genericErrorMessage);
                         }
                       }
-                    },
+                    }
                   }
                 );
                 setSubmitting(false);

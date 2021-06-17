@@ -1,9 +1,8 @@
 // export interface CallingDialogProps {}
 import React, { useEffect, useRef, useState } from 'react';
 import { HiPhone, HiPhoneMissedCall } from 'react-icons/hi';
-import { CancelCallMessage } from '../../..';
-import { ThreadSnippetFragment, UserSnippetFragment } from '../../../generated/graphql';
-import { socket } from '../../../utils/createWSconnection';
+import { ThreadSnippetFragment, useCancelCallMutation, UserSnippetFragment } from '../../../generated/graphql';
+import { errorToast } from '../../../utils/toasts';
 
 export type CallingDialog = {
   user: UserSnippetFragment | null;
@@ -34,7 +33,26 @@ const Clock = () => {
   return <p className="text-light-400 mt-2">{clock}</p>;
 };
 const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalling }) => {
+  const { mutate: cancelCallMutate } = useCancelCallMutation();
+
   const isMe = user?.id === myId;
+
+  const cancelCall = () => {
+    if (!thread) return;
+    cancelCallMutate(
+      { options: { threadId: thread.id } },
+      {
+        onSuccess: (d) => {
+          if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
+            d.CancelCall.errors.forEach((err) => {
+              errorToast(err.details?.message);
+            });
+          }
+        }
+      }
+    );
+    setIsCalling(false);
+  };
   return (
     <div
       className="w-72 h-52 bg-dark-300 absolute top-20 p-2 text-center rounded-md"
@@ -52,13 +70,7 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalli
               <button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 flex flex-row items-center font-roboto"
                 onClick={() => {
-                  if (!thread) return;
-                  const payload: CancelCallMessage = {
-                    code: 3011,
-                    threadId: thread.id
-                  };
-                  socket.send(JSON.stringify(payload));
-                  setIsCalling(false);
+                  cancelCall();
                 }}
               >
                 <HiPhoneMissedCall size={20} className="mr-2" />
@@ -81,15 +93,7 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalli
               <button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
                 onClick={() => {
-                  if (!thread) return;
-                  if (thread.isDm) {
-                    const payload: CancelCallMessage = {
-                      code: 3011,
-                      threadId: thread.id
-                    };
-                    socket.send(JSON.stringify(payload));
-                  }
-                  setIsCalling(false);
+                  cancelCall();
                 }}
               >
                 <HiPhoneMissedCall size={20} className="mr-2" />

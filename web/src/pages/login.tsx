@@ -23,12 +23,7 @@ const LoginSchema = yup.object().shape({
 const Login: NextPage = () => {
   const { setAuthenticated } = useAuth();
 
-  const { mutate: login } = useLoginMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: login } = useLoginMutation();
 
   return (
     <>

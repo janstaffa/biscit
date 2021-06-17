@@ -1,9 +1,7 @@
 import { InfiniteData, useInfiniteQuery } from 'react-query';
-import { genericErrorMessage } from '../constants';
 import { ThreadMessagesDocument, ThreadMessagesQuery } from '../generated/graphql';
 import { graphqlClient } from './createGQLClient';
 import { queryClient } from './createQueryClient';
-import { errorToast } from './toasts';
 import { removeDuplicateFragments } from './useGQLRequest';
 
 export const messagesLimit = 30;
@@ -26,10 +24,6 @@ export const usePaginatedMessagesQuery = (threadId: string) => {
       return graphqlClient.request(removeDuplicateFragments(ThreadMessagesDocument), vars);
     },
     {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      },
       getNextPageParam: (lastPage, allPages) => {
         if (lastPage.messages.data) {
           const nextMessage = lastPage.messages.data[0];

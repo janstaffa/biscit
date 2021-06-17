@@ -5,7 +5,7 @@ import { FaUser } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { MdAddAPhoto } from 'react-icons/md';
 import { Modal } from 'react-tiny-modals';
-import { genericErrorMessage, profilepApiURL, validProfilePictureUploadRegExp } from '../../constants';
+import { profilepApiURL, validProfilePictureUploadRegExp } from '../../constants';
 import { ThreadSnippetFragment, useEditThreadMutation } from '../../generated/graphql';
 import { errorToast, successToast } from '../../utils/toasts';
 import { uploadProfilePicture } from '../../utils/uploadFile';
@@ -22,12 +22,7 @@ const EditThreadModal: React.FC<EditThreadModalProps> = ({ isOpen = false, setIs
   const [show, setShow] = useState<boolean>(isOpen);
   const [editThreadNewName, setEditThreadNewName] = useState<string>(thread?.name || '');
 
-  const { mutate: editThread } = useEditThreadMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: editThread } = useEditThreadMutation();
 
   useEffect(() => {
     setShow(isOpen);

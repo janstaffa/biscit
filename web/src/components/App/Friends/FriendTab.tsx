@@ -31,10 +31,6 @@ const FriendTab: React.FC<FriendTabProps> = ({
       }
       queryClient.invalidateQueries('Me');
       queryClient.invalidateQueries('Threads');
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
     }
   });
 

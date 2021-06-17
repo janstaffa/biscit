@@ -1,0 +1,8 @@
+mutation CancelCall($options: CancelCallMutationInput!) {
+  CancelCall(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

@@ -32,7 +32,7 @@ export class CallResolver {
 
     const member = await ThreadMembers.findOne({
       where: { userId, threadId: options.threadId },
-      relations: ['user', 'thread', 'thread.call', 'thread.members']
+      relations: ['user', 'thread', 'thread.call', 'thread.members', 'thread.members.user']
     });
     const errors: GQLValidationError[] = [];
 

@@ -25,10 +25,6 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
         errorToast(genericErrorMessage);
       }
       queryClient.invalidateQueries('Threads');
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
     }
   });
   const { mutate: leaveThread } = useLeaveThreadMutation({
@@ -37,10 +33,6 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
         errorToast(genericErrorMessage);
       }
       queryClient.invalidateQueries('Threads');
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
     }
   });
   return (
