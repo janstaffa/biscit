@@ -5,19 +5,12 @@ import { RedisClient } from 'redis';
 import { createQueryBuilder } from 'typeorm';
 import WebSocket from 'ws';
 import {
-  ACCEPT_CALL_CODE,
-  CANCEL_CALL_CODE,
   CHAT_MESSAGE_CODE,
   CHAT_TYPING_CODE,
   closeConnection,
-  CREATE_CALL_CODE,
   ERROR_MESSAGE_CODE,
-  IncomingAcceptCallMessage,
-  IncomingCancelCallMessage,
-  IncomingCreateCallMessage,
   IncomingSocketChatMessage,
   JOIN_THREAD_CODE,
-  OutgoingCreateCallMessage,
   SocketChatMessage,
   SocketThreadMessage
 } from '.';
@@ -208,46 +201,48 @@ export const handleMessage = async (
     } catch (e) {
       console.error(e);
     }
-  } else if (code === CREATE_CALL_CODE) {
-    const { threadId } = incoming as IncomingCreateCallMessage;
-    if (!threadId || !user.id) return;
-    try {
-      const member = await ThreadMembers.findOne({
-        where: { userId: user.id, threadId },
-        relations: ['user', 'user.profile_picture', 'thread', 'thread.members', 'thread.members.user']
-      });
-      if (!member) return;
-
-      if (member.thread.isDm) {
-        const otherUser = member.thread.members.filter((member) => {
-          return member.user.id !== user.id;
-        });
-
-        member.thread.name = otherUser[0].user.username;
-      }
-      const pickedMember = pickUser(senderUser);
-      const payload: OutgoingCreateCallMessage = {
-        code: CREATE_CALL_CODE,
-        threadId,
-        thread: member.thread,
-        user: pickedMember as User
-      };
-
-      pubClient.publish(threadId, JSON.stringify(payload));
-    } catch (e) {
-      console.error(e);
-    }
-  } else if (code === CANCEL_CALL_CODE) {
-    const { threadId } = incoming as IncomingCancelCallMessage;
-
-    const member = await ThreadMembers.findOne({
-      where: { userId: user.id, threadId }
-    });
-    if (!member) return;
-    pubClient.publish(threadId, JSON.stringify(incoming));
-  } else if (code === ACCEPT_CALL_CODE) {
-    const { threadId } = incoming as IncomingAcceptCallMessage;
-
-    //...
   }
+  // else if (code === CREATE_CALL_CODE) {
+  //   const { threadId } = incoming as IncomingCreateCallMessage;
+  //   if (!threadId || !user.id) return;
+  //   try {
+  //     const member = await ThreadMembers.findOne({
+  //       where: { userId: user.id, threadId },
+  //       relations: ['user', 'user.profile_picture', 'thread', 'thread.members', 'thread.members.user']
+  //     });
+  //     if (!member) return;
+
+  //     if (member.thread.isDm) {
+  //       const otherUser = member.thread.members.filter((member) => {
+  //         return member.user.id !== user.id;
+  //       });
+
+  //       member.thread.name = otherUser[0].user.username;
+  //     }
+
+  //     const pickedMember = pickUser(member.user);
+  //     const payload: OutgoingCreateCallMessage = {
+  //       code: CREATE_CALL_CODE,
+  //       threadId,
+  //       thread: member.thread,
+  //       user: pickedMember as User
+  //     };
+
+  //     pubClient.publish(threadId, JSON.stringify(payload));
+  //   } catch (e) {
+  //     console.error(e);
+  //   }
+  // } else if (code === CANCEL_CALL_CODE) {
+  //   const { threadId } = incoming as IncomingCancelCallMessage;
+
+  //   const member = await ThreadMembers.findOne({
+  //     where: { userId: user.id, threadId }
+  //   });
+  //   if (!member) return;
+  //   pubClient.publish(threadId, JSON.stringify(incoming));
+  // } else if (code === ACCEPT_CALL_CODE) {
+  //   const { threadId } = incoming as IncomingAcceptCallMessage;
+
+  //   //...
+  // }
 };

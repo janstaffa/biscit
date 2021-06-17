@@ -45,7 +45,7 @@ export class ThreadMessagesResponse {
 
 @ObjectType()
 export class StringResponse {
-  @Field()
+  @Field(() => String, { nullable: true })
   data: string;
 
   @Field(() => [GQLValidationError])

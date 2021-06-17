@@ -12,6 +12,7 @@ import { createConnection, getConnection } from 'typeorm';
 import { TypeormStore } from 'typeorm-store';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Session } from './entities/Session';
+import { CallResolver } from './resolvers/call';
 import { FileResolver } from './resolvers/file';
 import { FriendResolver } from './resolvers/friend';
 import { MessageResolver } from './resolvers/message';
@@ -68,7 +69,7 @@ dotenv.config();
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolver, FriendResolver, ThreadResolver, MessageResolver, FileResolver],
+      resolvers: [UserResolver, FriendResolver, ThreadResolver, MessageResolver, FileResolver, CallResolver],
       validate: false
     }),
     context: ({ req, res }): ContextType => ({

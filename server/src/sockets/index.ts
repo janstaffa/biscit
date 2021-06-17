@@ -46,6 +46,8 @@ export interface OutgoingCreateCallMessage extends SocketThreadMessage {
   thread: Thread;
 }
 
+export type OutgoingCancelCallMessage = SocketThreadMessage;
+
 export type IncomingCancelCallMessage = SocketThreadMessage;
 export type IncomingAcceptCallMessage = SocketThreadMessage;
 

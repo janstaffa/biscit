@@ -33,7 +33,6 @@ export class File extends BaseEntity {
 
   @BeforeRemove()
   private async removeFile() {
-    console.log('here', this);
     fs.unlink(
       path.join(
         __dirname,
