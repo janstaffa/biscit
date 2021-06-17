@@ -15,10 +15,8 @@ const CallingDialog: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // console.log(((time / 60) % 1) * 60);
     const minutes = ('00' + (time >= 60 ? Math.floor(time / 60) : '')).toString().slice(-2);
-    // THIS IS BROKEN, NEEDS FIX
-    const seconds = ('00' + Math.ceil(((time / 60) % 1) * 60)).toString().slice(-2);
+    const seconds = ('00' + (time % 60)).toString().slice(-2);
     setClock(`${minutes}:${seconds}`);
   }, [time]);
   return (
