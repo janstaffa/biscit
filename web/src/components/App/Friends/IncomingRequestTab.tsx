@@ -13,10 +13,6 @@ export interface IncomingRequestTabProps {
 
 const IncomingRequestTab: React.FC<IncomingRequestTabProps> = ({ request: { id, sender, createdAt } }) => {
   const { mutate: acceptRequest } = useAcceptRequestMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    },
     onSuccess: (data) => {
       if (data.FriendRequestAccept.errors.length > 0) {
         const message = data.FriendRequestAccept.errors[0]?.details?.message;

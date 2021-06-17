@@ -21,6 +21,7 @@ import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { getId } from '../utils/generateId';
+import { pickUser } from '../utils/pickUser';
 
 export type JWTWSTokenType = {
   userId: string;
@@ -75,6 +76,7 @@ export const handleMessage = async (
 
   if (code === CHAT_MESSAGE_CODE) {
     const { content, threadId, replyingToId, resendId, media } = incoming as IncomingSocketChatMessage;
+
     try {
       const messageId = await getId(Message, 'id');
 
@@ -155,24 +157,14 @@ export const handleMessage = async (
 
       await Thread.update({ id: threadId }, { lastActivity: new Date() });
 
-      const pickedSender = (({
-        id,
-        username,
-        status,
-        bio,
-        threads,
-        email,
-        profile_picture,
-        updatedAt,
-        createdAt
-      }: User) => ({ id, username, status, bio, threads, email, profile_picture, updatedAt, createdAt }))(senderUser);
+      const pickedSender = pickUser(senderUser);
 
       const payload: SocketChatMessage = {
         threadId,
         code: CHAT_MESSAGE_CODE,
         message: {
           ...newMessage,
-          user: pickedSender
+          user: pickedSender as User
         } as Message
       };
 
@@ -182,6 +174,7 @@ export const handleMessage = async (
     }
   } else if (code === JOIN_THREAD_CODE) {
     const { threadId } = incoming as SocketThreadMessage;
+    if (!threadId) return;
 
     try {
       const membership = await ThreadMembers.update({ threadId, userId: user.id }, { unread: 0 });
@@ -196,6 +189,7 @@ export const handleMessage = async (
     }
   } else if (code === CHAT_TYPING_CODE) {
     const { threadId } = incoming as SocketThreadMessage;
+    if (!threadId) return;
     try {
       const payload: SocketThreadMessage & { username: string } = {
         code: CHAT_TYPING_CODE,
@@ -208,4 +202,47 @@ export const handleMessage = async (
       console.error(e);
     }
   }
+  // else if (code === CREATE_CALL_CODE) {
+  //   const { threadId } = incoming as IncomingCreateCallMessage;
+  //   if (!threadId || !user.id) return;
+  //   try {
+  //     const member = await ThreadMembers.findOne({
+  //       where: { userId: user.id, threadId },
+  //       relations: ['user', 'user.profile_picture', 'thread', 'thread.members', 'thread.members.user']
+  //     });
+  //     if (!member) return;
+
+  //     if (member.thread.isDm) {
+  //       const otherUser = member.thread.members.filter((member) => {
+  //         return member.user.id !== user.id;
+  //       });
+
+  //       member.thread.name = otherUser[0].user.username;
+  //     }
+
+  //     const pickedMember = pickUser(member.user);
+  //     const payload: OutgoingCreateCallMessage = {
+  //       code: CREATE_CALL_CODE,
+  //       threadId,
+  //       thread: member.thread,
+  //       user: pickedMember as User
+  //     };
+
+  //     pubClient.publish(threadId, JSON.stringify(payload));
+  //   } catch (e) {
+  //     console.error(e);
+  //   }
+  // } else if (code === CANCEL_CALL_CODE) {
+  //   const { threadId } = incoming as IncomingCancelCallMessage;
+
+  //   const member = await ThreadMembers.findOne({
+  //     where: { userId: user.id, threadId }
+  //   });
+  //   if (!member) return;
+  //   pubClient.publish(threadId, JSON.stringify(incoming));
+  // } else if (code === ACCEPT_CALL_CODE) {
+  //   const { threadId } = incoming as IncomingAcceptCallMessage;
+
+  //   //...
+  // }
 };

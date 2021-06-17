@@ -1,12 +1,13 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
-import { OutgoingSocketChatMessage } from '../../..';
+import { CancelCallMessage, IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../../..';
+import CallingDialog from '../../../components/App/Chat/CallingDialog';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
 import ChatInfoBar from '../../../components/App/Chat/ChatInfoBar';
@@ -17,12 +18,14 @@ import Layout from '../../../components/App/Layout';
 import FriendListItem from '../../../components/App/Threads/FriendListItem';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
 import EditThreadModal from '../../../components/Modals/EditThreadModal';
-import { genericErrorMessage } from '../../../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
+  ThreadSnippetFragment,
   useAddMembersMutation,
+  useCreateCallMutation,
   useMeQuery,
+  UserSnippetFragment,
   useThreadQuery,
   useThreadsQuery
 } from '../../../generated/graphql';
@@ -46,10 +49,6 @@ const Chat: NextPage = () => {
       options: { threadId }
     },
     {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      },
       onSuccess: (d) => {
         if (d.thread.errors.length > 0) {
           console.error(d.thread.errors);
@@ -60,22 +59,9 @@ const Chat: NextPage = () => {
   );
 
   const { data: meData, isLoading } = useMeQuery();
-  const { data: loadedThreads } = useThreadsQuery(
-    {},
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      }
-    }
-  );
+  const { data: loadedThreads } = useThreadsQuery();
 
-  const { mutate: addMembers } = useAddMembersMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: addMembers } = useAddMembersMutation();
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
   const [addMemberModalShow, setAddMemberModalShow] = useState<boolean>(false);
@@ -134,6 +120,54 @@ const Chat: NextPage = () => {
   const availableNewThreadMembers = meData?.me?.friends?.filter((friend) => {
     return !data?.thread.data?.members.find((member) => member.userId === friend.friend.id);
   });
+
+  const [isCalling, setIsCalling] = useState<boolean>(false);
+  const [callingUser, setCallingUser] = useState<UserSnippetFragment | null>(null);
+  const [callingThread, setCallingThread] = useState<ThreadSnippetFragment | null>(null);
+
+  useEffect(() => {
+    if (!meData?.me) return;
+    const ws = socket.connect();
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+
+      if (incoming.code === 3010) {
+        const { threadId: tID, user, thread } = incoming as IncomingCreateCallMessage;
+        // if (tID !== threadId) return;
+
+        setIsCalling(true);
+        setCallingUser(user);
+        setCallingThread(thread);
+      } else if (incoming.code === 3011) {
+        const { threadId: tID } = incoming as CancelCallMessage;
+
+        setIsCalling(false);
+        setCallingUser(null);
+        setCallingThread(null);
+      }
+    };
+    ws?.addEventListener('message', handleMessage);
+  }, [meData?.me]);
+
+  const { mutate: createCall } = useCreateCallMutation();
+
+  const ringtone = useRef<HTMLAudioElement>();
+  useEffect(() => {
+    ringtone.current = new Audio('/ringtone.mp3');
+  }, []);
+  useEffect(() => {
+    if (!ringtone.current) return;
+    if (isCalling) {
+      ringtone.current.play().catch((e) => console.error(e));
+    } else {
+      console.log('pause');
+      ringtone.current.pause();
+      ringtone.current.currentTime = 0;
+      setCallingUser(null);
+      setCallingThread(null);
+    }
+  }, [isCalling]);
   return (
     <>
       <Head>
@@ -154,7 +188,25 @@ const Chat: NextPage = () => {
                 className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
                 title="Video call"
               />
-              <IoMdCall size={24} className="text-light-300 hover:text-light-hover cursor-pointer mx-2" title="Call" />
+              <IoMdCall
+                size={24}
+                className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
+                title="Call"
+                onClick={() =>
+                  createCall(
+                    { options: { threadId } },
+                    {
+                      onSuccess: (d) => {
+                        if (!d.CreateCall.data && d.CreateCall.errors.length > 0) {
+                          d.CreateCall.errors.forEach((err) => {
+                            errorToast(err.details?.message);
+                          });
+                        }
+                      }
+                    }
+                  )
+                }
+              />
               <HiDotsVertical
                 size={26}
                 className="text-light-200 hover:text-light-hover cursor-pointer mx-1"
@@ -184,6 +236,15 @@ const Chat: NextPage = () => {
               setAddMemberModalShow={setAddMemberModalShow}
               editModalShow={editModalShow}
             />
+            {isCalling && (
+              <CallingDialog
+                user={callingUser}
+                thread={callingThread}
+                myId={meData?.me?.id}
+                setIsCalling={setIsCalling}
+              />
+            )}
+            {/* <VideoChat /> */}
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>

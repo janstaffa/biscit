@@ -20,12 +20,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
   const router = useRouter();
   const [currentPath, setCurrentPath] = useState<string>();
 
-  const { mutate: createThread } = useCreateThreadMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: createThread } = useCreateThreadMutation();
   useEffect(() => {
     setCurrentPath(currentUrl()?.pathname);
   }, [currentUrl()]);

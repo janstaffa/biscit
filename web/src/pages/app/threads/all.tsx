@@ -4,22 +4,12 @@ import React from 'react';
 import ThreadsLayout from '../../../components/App/Threads/ThreadsLayout';
 import ThreadTab from '../../../components/App/Threads/ThreadTab';
 import SplashScreen from '../../../components/SplashScreen';
-import { genericErrorMessage } from '../../../constants';
 import { useMeQuery, useThreadsQuery } from '../../../generated/graphql';
-import { errorToast } from '../../../utils/toasts';
 import withAuth from '../../../utils/withAuth';
 
 const AllFriends: NextPage = () => {
   const { data: meData } = useMeQuery();
-  const { data: loadedThreads, isLoading } = useThreadsQuery(
-    {},
-    {
-      onError: (err) => {
-        console.error(err);
-        errorToast(genericErrorMessage);
-      }
-    }
-  );
+  const { data: loadedThreads, isLoading } = useThreadsQuery();
   const threads = loadedThreads?.threads.filter((t) => !t.thread.isDm);
   return (
     <>

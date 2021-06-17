@@ -1,0 +1,8 @@
+mutation CreateCall($options: CreateCallMutationInput!) {
+  CreateCall(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

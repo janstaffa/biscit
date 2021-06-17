@@ -24,12 +24,7 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
   const [modalShow, setModalShow] = useState<boolean>(false);
   const [newFriendInput, setNewFriendInput] = useState<string>();
 
-  const { mutate: sendRequest } = useSendRequestMutation({
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
-    }
-  });
+  const { mutate: sendRequest } = useSendRequestMutation();
 
   return (
     <>

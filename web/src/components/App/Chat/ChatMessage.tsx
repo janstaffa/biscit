@@ -45,10 +45,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       if (!data.UpdateMessage.data) {
         errorToast(genericErrorMessage);
       }
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
     }
   });
   const { mutate: deleteMessage } = useDeleteMessageMutation({
@@ -62,10 +58,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       if (message.media && message.media.length > 0) {
         queryClient.invalidateQueries(['Thread', { options: { threadId: message.threadId } }]);
       }
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
     }
   });
 

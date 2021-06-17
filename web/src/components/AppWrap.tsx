@@ -18,7 +18,8 @@ const AppWrap: React.FC<AppWrapProps> = ({ children }) => {
 
     if (incoming.code === 3000) {
       const { message, threadId: incomingThreadId } = incoming as IncomingSocketChatMessage;
-      if (meData?.me?.soundNotifications && message.userId !== meData?.me?.id) audio.play();
+      if (meData?.me?.soundNotifications && message.userId !== meData?.me?.id)
+        audio.play().catch((err) => console.error(err));
     }
   };
   useEffect(() => {

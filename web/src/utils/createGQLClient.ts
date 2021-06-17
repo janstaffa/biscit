@@ -3,5 +3,5 @@ import { gqlEndpoint } from '../constants';
 
 export const graphqlClient = new GraphQLClient(gqlEndpoint, {
   credentials: 'include',
-  headers: {},
+  headers: {}
 });

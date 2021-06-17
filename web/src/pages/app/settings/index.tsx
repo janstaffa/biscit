@@ -9,7 +9,7 @@ import { Modal } from 'react-tiny-modals';
 import '../../../../node_modules/cropperjs/dist/cropper.css';
 import SettingsLayout from '../../../components/App/Settings/SettingsLayout';
 import SubmitButton from '../../../components/Buttons/SubmitButton';
-import { genericErrorMessage, profilepApiURL, validProfilePictureUploadRegExp } from '../../../constants';
+import { profilepApiURL, validProfilePictureUploadRegExp } from '../../../constants';
 import { useMeQuery, useUpdateSettingsMutation } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
@@ -30,10 +30,6 @@ const Settings: NextPage = () => {
         return;
       }
       queryClient.invalidateQueries('Me');
-    },
-    onError: (err) => {
-      console.error(err);
-      errorToast(genericErrorMessage);
     }
   });
 

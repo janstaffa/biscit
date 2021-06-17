@@ -16,6 +16,7 @@ import {
   UpdateDateColumn
 } from 'typeorm';
 import { getId } from '../utils/generateId';
+import { Call } from './Call';
 import { File } from './File';
 import { Message } from './Message';
 import { ProfilePicture } from './ProfilePicture';
@@ -106,6 +107,10 @@ export class Thread extends BaseEntity {
   @Field(() => ProfilePicture, { nullable: true })
   @OneToOne(() => ProfilePicture, (profile_picture) => profile_picture.thread)
   thread_picture: ProfilePicture;
+
+  @Field(() => Call, { nullable: true })
+  @OneToOne(() => Call, (call) => call.thread, { nullable: true })
+  call: Call;
 
   //createdAt field
   @Field(() => String)

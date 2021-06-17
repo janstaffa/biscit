@@ -13,6 +13,7 @@ import {
 } from 'typeorm';
 import { getId } from '../utils/generateId';
 import { getTag } from '../utils/generateTag';
+import { Call } from './Call';
 import { File } from './File';
 import { Friend } from './Friend';
 import { FriendRequest } from './FriendRequest';
@@ -109,6 +110,10 @@ export class User extends BaseEntity {
   @Field(() => Boolean)
   @Column({ default: true })
   allowThreads: boolean;
+
+  @Field(() => [Call], { nullable: true })
+  @OneToMany(() => Call, (call) => call.creator, { nullable: true })
+  calls: Call[];
 
   //createdAt field
   @Field(() => String)
