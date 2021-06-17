@@ -39,13 +39,16 @@ export interface ThreadUpdateMessage extends SocketThreadMessage {
   updatedThread: Thread;
 }
 
-export interface IncomingCreateCallMessage extends SocketThreadMessage {
-  userId: string | undefined;
-}
+export type IncomingCreateCallMessage = SocketThreadMessage;
 
 export interface OutgoingCreateCallMessage extends SocketThreadMessage {
   user: User;
+  thread: Thread;
 }
+
+export type IncomingCancelCallMessage = SocketThreadMessage;
+export type IncomingAcceptCallMessage = SocketThreadMessage;
+
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -57,6 +60,8 @@ export const AUTH_CODE = 3004;
 export const READY_CODE = 3005;
 export const THREAD_CHANGE_CODE = 3009;
 export const CREATE_CALL_CODE = 3010;
+export const CANCEL_CALL_CODE = 3011;
+export const ACCEPT_CALL_CODE = 3012;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -233,7 +238,6 @@ export const socketController = (server: Server) => {
             }
           }
         }
-        console.log('message ', message);
         ws.send(message);
       });
     }

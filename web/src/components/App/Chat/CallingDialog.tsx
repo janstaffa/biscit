@@ -1,7 +1,18 @@
 // export interface CallingDialogProps {}
-import { useEffect, useRef, useState } from 'react';
-import { HiPhoneMissedCall } from 'react-icons/hi';
-const CallingDialog: React.FC = () => {
+import React, { useEffect, useRef, useState } from 'react';
+import { HiPhone, HiPhoneMissedCall } from 'react-icons/hi';
+import { CancelCallMessage } from '../../..';
+import { ThreadSnippetFragment, UserSnippetFragment } from '../../../generated/graphql';
+import { socket } from '../../../utils/createWSconnection';
+
+export type CallingDialog = {
+  user: UserSnippetFragment | null;
+  thread: ThreadSnippetFragment | null;
+  myId: string | undefined;
+  setIsCalling: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const Clock = () => {
   const [time, setTime] = useState<number>(0);
   const timeRef = useRef<number>(time);
   timeRef.current = time;
@@ -19,23 +30,74 @@ const CallingDialog: React.FC = () => {
     const seconds = ('00' + (time % 60)).toString().slice(-2);
     setClock(`${minutes}:${seconds}`);
   }, [time]);
+
+  return <p className="text-light-400 mt-2">{clock}</p>;
+};
+const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalling }) => {
+  const isMe = user?.id === myId;
   return (
     <div
       className="w-72 h-52 bg-dark-300 absolute top-20 p-2 text-center rounded-md"
       style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }}
     >
       <div className="w-full h-full flex flex-col">
-        <div>
-          <h2 className="text-light-200 text-xl">Calling...</h2>
-          <h3 className="text-light-300 text-lg my-1">John</h3>
-          <p className="text-light-400 mt-2">{clock}</p>
-        </div>
-        <div className="w-full flex flex-row justify-center flex-grow items-end">
-          <button className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 flex flex-row items-center font-roboto">
-            <HiPhoneMissedCall size={20} className="mr-2" />
-            Cancel
-          </button>
-        </div>
+        {isMe ? (
+          <>
+            <div>
+              <h2 className="text-light-200 text-xl">Calling...</h2>
+              <h3 className="text-light-300 text-lg my-1">{thread?.name}</h3>
+              <Clock />
+            </div>
+            <div className="w-full flex flex-row justify-center flex-grow items-end">
+              <button
+                className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 flex flex-row items-center font-roboto"
+                onClick={() => {
+                  if (!thread) return;
+                  const payload: CancelCallMessage = {
+                    code: 3011,
+                    threadId: thread.id
+                  };
+                  socket.send(JSON.stringify(payload));
+                  setIsCalling(false);
+                }}
+              >
+                <HiPhoneMissedCall size={20} className="mr-2" />
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <h2 className="text-light-200 text-xl">Incoming call</h2>
+              <h3 className="text-light-300 text-lg my-1">{thread?.name}</h3>
+              <Clock />
+            </div>
+            <div className="w-full flex flex-row justify-center flex-grow items-end">
+              <button className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto">
+                <HiPhone size={20} className="mr-2" />
+                {thread?.isDm ? 'Accept' : 'Join'}
+              </button>
+              <button
+                className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
+                onClick={() => {
+                  if (!thread) return;
+                  if (thread.isDm) {
+                    const payload: CancelCallMessage = {
+                      code: 3011,
+                      threadId: thread.id
+                    };
+                    socket.send(JSON.stringify(payload));
+                  }
+                  setIsCalling(false);
+                }}
+              >
+                <HiPhoneMissedCall size={20} className="mr-2" />
+                {thread?.isDm ? 'Decline' : 'Ignore'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

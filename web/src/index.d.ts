@@ -1,4 +1,4 @@
-import { Message } from './generated/graphql';
+import { Message, Thread } from './generated/graphql';
 
 export interface SocketMessage {
   code: number;
@@ -38,10 +38,11 @@ export interface IncomingThreadUpdateMessage extends SocketThreadMessage {
   updatedThread: Thread;
 }
 
-export interface OutgoingCreateCallMessage extends SocketThreadMessage {
-  userId: string | undefined;
-}
+export type OutgoingCreateCallMessage = SocketThreadMessage;
 
 export interface IncomingCreateCallMessage extends SocketThreadMessage {
   user: User;
+  thread: ThreadSnippetFragment;
 }
+
+export type CancelCallMessage = SocketThreadMessage;
