@@ -111,9 +111,9 @@ export class User extends BaseEntity {
   @Column({ default: true })
   allowThreads: boolean;
 
-  @Field(() => [Call], { nullable: true })
-  @OneToMany(() => Call, (call) => call.creator, { nullable: true })
-  calls: Call[];
+  @Field(() => Call, { nullable: true })
+  @OneToOne(() => Call, (call) => call.creator, { nullable: true })
+  callCreator: Call;
 
   //createdAt field
   @Field(() => String)

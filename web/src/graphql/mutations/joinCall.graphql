@@ -1,0 +1,8 @@
+mutation JoinCall($options: JoinCallMutationInput!) {
+  JoinCall(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}

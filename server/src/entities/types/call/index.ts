@@ -11,3 +11,15 @@ export class CancelCallMutationInput {
   @Field()
   threadId: string;
 }
+
+@InputType()
+export class JoinCallMutationInput {
+  @Field()
+  callId: string;
+}
+
+@InputType()
+export class LeaveCallMutationInput {
+  @Field()
+  callId: string;
+}

@@ -1,10 +1,16 @@
 // export interface CallingDialogProps {}
 import React, { useEffect, useRef, useState } from 'react';
 import { HiPhone, HiPhoneMissedCall } from 'react-icons/hi';
-import { ThreadSnippetFragment, useCancelCallMutation, UserSnippetFragment } from '../../../generated/graphql';
+import {
+  ThreadSnippetFragment,
+  useCancelCallMutation,
+  useJoinCallMutation,
+  UserSnippetFragment
+} from '../../../generated/graphql';
 import { errorToast } from '../../../utils/toasts';
 
 export type CallingDialog = {
+  callId: string;
   user: UserSnippetFragment | null;
   thread: ThreadSnippetFragment | null;
   myId: string | undefined;
@@ -32,8 +38,9 @@ const Clock = () => {
 
   return <p className="text-light-400 mt-2">{clock}</p>;
 };
-const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalling }) => {
+const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalling, callId }) => {
   const { mutate: cancelCallMutate } = useCancelCallMutation();
+  const { mutate: joinCall } = useJoinCallMutation();
 
   const isMe = user?.id === myId;
 
@@ -86,7 +93,23 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalli
               <Clock />
             </div>
             <div className="w-full flex flex-row justify-center flex-grow items-end">
-              <button className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto">
+              <button
+                className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
+                onClick={() => {
+                  joinCall(
+                    { options: { callId } },
+                    {
+                      onSuccess: (d) => {
+                        if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
+                          d.JoinCall.errors.forEach((err) => {
+                            errorToast(err.details?.message);
+                          });
+                        }
+                      }
+                    }
+                  );
+                }}
+              >
                 <HiPhone size={20} className="mr-2" />
                 {thread?.isDm ? 'Accept' : 'Join'}
               </button>
