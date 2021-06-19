@@ -5,6 +5,7 @@ import * as net from 'net';
 import { createClient, RedisClient } from 'redis';
 import WebSocket from 'ws';
 import { browserOrigin } from '../constants';
+import { Call } from '../entities/Call';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
 import { Thread } from '../entities/Thread';
@@ -44,10 +45,16 @@ export type IncomingCreateCallMessage = SocketThreadMessage;
 export interface OutgoingCreateCallMessage extends SocketThreadMessage {
   user: User;
   thread: Thread;
+  callId: string;
 }
 
 export type OutgoingCancelCallMessage = SocketThreadMessage;
-
+export interface OutgoingStartCallMessage extends SocketThreadMessage {
+  callId: string;
+}
+export interface OutgoingKillCallMessage extends SocketThreadMessage {
+  callId: string;
+}
 export type IncomingCancelCallMessage = SocketThreadMessage;
 export type IncomingAcceptCallMessage = SocketThreadMessage;
 
@@ -63,7 +70,8 @@ export const READY_CODE = 3005;
 export const THREAD_CHANGE_CODE = 3009;
 export const CREATE_CALL_CODE = 3010;
 export const CANCEL_CALL_CODE = 3011;
-export const ACCEPT_CALL_CODE = 3012;
+export const START_CALL_CODE = 3012;
+export const KILL_CALL_CODE = 3013;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -179,6 +187,26 @@ export const socketController = (server: Server) => {
         clearTimeout(elapsed);
         clearInterval(heartbeat);
         await User.update({ id: user.id }, { status: 'offline' });
+
+        const latestUser = await User.findOne({
+          where: { id: user.id },
+          relations: ['threads', 'threads.thread', 'threads.thread.call']
+        });
+        latestUser?.threads?.forEach(async (thread) => {
+          const { memberIds } = thread.thread.call;
+          if (!memberIds) return;
+          const newMemberIds = [...memberIds];
+          if (newMemberIds.includes(user.id)) {
+            newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
+            await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
+            const payload: OutgoingCancelCallMessage = {
+              code: CANCEL_CALL_CODE,
+              threadId: thread.id
+            };
+
+            pubClient.publish(thread.id, JSON.stringify(payload));
+          }
+        });
       };
 
       let sentMessages = 0;

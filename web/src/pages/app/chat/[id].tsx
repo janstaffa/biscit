@@ -6,13 +6,14 @@ import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
-import { CancelCallMessage, IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../../..';
+import { IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../../..';
 import CallingDialog from '../../../components/App/Chat/CallingDialog';
 import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../../../components/App/Chat/ChatFeed';
 import ChatInfoBar from '../../../components/App/Chat/ChatInfoBar';
 import ImageGallery from '../../../components/App/Chat/ImageGallery';
 import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
+import VideoChat from '../../../components/App/Chat/VideoChat';
 import ContentNav from '../../../components/App/ContentNav';
 import Layout from '../../../components/App/Layout';
 import FriendListItem from '../../../components/App/Threads/FriendListItem';
@@ -124,6 +125,8 @@ const Chat: NextPage = () => {
   const [isCalling, setIsCalling] = useState<boolean>(false);
   const [callingUser, setCallingUser] = useState<UserSnippetFragment | null>(null);
   const [callingThread, setCallingThread] = useState<ThreadSnippetFragment | null>(null);
+  const [callId, setCallId] = useState<string | undefined | null>(null);
+  const [isInCall, setIsInCall] = useState<boolean>(false);
 
   useEffect(() => {
     if (!meData?.me) return;
@@ -133,18 +136,26 @@ const Chat: NextPage = () => {
       const incoming = JSON.parse(m);
 
       if (incoming.code === 3010) {
-        const { threadId: tID, user, thread } = incoming as IncomingCreateCallMessage;
+        const { threadId: tID, user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
         // if (tID !== threadId) return;
 
         setIsCalling(true);
         setCallingUser(user);
         setCallingThread(thread);
+        setCallId(cId);
       } else if (incoming.code === 3011) {
-        const { threadId: tID } = incoming as CancelCallMessage;
+        // const { threadId: tID } = incoming as CancelCallMessage;
 
         setIsCalling(false);
         setCallingUser(null);
         setCallingThread(null);
+      } else if (incoming.code === 3012) {
+        // const { threadId: tID } = incoming as IncomingStartCallMessage;
+        setIsInCall(true);
+        setIsCalling(false);
+      } else if (incoming.code === 3013) {
+        // const { threadId: tID } = incoming as IncomingStartCallMessage;
+        setIsInCall(false);
       }
     };
     ws?.addEventListener('message', handleMessage);
@@ -155,19 +166,21 @@ const Chat: NextPage = () => {
   const ringtone = useRef<HTMLAudioElement>();
   useEffect(() => {
     ringtone.current = new Audio('/ringtone.mp3');
+    ringtone.current.loop = true;
   }, []);
   useEffect(() => {
-    if (!ringtone.current) return;
+    if (!ringtone.current || !callingUser) return;
     if (isCalling) {
-      ringtone.current.play().catch((e) => console.error(e));
+      if (callingUser.id !== meData?.me?.id) {
+        ringtone.current.play().catch((e) => console.error(e));
+      }
     } else {
-      console.log('pause');
       ringtone.current.pause();
       ringtone.current.currentTime = 0;
       setCallingUser(null);
       setCallingThread(null);
     }
-  }, [isCalling]);
+  }, [isCalling, callingUser]);
   return (
     <>
       <Head>
@@ -197,11 +210,13 @@ const Chat: NextPage = () => {
                     { options: { threadId } },
                     {
                       onSuccess: (d) => {
-                        if (!d.CreateCall.data && d.CreateCall.errors.length > 0) {
+                        if (d.CreateCall.errors.length > 0) {
                           d.CreateCall.errors.forEach((err) => {
                             errorToast(err.details?.message);
                           });
                         }
+                        setCallId(d.CreateCall.data);
+                        console.log(callId, d.CreateCall.data);
                       }
                     }
                   )
@@ -236,15 +251,20 @@ const Chat: NextPage = () => {
               setAddMemberModalShow={setAddMemberModalShow}
               editModalShow={editModalShow}
             />
-            {isCalling && (
-              <CallingDialog
-                user={callingUser}
-                thread={callingThread}
-                myId={meData?.me?.id}
-                setIsCalling={setIsCalling}
-              />
+            {!!callId && (
+              <>
+                {isCalling && (
+                  <CallingDialog
+                    callId={callId}
+                    user={callingUser}
+                    thread={callingThread}
+                    myId={meData?.me?.id}
+                    setIsCalling={setIsCalling}
+                  />
+                )}
+                {isInCall && <VideoChat callId={callId} setIsInCall={setIsInCall} />}
+              </>
             )}
-            {/* <VideoChat /> */}
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
         </div>

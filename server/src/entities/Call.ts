@@ -38,7 +38,7 @@ export class Call extends BaseEntity {
   creatorId: string;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.calls, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.callCreator, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'creatorId' })
   creator: User;
 
@@ -46,9 +46,14 @@ export class Call extends BaseEntity {
   @Column()
   threadId: string;
 
+  @Field(() => Thread)
   @OneToOne(() => Thread, (thread) => thread.call, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'threadId' })
   thread: Thread;
+
+  @Field(() => [String], { nullable: true })
+  @Column('text', { array: true, nullable: true })
+  memberIds: string[];
 
   //createdAt field
   @Field(() => String)

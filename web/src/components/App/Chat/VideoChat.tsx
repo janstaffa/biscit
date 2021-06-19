@@ -5,18 +5,19 @@ import { BiVideoOff } from 'react-icons/bi';
 import { HiDotsVertical, HiPhoneMissedCall } from 'react-icons/hi';
 import { MdScreenShare } from 'react-icons/md';
 import { VscMute } from 'react-icons/vsc';
+import { useLeaveCallMutation } from '../../../generated/graphql';
+import { errorToast } from '../../../utils/toasts';
 import Video from './Video';
-const VideoChat: React.FC = () => {
+
+type VideoChatProps = {
+  callId: string;
+  setIsInCall: React.Dispatch<React.SetStateAction<boolean>>;
+};
+const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   const videoContainer = useRef<HTMLDivElement | null>(null);
   const videoContainerPadding = 20;
   const [videos, setVideos] = useState<string[]>(['Test', 'Babel']);
-  // const [videoSize, setVideoSize] = useState<{ width: number; height: number }>();
-  // useEffect(() => {
-  //   if (!videoContainer.current) return;
-  //   const fullHeight = videoContainer.current.clientHeight - videoContainerPadding * 2;
-  //   setVideoSize({ height: fullHeight, width: fullHeight });
-  //   console.log(fullHeight);
-  // }, []);
+  const { mutate: leaveCall } = useLeaveCallMutation();
 
   return (
     <div
@@ -56,6 +57,21 @@ const VideoChat: React.FC = () => {
           <button
             className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex flex-col justify-center items-center mx-2"
             title="Leave call"
+            onClick={() => {
+              leaveCall(
+                { options: { callId } },
+                {
+                  onSuccess: (d) => {
+                    if (d.LeaveCall.errors.length > 0) {
+                      d.LeaveCall.errors.forEach((err) => {
+                        errorToast(err.details?.message);
+                      });
+                    }
+                    setIsInCall(false);
+                  }
+                }
+              );
+            }}
           >
             <HiPhoneMissedCall size={20} />
           </button>
