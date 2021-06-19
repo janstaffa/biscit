@@ -1,13 +1,12 @@
-import { isServer } from './utils/isServer';
-
 export const __prod__ = process.env.NODE_ENV === 'production';
 export const serverURL = 'http://localhost:9000';
 export const gqlEndpoint = __prod__ ? '' : serverURL + '/graphql';
-export const currentUrl = () => (isServer() ? null : window.location);
+export const currentUrl = () => window.location;
 export const genericErrorMessage = 'Something went wrong, please try again later.';
 export const webSocketURL = 'ws://localhost:9000/socket';
 export const attachmentUploadURL = serverURL + '/upload/attachment';
 export const profilepUploadURL = serverURL + '/upload/profilep';
+export const peerServerURL = 'http://localhost:8000/peer';
 
 export const fileApiURL = serverURL + '/files';
 export const profilepApiURL = serverURL + '/files/profilep';

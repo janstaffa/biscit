@@ -1,10 +1,9 @@
 import WS from 'isomorphic-ws';
 import ReconnectingWebSocket, { Options } from 'reconnecting-websocket';
-import { SocketMessage } from '..';
 import { webSocketURL } from '../constants';
 import { useTokenStore } from '../stores/useTokenStore';
 import { useWebSocketStore } from '../stores/useWebSocketStore';
-import { isServer } from './isServer';
+import { SocketMessage } from '../types';
 import { errorToast } from './toasts';
 
 export const WS_OPTIONS: Options = {
@@ -27,7 +26,7 @@ interface Socket {
 export const socket: Socket = {
   ws: undefined,
   connect: () => {
-    if (!isServer() && !socket.ws) {
+    if (!socket.ws) {
       socket.ws = new ReconnectingWebSocket(webSocketURL, undefined, WS_OPTIONS);
 
       socket.ws.onmessage = (e) => {

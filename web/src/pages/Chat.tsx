@@ -1,24 +1,22 @@
-import { NextPage } from 'next';
-import Head from 'next/head';
-import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
+import { useHistory, useParams } from 'react-router-dom';
 import { Modal } from 'react-tiny-modals';
-import { IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../../..';
-import CallingDialog from '../../../components/App/Chat/CallingDialog';
-import ChatBottomBar from '../../../components/App/Chat/ChatBottomBar';
-import ChatFeed from '../../../components/App/Chat/ChatFeed';
-import ChatInfoBar from '../../../components/App/Chat/ChatInfoBar';
-import ImageGallery from '../../../components/App/Chat/ImageGallery';
-import ThreadListItem from '../../../components/App/Chat/ThreadListItem';
-import VideoChat from '../../../components/App/Chat/VideoChat';
-import ContentNav from '../../../components/App/ContentNav';
-import Layout from '../../../components/App/Layout';
-import FriendListItem from '../../../components/App/Threads/FriendListItem';
-import SubmitButton from '../../../components/Buttons/SubmitButton';
-import EditThreadModal from '../../../components/Modals/EditThreadModal';
+import CallingDialog from '../components/App/Chat/CallingDialog';
+import ChatBottomBar from '../components/App/Chat/ChatBottomBar';
+import ChatFeed from '../components/App/Chat/ChatFeed';
+import ChatInfoBar from '../components/App/Chat/ChatInfoBar';
+import ImageGallery from '../components/App/Chat/ImageGallery';
+import ThreadListItem from '../components/App/Chat/ThreadListItem';
+import VideoChat from '../components/App/Chat/VideoChat';
+import ContentNav from '../components/App/ContentNav';
+import Layout from '../components/App/Layout';
+import FriendListItem from '../components/App/Threads/FriendListItem';
+import SubmitButton from '../components/Buttons/SubmitButton';
+import EditThreadModal from '../components/Modals/EditThreadModal';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
@@ -29,21 +27,17 @@ import {
   UserSnippetFragment,
   useThreadQuery,
   useThreadsQuery
-} from '../../../generated/graphql';
-import { socket } from '../../../utils/createWSconnection';
-import { isServer } from '../../../utils/isServer';
-import { errorToast, successToast } from '../../../utils/toasts';
-import withAuth from '../../../utils/withAuth';
+} from '../generated/graphql';
+import { IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../types';
+import { socket } from '../utils/createWSconnection';
+import { errorToast, successToast } from '../utils/toasts';
 
-const Chat: NextPage = () => {
-  const router = useRouter();
-  if (!router.query.id) {
-    if (!isServer()) {
-      router.replace('/app/friends/all');
-    }
+const Chat: React.FC = () => {
+  const history = useHistory();
+  const { id: threadId } = useParams<{ id: string }>();
+  if (!threadId) {
     return null;
   }
-  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
 
   const { data } = useThreadQuery(
     {
@@ -53,7 +47,7 @@ const Chat: NextPage = () => {
       onSuccess: (d) => {
         if (d.thread.errors.length > 0) {
           console.error(d.thread.errors);
-          router.replace('/app/friends/all');
+          history.replace('/app/friends/all');
         }
       }
     }
@@ -183,10 +177,10 @@ const Chat: NextPage = () => {
   }, [isCalling, callingUser]);
   return (
     <>
-      <Head>
-        <title>Biscit | Chat - {data?.thread.data?.name} </title>
-      </Head>
-      <Layout>
+      <Helmet>
+        <title>Biscit | Chat - {data?.thread.data?.name || ''} </title>
+      </Helmet>
+      <Layout threadId={threadId}>
         <ContentNav>
           <div className="flex flex-row justify-between h-full select-none">
             <div className="flex flex-row items-center">
@@ -266,7 +260,7 @@ const Chat: NextPage = () => {
               </>
             )}
           </div>
-          <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} />
+          <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} threadId={threadId} />
         </div>
       </Layout>
       {galleryFile && <ImageGallery file={galleryFile} setGalleryFile={setGalleryFile} />}
@@ -427,4 +421,4 @@ const Chat: NextPage = () => {
   );
 };
 
-export default withAuth(Chat);
+export default Chat;

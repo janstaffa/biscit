@@ -1,10 +1,10 @@
-import { useRouter } from 'next/router';
 import React from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
 import { HiDotsVertical } from 'react-icons/hi';
 import { ImCross } from 'react-icons/im';
 import { IoMdCall } from 'react-icons/io';
 import { RiDeleteBin6Line } from 'react-icons/ri';
+import { useHistory } from 'react-router-dom';
 import { Popup } from 'react-tiny-modals';
 import { genericErrorMessage } from '../../../constants';
 import { ThreadSnippetFragment, useDeleteThreadMutation, useLeaveThreadMutation } from '../../../generated/graphql';
@@ -17,7 +17,7 @@ export interface ThreadTabProps {
 }
 
 const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myId }) => {
-  const router = useRouter();
+  const history = useHistory();
 
   const { mutate: deleteThread } = useDeleteThreadMutation({
     onSuccess: (data) => {
@@ -50,7 +50,7 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
               <BiMessageAltDetail
                 className="text-light-300 text-2xl mx-2 hover:text-light-200"
                 title="Message"
-                onClick={() => router.push(`/app/chat/${id}`)}
+                onClick={() => history.push(`/app/chat/${id}`)}
               />
               <IoMdCall className="text-light-300 text-2xl mx-2 hover:text-light-200" title="Call" />
               <Popup

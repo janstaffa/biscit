@@ -1,19 +1,14 @@
-import Link from 'next/link';
 import { InputHTMLAttributes, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 export type NavLinkProps = InputHTMLAttributes<HTMLDivElement> & {
   children: ReactNode;
   href: string;
   active?: boolean;
 };
 
-const NavLink: React.FC<NavLinkProps> = ({
-  children,
-  href,
-  active = false,
-  ...props
-}) => {
+const NavLink: React.FC<NavLinkProps> = ({ children, href, active = false, ...props }) => {
   return (
-    <Link href={href}>
+    <Link to={href}>
       <div
         className={
           props.className

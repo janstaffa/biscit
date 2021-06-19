@@ -1,6 +1,5 @@
 // export interface FileDropZoneProps {}
 
-import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { attachment } from '../../..';
 import { errorToast } from '../../../utils/toasts';

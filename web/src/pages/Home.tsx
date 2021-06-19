@@ -1,16 +1,16 @@
-import { NextPage } from 'next';
-import Head from 'next/head';
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import AboutPage from '../components/Home/AboutPage';
 import Footer from '../components/Home/Footer';
 import LandingPage from '../components/Home/LandingPage';
+export interface HomeProps {}
 
-const Home: NextPage = () => {
+const Home: React.FC<HomeProps> = () => {
   return (
     <>
-      <Head>
+      <Helmet>
         <title>Biscit | Home</title>
-      </Head>
+      </Helmet>
       <LandingPage />
       <AboutPage />
       <Footer />

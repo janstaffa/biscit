@@ -50,11 +50,3 @@ body {
   user-select: none;
   margin: 3px;
 }
-
-a {
-  color: #e09f3e;
-}
-
-a:hover {
-  color: #d89530;
-}

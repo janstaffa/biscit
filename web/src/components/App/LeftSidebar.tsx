@@ -1,5 +1,3 @@
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
@@ -7,9 +5,9 @@ import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
 import { VscSearchStop } from 'react-icons/vsc';
+import { Link, useHistory, useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { Modal } from 'react-tiny-modals';
-import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage, SocketThreadMessage } from '../..';
 import { currentUrl, genericErrorMessage, profilepApiURL } from '../../constants';
 import {
   MeQuery,
@@ -24,19 +22,26 @@ import {
 } from '../../generated/graphql';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTokenStore } from '../../stores/useTokenStore';
+import {
+  IncomingDeleteMessage,
+  IncomingSocketChatMessage,
+  IncomingUpdateMessage,
+  SocketThreadMessage
+} from '../../types';
 import { queryClient } from '../../utils/createQueryClient';
 import { socket } from '../../utils/createWSconnection';
-import { isServer } from '../../utils/isServer';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
 import ProfilePicture from './ProfilePicture';
 import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 
-const LeftSidebar: React.FC = () => {
-  const router = useRouter();
-  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
-
+interface LeftSidebarProps {
+  threadId?: string;
+}
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId }) => {
+  const params = useParams();
+  const history = useHistory();
   const { setAuthenticated } = useAuth();
   const { setToken } = useTokenStore();
   const [modalShow, setModalShow] = useState<boolean>(false);
@@ -113,9 +118,10 @@ const LeftSidebar: React.FC = () => {
           threads.unshift(thisThread);
           setThreadList(threads);
         }
-        if ((message as Message).userId === meData?.me?.id) {
-          readMessages({ options: { threadId: threadId } });
-        }
+        // if ((message as Message).userId === meData?.me?.id) {
+        //   if (!threadId) return;
+        //   readMessages({ options: { threadId } });
+        // }
       } else if (incoming.code === 3007) {
         const { messageId, threadId: incomingThreadId } = incoming as IncomingDeleteMessage;
         threadListRef.current.forEach((thread) => {
@@ -144,7 +150,7 @@ const LeftSidebar: React.FC = () => {
       }
     };
 
-    if (!isServer() && ws) {
+    if (ws) {
       try {
         ws.addEventListener('message', handleMessage);
       } catch (err) {
@@ -159,7 +165,7 @@ const LeftSidebar: React.FC = () => {
 
   useEffect(() => {
     const ws = socket.connect();
-    if (isServer() || !ws) return;
+    if (!ws) return;
 
     const handleMessage = async (e) => {
       const { data: m } = e;
@@ -192,13 +198,17 @@ const LeftSidebar: React.FC = () => {
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
         <div className="flex-col w-full h-auto border-b-2 border-dark-50 px-10 py-5">
-          <TabButton active={currentPath?.includes('/app/friends')} href="/app/friends">
-            <FaUserFriends className="mr-4" />
-            Friends
+          <TabButton active={currentPath?.includes('/app/friends/all')} href="/app/friends/all">
+            <div className="flex flex-row items-center">
+              <FaUserFriends className="mr-4" />
+              Friends
+            </div>
           </TabButton>
-          <TabButton active={currentPath?.includes('/app/threads')} href="/app/threads">
-            <HiUserGroup className="mr-4" />
-            Threads
+          <TabButton active={currentPath?.includes('/app/threads/all')} href="/app/threads/all">
+            <div className="flex flex-row items-center">
+              <HiUserGroup className="mr-4" />
+              Threads
+            </div>
           </TabButton>
         </div>
 
@@ -236,7 +246,7 @@ const LeftSidebar: React.FC = () => {
                 </div>
               ) : threadList.length > 0 ? (
                 threadList.map((membership, i) => {
-                  if (router.query.id === membership.threadId) {
+                  if (threadId === membership.threadId) {
                     threadList[i].unread = 0;
                   }
                   return (
@@ -272,7 +282,7 @@ const LeftSidebar: React.FC = () => {
                   size="48px"
                   src={profilePictureSrc}
                   className="cursor-pointer"
-                  onClick={() => router.push('/app/settings')}
+                  onClick={() => history.push('/app/settings')}
                 />
               </div>
               <div className="w-full flex-1 px-2">
@@ -300,10 +310,11 @@ const LeftSidebar: React.FC = () => {
                             onSuccess: (data) => {
                               if (data.UserLogout) {
                                 setAuthenticated(false);
+                                localStorage.setItem('auth', JSON.stringify({ value: false }));
                                 queryClient.removeQueries();
                                 socket.close();
                                 setToken(null);
-                                router.replace('/');
+                                history.replace('/');
                               } else {
                                 errorToast(genericErrorMessage);
                               }
@@ -312,7 +323,7 @@ const LeftSidebar: React.FC = () => {
                         );
                       }}
                     />
-                    <Link href="/app/settings">
+                    <Link to="/app/settings">
                       <>
                         <MdSettings className="hover:text-light-200 mx-1" title="Settings" />
                       </>

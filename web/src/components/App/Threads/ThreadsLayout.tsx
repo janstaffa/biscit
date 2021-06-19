@@ -1,7 +1,7 @@
-import { useRouter } from 'next/router';
 import React, { ReactNode, useEffect, useState } from 'react';
 import { FaUserFriends } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
+import { useHistory } from 'react-router-dom';
 import { Modal } from 'react-tiny-modals';
 import { currentUrl, genericErrorMessage } from '../../../constants';
 import { useCreateThreadMutation, useMeQuery } from '../../../generated/graphql';
@@ -12,12 +12,13 @@ import SubmitButton from '../../Buttons/SubmitButton';
 import ContentNav from '../ContentNav';
 import Layout from '../Layout';
 import FriendListItem from './FriendListItem';
+
 export interface ThreadsLayoutProps {
   children: ReactNode;
 }
 
 const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
-  const router = useRouter();
+  const history = useHistory();
   const [currentPath, setCurrentPath] = useState<string>();
 
   const { mutate: createThread } = useCreateThreadMutation();
@@ -137,7 +138,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
                         if (data.CreateThread.data) {
                           successToast(`New thread ${newThreadName} was created successfully.`);
                           queryClient.refetchQueries({ queryKey: 'Threads' });
-                          router.push(`/app/chat/${data.CreateThread.data}`);
+                          history.push(`/app/chat/${data.CreateThread.data}`);
                         } else {
                           errorToast(genericErrorMessage);
                         }

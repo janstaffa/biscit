@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { InfiniteData } from 'react-query';
 import { ClipLoader } from 'react-spinners';
-import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../..';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
@@ -11,10 +10,10 @@ import {
   useMeQuery,
   useThreadQuery
 } from '../../../generated/graphql';
+import { IncomingDeleteMessage, IncomingSocketChatMessage, IncomingUpdateMessage } from '../../../types';
 import { queryClient } from '../../../utils/createQueryClient';
 import { socket } from '../../../utils/createWSconnection';
 import { datesAreSameDay } from '../../../utils/datesAreSameDay';
-import { isServer } from '../../../utils/isServer';
 import { usePaginatedMessagesQuery } from '../../../utils/usePaginatedMessagesQuery';
 import ChatMessage from './ChatMessage';
 
@@ -56,7 +55,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   useEffect(() => {
     setShouldScroll(true);
     const ws = socket.connect();
-    if (isServer() || !ws) return;
+    if (!ws) return;
     setIsLoadingMessages(false);
 
     const handleMessage = (e) => {

@@ -1,20 +1,18 @@
-import { NextPage } from 'next';
-import Head from 'next/head';
 import React from 'react';
-import FriendsLayout from '../../../components/App/Friends/FriendsLayout';
-import FriendTab from '../../../components/App/Friends/FriendTab';
-import SplashScreen from '../../../components/SplashScreen';
-import { useMeQuery } from '../../../generated/graphql';
-import withAuth from '../../../utils/withAuth';
+import { Helmet } from 'react-helmet-async';
+import FriendsLayout from '../components/App/Friends/FriendsLayout';
+import FriendTab from '../components/App/Friends/FriendTab';
+import SplashScreen from '../components/SplashScreen';
+import { useMeQuery } from '../generated/graphql';
 
-const AllFriends: NextPage = () => {
+const AllFriends: React.FC = () => {
   const { data: meData, isLoading } = useMeQuery();
   const friends = meData?.me?.friends;
   return (
     <>
-      <Head>
+      <Helmet>
         <title>Biscit | All friends</title>
-      </Head>
+      </Helmet>
       <FriendsLayout>
         <div className="w-full h-full relative overflow-y-auto">
           {!isLoading && friends && friends.length > 0 ? (
@@ -50,4 +48,4 @@ const AllFriends: NextPage = () => {
   );
 };
 
-export default withAuth(AllFriends);
+export default AllFriends;
