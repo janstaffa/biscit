@@ -43,6 +43,11 @@ export type OutgoingCreateCallMessage = SocketThreadMessage;
 export interface IncomingCreateCallMessage extends SocketThreadMessage {
   user: User;
   thread: ThreadSnippetFragment;
+  callId: string;
 }
 
 export type CancelCallMessage = SocketThreadMessage;
+
+export interface IncomingStartCallMessage extends SocketThreadMessage {
+  callId: string;
+}

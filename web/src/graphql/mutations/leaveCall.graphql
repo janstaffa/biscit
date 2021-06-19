@@ -1,0 +1,8 @@
+mutation LeaveCall($options: LeaveCallMutationInput!) {
+  LeaveCall(options: $options) {
+    data
+    errors {
+      ...errorSnippet
+    }
+  }
+}
