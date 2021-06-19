@@ -1,21 +1,19 @@
-import { NextPage } from 'next';
-import Head from 'next/head';
 import React from 'react';
-import ThreadsLayout from '../../../components/App/Threads/ThreadsLayout';
-import ThreadTab from '../../../components/App/Threads/ThreadTab';
-import SplashScreen from '../../../components/SplashScreen';
-import { useMeQuery, useThreadsQuery } from '../../../generated/graphql';
-import withAuth from '../../../utils/withAuth';
+import { Helmet } from 'react-helmet-async';
+import ThreadsLayout from '../components/App/Threads/ThreadsLayout';
+import ThreadTab from '../components/App/Threads/ThreadTab';
+import SplashScreen from '../components/SplashScreen';
+import { useMeQuery, useThreadsQuery } from '../generated/graphql';
 
-const AllFriends: NextPage = () => {
+const AllThreads: React.FC = () => {
   const { data: meData } = useMeQuery();
   const { data: loadedThreads, isLoading } = useThreadsQuery();
   const threads = loadedThreads?.threads.filter((t) => !t.thread.isDm);
   return (
     <>
-      <Head>
+      <Helmet>
         <title>Biscit | All threads</title>
-      </Head>
+      </Helmet>
       <ThreadsLayout>
         <div className="w-full h-full relative overflow-y-auto">
           {!isLoading && threads && threads.length > 0 ? (
@@ -44,4 +42,4 @@ const AllFriends: NextPage = () => {
   );
 };
 
-export default withAuth(AllFriends);
+export default AllThreads;

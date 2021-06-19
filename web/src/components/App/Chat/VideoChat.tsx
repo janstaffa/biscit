@@ -1,11 +1,12 @@
 // export interface VideoChatProps {}
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AiOutlineAudioMuted } from 'react-icons/ai';
 import { BiVideoOff } from 'react-icons/bi';
 import { HiDotsVertical, HiPhoneMissedCall } from 'react-icons/hi';
 import { MdScreenShare } from 'react-icons/md';
 import { VscMute } from 'react-icons/vsc';
 import { useLeaveCallMutation } from '../../../generated/graphql';
+import RTCConnection from '../../../utils/rtcConnection';
 import { errorToast } from '../../../utils/toasts';
 import Video from './Video';
 
@@ -19,6 +20,11 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   const [videos, setVideos] = useState<string[]>(['Test', 'Babel']);
   const { mutate: leaveCall } = useLeaveCallMutation();
 
+  useEffect(() => {
+    import('peerjs').then(({ default: Peer }) => {
+      const conn = new RTCConnection(callId, Peer);
+    });
+  }, []);
   return (
     <div
       className="w-full bg-dark-300 absolute top-0 left-0 border-b-2 border-dark-50 pt-12"

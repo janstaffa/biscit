@@ -1,22 +1,20 @@
-import { NextPage } from 'next';
-import Head from 'next/head';
 import React from 'react';
-import FriendsLayout from '../../../components/App/Friends/FriendsLayout';
-import IncomingRequestTab from '../../../components/App/Friends/IncomingRequestTab';
-import OutgoingRequestTab from '../../../components/App/Friends/OutgoingRequestTab';
-import SplashScreen from '../../../components/SplashScreen';
-import { useMeQuery } from '../../../generated/graphql';
-import withAuth from '../../../utils/withAuth';
+import { Helmet } from 'react-helmet-async';
+import FriendsLayout from '../components/App/Friends/FriendsLayout';
+import IncomingRequestTab from '../components/App/Friends/IncomingRequestTab';
+import OutgoingRequestTab from '../components/App/Friends/OutgoingRequestTab';
+import SplashScreen from '../components/SplashScreen';
+import { useMeQuery } from '../generated/graphql';
 
-const PendingRequests: NextPage = () => {
+const PendingRequests: React.FC = () => {
   const { data: meData, isLoading } = useMeQuery();
   const requests = meData?.me?.friend_requests;
 
   return (
     <>
-      <Head>
+      <Helmet>
         <title>Biscit | Pending friends</title>
-      </Head>
+      </Helmet>
       <FriendsLayout>
         <div className="w-full h-full relative overflow-y-auto">
           {requests && requests.incoming.length > 0 ? (
@@ -26,9 +24,7 @@ const PendingRequests: NextPage = () => {
               </p>
               <div>
                 {requests.incoming.map((request) => {
-                  return (
-                    <IncomingRequestTab request={request} key={request.id} />
-                  );
+                  return <IncomingRequestTab request={request} key={request.id} />;
                 })}
               </div>
             </div>
@@ -40,18 +36,13 @@ const PendingRequests: NextPage = () => {
               </p>
               <div>
                 {requests.outcoming.map((request) => {
-                  return (
-                    <OutgoingRequestTab request={request} key={request.id} />
-                  );
+                  return <OutgoingRequestTab request={request} key={request.id} />;
                 })}
               </div>
             </div>
           ) : null}
 
-          {!isLoading &&
-          (!requests ||
-            (requests.incoming.length === 0 &&
-              requests.outcoming.length === 0)) ? (
+          {!isLoading && (!requests || (requests.incoming.length === 0 && requests.outcoming.length === 0)) ? (
             <SplashScreen
               src="/pending_splash.svg"
               alt="Pending splash image"
@@ -64,4 +55,4 @@ const PendingRequests: NextPage = () => {
   );
 };
 
-export default withAuth(PendingRequests);
+export default PendingRequests;

@@ -1,4 +1,3 @@
-import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { AiOutlineCloseCircle } from 'react-icons/ai';
 import { FaRegSmile } from 'react-icons/fa';
@@ -6,15 +5,16 @@ import { GoReply } from 'react-icons/go';
 import { ImAttachment } from 'react-icons/im';
 import { BeatLoader } from 'react-spinners';
 import { Popup } from 'react-tiny-modals';
-import { attachment, OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../..';
 import { MessageSnippetFragment } from '../../../generated/graphql';
+import { attachment, OutgoingSocketChatMessage, SocketThreadMessage, TypingMessage } from '../../../types';
 import { socket } from '../../../utils/createWSconnection';
-import { isServer } from '../../../utils/isServer';
 import { errorToast } from '../../../utils/toasts';
 import { uploadAttachment } from '../../../utils/uploadFile';
 import AttachmentBar from './AttachmentBar';
 import FileDropZone from './FileDropZone';
+
 export interface ChatBottomBarProps {
+  threadId: string;
   replyMessage: MessageSnippetFragment | null;
   setReplyMessage: React.Dispatch<React.SetStateAction<MessageSnippetFragment | null>>;
 }
@@ -64,14 +64,7 @@ const emojis = [
   '😇'
 ];
 
-const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMessage }) => {
-  const router = useRouter();
-  if (!router.query.id) {
-    router.replace('/app/friends/all');
-    return null;
-  }
-  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
-
+const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMessage, threadId }) => {
   const threadIdRef = useRef<string>();
   threadIdRef.current = threadId;
   const [typing, setTyping] = useState<{ username: string } | null>(null);
@@ -87,7 +80,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
   useEffect(() => {
     setMessageInputValue('');
     const ws = socket.connect();
-    if (isServer() || !ws) return;
+    if (!ws) return;
 
     let resetTyping: NodeJS.Timeout | null;
     const handleMessage = (e) => {

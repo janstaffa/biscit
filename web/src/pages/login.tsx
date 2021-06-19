@@ -1,9 +1,7 @@
 import { Form, Formik } from 'formik';
-import { NextPage } from 'next';
-import Head from 'next/head';
-import Link from 'next/link';
-import router from 'next/router';
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
+import { Link, useHistory } from 'react-router-dom';
 import * as yup from 'yup';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import HomeNav from '../components/Home/Navbar';
@@ -13,23 +11,30 @@ import { useLoginMutation } from '../generated/graphql';
 import { useAuth } from '../providers/AuthProvider';
 import { errorToast } from '../utils/toasts';
 import { toErrorMap } from '../utils/toErrorMap';
-import withNoAuth from '../utils/withNoAuth';
 
 const LoginSchema = yup.object().shape({
   usernameOrEmail: yup.string().required('username or email is required'),
   password: yup.string().required('password is required')
 });
 
-const Login: NextPage = () => {
+const Login: React.FC = () => {
   const { setAuthenticated } = useAuth();
 
   const { mutate: login } = useLoginMutation();
+  const history = useHistory();
 
+  const ls = localStorage.getItem('auth');
+  if (ls) {
+    const isAuth = JSON.parse(ls).value;
+    if (isAuth) {
+      history.replace('/app/friends/all');
+    }
+  }
   return (
     <>
-      <Head>
+      <Helmet>
         <title>Biscit | Login</title>
-      </Head>
+      </Helmet>
       <div className="w-screen h-screen">
         <HomeNav />
         <div className="w-full flex flex-row justify-center items-center">
@@ -52,7 +57,8 @@ const Login: NextPage = () => {
                       } else {
                         if (data.UserLogin.data) {
                           setAuthenticated(true);
-                          router.replace('/app/friends/all');
+                          localStorage.setItem('auth', JSON.stringify({ value: true }));
+                          history.replace('/app/friends/all');
                         } else {
                           errorToast(genericErrorMessage);
                         }
@@ -82,7 +88,7 @@ const Login: NextPage = () => {
                   <div className="text-right text-light">
                     Don't have an account?
                     <span className="text-accent hover:text-accent-hover hover:underline">
-                      <Link href="/register">register</Link>
+                      <Link to="/register">register</Link>
                     </span>
                   </div>
                   <SubmitButton disabled={isSubmitting} id="login_button">
@@ -98,4 +104,4 @@ const Login: NextPage = () => {
   );
 };
 
-export default withNoAuth(Login);
+export default Login;

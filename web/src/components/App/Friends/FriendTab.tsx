@@ -1,15 +1,16 @@
-import { useRouter } from 'next/router';
 import React from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
 import { BsFillPersonDashFill } from 'react-icons/bs';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall } from 'react-icons/io';
+import { useHistory } from 'react-router-dom';
 import { Popup } from 'react-tiny-modals';
 import { genericErrorMessage, profilepApiURL } from '../../../constants';
 import { useRemoveFriendMutation, UserSnippetFragment } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast } from '../../../utils/toasts';
 import ProfilePicture from '../ProfilePicture';
+
 export interface FriendTabProps {
   friendId: string;
   friend: UserSnippetFragment;
@@ -22,7 +23,7 @@ const FriendTab: React.FC<FriendTabProps> = ({
   friend: { username, bio, status, tag },
   threadId
 }) => {
-  const router = useRouter();
+  const history = useHistory();
 
   const { mutate: removeFriend } = useRemoveFriendMutation({
     onSuccess: (data) => {
@@ -54,7 +55,7 @@ const FriendTab: React.FC<FriendTabProps> = ({
               <BiMessageAltDetail
                 className="text-light-300 text-2xl mx-2 hover:text-light-200"
                 title="Message"
-                onClick={() => router.push(`/app/chat/${threadId}`)}
+                onClick={() => history.push(`/app/chat/${threadId}`)}
               />
               <IoMdCall className="text-light-300 text-2xl mx-2 hover:text-light-200" title="Call" />
               <Popup

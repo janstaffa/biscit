@@ -3,7 +3,7 @@
     "target": "es6",
     "module": "esnext",
     "lib": ["dom", "es6", "es2017", "esnext.asynciterable"],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "sourceMap": true,
     "outDir": "./dist",
     "moduleResolution": "node",
@@ -12,7 +12,7 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "noImplicitThis": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -30,6 +30,6 @@
     "isolatedModules": true
   },
   "exclude": ["node_modules"],
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "declaration.d.ts"],
+  "include": ["./src/**/*.ts", "./src/**/*.tsx", "declaration.d.ts"],
   "typeRoots": ["./src/typings", "./node_modules/@types"]
 }

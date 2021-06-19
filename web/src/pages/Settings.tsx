@@ -1,21 +1,20 @@
 import Cropper from 'cropperjs';
-import { NextPage } from 'next';
-import Head from 'next/head';
-import React, { useEffect, useRef, useState } from 'react';
+import 'cropperjs/dist/cropper.css';
+import { useEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { FaUser } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { MdAddAPhoto } from 'react-icons/md';
 import { Modal } from 'react-tiny-modals';
-import '../../../../node_modules/cropperjs/dist/cropper.css';
-import SettingsLayout from '../../../components/App/Settings/SettingsLayout';
-import SubmitButton from '../../../components/Buttons/SubmitButton';
-import { profilepApiURL, validProfilePictureUploadRegExp } from '../../../constants';
-import { useMeQuery, useUpdateSettingsMutation } from '../../../generated/graphql';
-import { queryClient } from '../../../utils/createQueryClient';
-import { errorToast, successToast } from '../../../utils/toasts';
-import { uploadProfilePicture } from '../../../utils/uploadFile';
-import withAuth from '../../../utils/withAuth';
-const Settings: NextPage = () => {
+import SettingsLayout from '../components/App/Settings/SettingsLayout';
+import SubmitButton from '../components/Buttons/SubmitButton';
+import { profilepApiURL, validProfilePictureUploadRegExp } from '../constants';
+import { useMeQuery, useUpdateSettingsMutation } from '../generated/graphql';
+import { queryClient } from '../utils/createQueryClient';
+import { errorToast, successToast } from '../utils/toasts';
+import { uploadProfilePicture } from '../utils/uploadFile';
+
+const Settings: React.FC = () => {
   const { data: meData } = useMeQuery();
 
   const { mutate: updateSettings } = useUpdateSettingsMutation({
@@ -66,9 +65,9 @@ const Settings: NextPage = () => {
   const blinkScreen = useRef<HTMLDivElement | null>(null);
   return (
     <>
-      <Head>
+      <Helmet>
         <title>Biscit | Settings</title>
-      </Head>
+      </Helmet>
       <SettingsLayout>
         <div className="w-full h-full flex flex-row">
           <div className="w-64 bg-dark-300 text-light-300 flex flex-row justify-center pt-5">
@@ -364,4 +363,4 @@ const Settings: NextPage = () => {
   );
 };
 
-export default withAuth(Settings);
+export default Settings;

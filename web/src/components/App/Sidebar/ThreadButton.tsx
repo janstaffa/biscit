@@ -1,12 +1,11 @@
-import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaUser } from 'react-icons/fa';
-import { TypingMessage } from '../../..';
+import { Link } from 'react-router-dom';
 import { profilepApiURL } from '../../../constants';
 import { ThreadSnippetFragment } from '../../../generated/graphql';
+import { TypingMessage } from '../../../types';
 import { socket } from '../../../utils/createWSconnection';
 import { formatTime } from '../../../utils/formatTime';
-import { isServer } from '../../../utils/isServer';
 
 export interface ThreadButtonProps {
   thread: ThreadSnippetFragment;
@@ -24,7 +23,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, a
 
   useEffect(() => {
     const ws = socket.connect();
-    if (isServer() || !ws) return;
+    if (!ws) return;
 
     let resetTyping: NodeJS.Timeout | null;
     const handleMessage = (e) => {
@@ -70,7 +69,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, a
   const profilePictureId = thread.thread_picture?.id;
   const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
-    <Link href={`/app/chat/${threadId}`}>
+    <Link to={`/app/chat/${threadId}`}>
       <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>
         <div className="w-full h-16 flex flex-row items-center cursor-pointer py-2">
           <div className="w-16 h-full flex flex-col justify-center items-center">
