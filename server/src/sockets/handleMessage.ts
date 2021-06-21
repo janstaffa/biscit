@@ -8,6 +8,7 @@ import {
   CHAT_MESSAGE_CODE,
   CHAT_TYPING_CODE,
   closeConnection,
+  connections,
   ERROR_MESSAGE_CODE,
   IncomingSocketChatMessage,
   JOIN_THREAD_CODE,
@@ -40,6 +41,7 @@ export const handleMessage = async (
       message: 'Invalid socket token.'
     };
     ws.send(JSON.stringify(payload));
+    ws.terminate();
     return;
   };
   const incoming = JSON.parse(data);
@@ -69,7 +71,7 @@ export const handleMessage = async (
     ws.send(JSON.stringify(payload));
     closeConnection(ws);
     await User.update({ id: user.id }, { status: 'offline' });
-    subClient.removeAllListeners();
+    // subClient.removeAllListeners();
 
     return;
   }
@@ -147,7 +149,10 @@ export const handleMessage = async (
           newMessage.media = files;
         }
       }
-      const membership = await ThreadMembers.findOne({ where: { userId: user.id, threadId } });
+      const membership = await ThreadMembers.findOne({
+        where: { userId: user.id, threadId },
+        relations: ['thread', 'thread.members']
+      });
       if (!membership) {
         const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this thread' };
         ws.send(JSON.stringify(payload));
@@ -168,7 +173,10 @@ export const handleMessage = async (
         } as Message
       };
 
-      pubClient.publish(threadId, JSON.stringify(payload));
+      membership.thread.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(threadId, JSON.stringify(payload));
     } catch (e) {
       console.error(e);
     }
@@ -183,7 +191,7 @@ export const handleMessage = async (
         ws.send(JSON.stringify(payload));
         return;
       }
-      subClient.subscribe(threadId);
+      // subClient.subscribe(threadId);
     } catch (e) {
       console.error(e);
     }
@@ -197,11 +205,34 @@ export const handleMessage = async (
         username: user.username
       };
 
-      pubClient.publish(threadId, JSON.stringify(payload));
+      const thread = await Thread.findOne({ where: { id: threadId }, relations: ['members'] });
+      if (!thread) return;
+      thread.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(threadId, JSON.stringify(payload));
     } catch (e) {
       console.error(e);
     }
   }
+  //  else if (code === PEER_JOIN_CODE) {
+  //   const { callId, peerId } = incoming as SocketPeerJoinMessage;
+  //   if (!callId) return;
+  //   try {
+  //     const call = await Call.findOne({ where: { id: callId }, relations: ['thread', 'thread.members'] });
+  //     if (!call?.thread) return;
+  //     if (!call.memberIds.includes(user.id)) {
+  //     }
+  //     const payload: SocketPeerJoinMessage & { user: User } = {
+  //       code: PEER_JOIN_CODE,
+
+  //     };
+
+  //     pubClient.publish(threadId, JSON.stringify(payload));
+  //   } catch (e) {
+  //     console.error(e);
+  //   }
+  // }
   // else if (code === CREATE_CALL_CODE) {
   //   const { threadId } = incoming as IncomingCreateCallMessage;
   //   if (!threadId || !user.id) return;

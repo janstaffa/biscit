@@ -9,10 +9,11 @@ import { Call } from '../entities/Call';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
 import { Thread } from '../entities/Thread';
-import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
+import { Connections } from './Connections';
 import { handleMessage } from './handleMessage';
 
+//generic message types
 export interface SocketMessage {
   code: number;
   // token: string;
@@ -24,39 +25,50 @@ export interface SocketChatMessage extends SocketThreadMessage {
   message: Message;
 }
 
+//chat message types
 export interface IncomingSocketChatMessage extends SocketThreadMessage {
   content: string;
   replyingToId?: string;
   resendId?: string;
   media?: string[];
 }
-
-export interface IncomingLoadMessagesMessage extends SocketThreadMessage {
-  cursor: string | null;
-  limit: number;
-}
-
 export interface ThreadUpdateMessage extends SocketThreadMessage {
   updatedThread: Thread;
 }
 
-export type IncomingCreateCallMessage = SocketThreadMessage;
+//call message types
 
+// when user creates a call, this message is sent to everyone in the thread
 export interface OutgoingCreateCallMessage extends SocketThreadMessage {
   user: User;
   thread: Thread;
   callId: string;
 }
 
-export type OutgoingCancelCallMessage = SocketThreadMessage;
-export interface OutgoingStartCallMessage extends SocketThreadMessage {
+// to close the calling dialog
+export interface OutgoingCancelCallMessage extends SocketMessage {
   callId: string;
 }
-export interface OutgoingKillCallMessage extends SocketThreadMessage {
+
+//when a new user joins the thread, this message is sent to everyone in the call
+export interface OutgoingJoinCallMessage extends SocketMessage {
+  callId: string;
+  peerId: string;
+  userId: string;
+  user: User;
+}
+
+//when there are 2 members in the call, this message indicates the actual start of the call
+export interface OutgoingStartCallMessage extends SocketMessage {
+  callId: string;
+  user: User;
+  thread: Thread;
+}
+
+//to cancel the call for everyone
+export interface OutgoingKillCallMessage extends SocketMessage {
   callId: string;
 }
-export type IncomingCancelCallMessage = SocketThreadMessage;
-export type IncomingAcceptCallMessage = SocketThreadMessage;
 
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
@@ -69,8 +81,9 @@ export const AUTH_CODE = 3004;
 export const READY_CODE = 3005;
 export const THREAD_CHANGE_CODE = 3009;
 export const CREATE_CALL_CODE = 3010;
+export const START_CALL_CODE = 3014;
 export const CANCEL_CALL_CODE = 3011;
-export const START_CALL_CODE = 3012;
+export const JOIN_CALL_CODE = 3012;
 export const KILL_CALL_CODE = 3013;
 
 const HEARTBEAT_INTERVAL = 10000;
@@ -78,6 +91,7 @@ const ELAPSED_TIME = 30000;
 const THROTTLE_LIMIT = 200;
 const THROTTLE_INTERVAL = 500;
 
+export const connections = new Connections();
 export const closeConnection = (ws: WebSocket) => {
   ws.removeAllListeners();
   ws.terminate();
@@ -157,6 +171,7 @@ export const socketController = (server: Server) => {
     'connection',
     async (ws: WebSocket, req: http.IncomingMessage, user: User, subClient: RedisClient, pubClient: RedisClient) => {
       console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
+      connections.addSocket(user.id, ws);
 
       await User.update({ id: user.id }, { status: 'online' });
       const heartbeat = setInterval(async () => {
@@ -182,8 +197,8 @@ export const socketController = (server: Server) => {
       const closeConnectionAndClear = async () => {
         console.log('connection closed');
         closeConnection(ws);
-        subClient.removeAllListeners();
-        subClient.unsubscribe();
+        // subClient.removeAllListeners();
+        // subClient.unsubscribe();
         clearTimeout(elapsed);
         clearInterval(heartbeat);
         await User.update({ id: user.id }, { status: 'offline' });
@@ -193,18 +208,23 @@ export const socketController = (server: Server) => {
           relations: ['threads', 'threads.thread', 'threads.thread.call']
         });
         latestUser?.threads?.forEach(async (thread) => {
-          const { memberIds } = thread.thread.call;
-          if (!memberIds) return;
-          const newMemberIds = [...memberIds];
-          if (newMemberIds.includes(user.id)) {
-            newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
-            await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
-            const payload: OutgoingCancelCallMessage = {
-              code: CANCEL_CALL_CODE,
-              threadId: thread.id
-            };
+          if (thread.thread.call) {
+            const { memberIds } = thread.thread.call;
+            if (!memberIds) return;
+            const newMemberIds = [...memberIds];
+            if (newMemberIds.includes(user.id)) {
+              newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
+              await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
+              const payload: OutgoingCancelCallMessage = {
+                code: CANCEL_CALL_CODE,
+                callId: thread.thread.call.id
+              };
 
-            pubClient.publish(thread.id, JSON.stringify(payload));
+              newMemberIds.forEach((memberId) => {
+                connections.getSocket(memberId)?.send(JSON.stringify(payload));
+              });
+              // pubClient.publish(thread.id, JSON.stringify(payload));
+            }
           }
         });
       };
@@ -246,30 +266,30 @@ export const socketController = (server: Server) => {
         await closeConnectionAndClear();
       });
 
-      try {
-        const threads = await ThreadMembers.find({ where: { userId: user.id } });
+      // try {
+      //   const threads = await ThreadMembers.find({ where: { userId: user.id } });
 
-        threads.map((thread) => {
-          const { threadId } = thread;
-          subClient.subscribe(threadId);
-        });
-      } catch (e) {
-        console.error(e);
-      }
+      //   threads.map((thread) => {
+      //     const { threadId } = thread;
+      //     subClient.subscribe(threadId);
+      //   });
+      // } catch (e) {
+      //   console.error(e);
+      // }
 
-      subClient.on('message', async (channel, message) => {
-        const parsed = JSON.parse(message);
-        if (parsed.code === CHAT_MESSAGE_CODE) {
-          const { message, threadId } = parsed as SocketChatMessage;
-          if (message.userId !== user.id) {
-            const latestUser = await User.findOne({ where: { id: user.id } });
-            if (latestUser && latestUser.setAsUnread) {
-              await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
-            }
-          }
-        }
-        ws.send(message);
-      });
+      // subClient.on('message', async (channel, message) => {
+      //   const parsed = JSON.parse(message);
+      //   if (parsed.code === CHAT_MESSAGE_CODE) {
+      //     const { message, threadId } = parsed as SocketChatMessage;
+      //     if (message.userId !== user.id) {
+      //       const latestUser = await User.findOne({ where: { id: user.id } });
+      //       if (latestUser && latestUser.setAsUnread) {
+      //         await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+      //       }
+      //     }
+      //   }
+      //   ws.send(message);
+      // });
     }
   );
 };

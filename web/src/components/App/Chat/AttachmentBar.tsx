@@ -1,9 +1,17 @@
 import React, { ReactNode } from 'react';
 import { FaRegFile, FaRegFileAlt, FaRegFileAudio, FaRegFileExcel, FaRegFilePdf, FaRegFileVideo } from 'react-icons/fa';
 import { IoMdCloseCircle } from 'react-icons/io';
-import { attachment } from '../../..';
-import { audioRegExp, documentRegExp, imageRegExp, pdfRegExp, sheetRegExp, videoRegExp } from '../../../constants';
+import {
+  audioRegExp,
+  documentRegExp,
+  imageRegExp,
+  pdfRegExp,
+  serverIP,
+  sheetRegExp,
+  videoRegExp
+} from '../../../constants';
 import { useDeleteFileMutation } from '../../../generated/graphql';
+import { attachment } from '../../../types';
 export interface AttachmentBarProps {
   attachments: attachment[];
   setAttachments: React.Dispatch<React.SetStateAction<attachment[]>>;
@@ -23,7 +31,7 @@ const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachments, setAttachmen
           let display: ReactNode;
           if (extension) {
             if (imageRegExp.test(extension)) {
-              display = <img src={'http://localhost:9000/files/' + at.id} className="h-auto w-14" />;
+              display = <img src={'http://' + serverIP + ':9000/files/' + at.id} className="h-auto w-14" />;
             } else if (documentRegExp.test(extension)) {
               display = <FaRegFileAlt className="text-accent" size={25} />;
             } else if (pdfRegExp.test(extension)) {

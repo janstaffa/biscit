@@ -38,7 +38,7 @@ const Login: React.FC = () => {
       <div className="w-screen h-screen">
         <HomeNav />
         <div className="w-full flex flex-row justify-center items-center">
-          <div className="w-1/4 h-96 bg-dark-200 p-10 rounded-xl">
+          <div className="w-1/4 h-96 bg-dark-200 p-10 rounded-xl" style={{ minWidth: '300px' }}>
             <p className="text-light text-xl font-bold">Login</p>
             <Formik
               initialValues={{ usernameOrEmail: '', password: '' }}

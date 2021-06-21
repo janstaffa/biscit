@@ -69,7 +69,6 @@ const Chat: React.FC = () => {
   const handleResend = () => {
     const ws = socket.connect();
     if (resendMessage && ws) {
-      console.log(resendMessage);
       if (resendMessage.media?.length === 0 && (!resendMessage.content || !/\S/.test(resendMessage.content))) {
         return;
       }
@@ -130,26 +129,20 @@ const Chat: React.FC = () => {
       const incoming = JSON.parse(m);
 
       if (incoming.code === 3010) {
-        const { threadId: tID, user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
-        // if (tID !== threadId) return;
-
+        const { user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
         setIsCalling(true);
         setCallingUser(user);
         setCallingThread(thread);
         setCallId(cId);
-      } else if (incoming.code === 3011) {
-        // const { threadId: tID } = incoming as CancelCallMessage;
-
+      } else if (incoming.code === 3014) {
+        setIsInCall(true);
         setIsCalling(false);
-        setCallingUser(null);
-        setCallingThread(null);
       } else if (incoming.code === 3012) {
-        // const { threadId: tID } = incoming as IncomingStartCallMessage;
         setIsInCall(true);
         setIsCalling(false);
       } else if (incoming.code === 3013) {
-        // const { threadId: tID } = incoming as IncomingStartCallMessage;
         setIsInCall(false);
+        setIsCalling(false);
       }
     };
     ws?.addEventListener('message', handleMessage);
@@ -210,7 +203,6 @@ const Chat: React.FC = () => {
                           });
                         }
                         setCallId(d.CreateCall.data);
-                        console.log(callId, d.CreateCall.data);
                       }
                     }
                   )

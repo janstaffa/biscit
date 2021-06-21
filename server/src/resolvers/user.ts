@@ -35,7 +35,6 @@ class FriendRequestResponse {
 @Resolver(User)
 export class UserResolver {
   @FieldResolver(() => FriendRequestResponse)
-  @UseMiddleware(isAuth)
   async friend_requests(@Root() user: User, @Ctx() { req }: ContextType): Promise<FriendRequestResponse | null> {
     const userId = req.session.userId;
     if (userId === user.id) {
@@ -54,7 +53,6 @@ export class UserResolver {
   }
 
   @FieldResolver(() => [Friend])
-  @UseMiddleware(isAuth)
   async friends(@Root() user: User, @Ctx() { req }: ContextType): Promise<Friend[] | null> {
     const userId = req.session.userId;
     if (userId === user.id) {
@@ -69,14 +67,12 @@ export class UserResolver {
   }
 
   @FieldResolver()
-  @UseMiddleware(isAuth)
   async profile_picture(@Root() user: User): Promise<ProfilePicture | undefined> {
     if (!user.profile_pictureId) return;
     return await ProfilePicture.findOne({ where: { id: user.profile_pictureId } });
   }
 
   @Query(() => User, { nullable: true })
-  @UseMiddleware(isAuth)
   async me(@Ctx() { req, res }: ContextType): Promise<User | undefined> {
     const userId = req.session.userId;
     if (!userId) return undefined;
@@ -87,7 +83,6 @@ export class UserResolver {
   }
 
   @Query(() => String, { nullable: true })
-  @UseMiddleware(isAuth)
   async token(@Ctx() { req, res }: ContextType): Promise<string | undefined> {
     const userId = req.session.userId;
     if (!userId) return;

@@ -7,6 +7,7 @@ import {
   useJoinCallMutation,
   UserSnippetFragment
 } from '../../../generated/graphql';
+import { RTCconnection } from '../../../utils/createRTCconnection';
 import { errorToast } from '../../../utils/toasts';
 
 export type CallingDialog = {
@@ -39,15 +40,23 @@ const Clock = () => {
   return <p className="text-light-400 mt-2">{clock}</p>;
 };
 const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalling, callId }) => {
+  const { mutate: joinCall } = useJoinCallMutation({
+    onSuccess: (d) => {
+      if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
+        d.JoinCall.errors.forEach((err) => {
+          errorToast(err.details?.message);
+        });
+      }
+    }
+  });
   const { mutate: cancelCallMutate } = useCancelCallMutation();
-  const { mutate: joinCall } = useJoinCallMutation();
 
   const isMe = user?.id === myId;
 
   const cancelCall = () => {
     if (!thread) return;
     cancelCallMutate(
-      { options: { threadId: thread.id } },
+      { options: { callId } },
       {
         onSuccess: (d) => {
           if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
@@ -96,18 +105,21 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalli
               <button
                 className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
                 onClick={() => {
-                  joinCall(
-                    { options: { callId } },
-                    {
-                      onSuccess: (d) => {
-                        if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
-                          d.JoinCall.errors.forEach((err) => {
-                            errorToast(err.details?.message);
-                          });
+                  const rtc = RTCconnection.connect(callId);
+                  rtc.on('open', (id) => {
+                    joinCall(
+                      { options: { callId, peerId: id } },
+                      {
+                        onSuccess: (d) => {
+                          if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
+                            d.JoinCall.errors.forEach((err) => {
+                              errorToast(err.details?.message);
+                            });
+                          }
                         }
                       }
-                    }
-                  );
+                    );
+                  });
                 }}
               >
                 <HiPhone size={20} className="mr-2" />

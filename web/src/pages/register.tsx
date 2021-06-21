@@ -51,7 +51,7 @@ const Register: React.FC = () => {
       <div className="w-screen h-screen">
         <HomeNav />
         <div className="w-full flex flex-row justify-center items-center">
-          <div className="w-1/4 h-auto bg-dark-200 p-10 rounded-xl">
+          <div className="w-1/4 h-auto bg-dark-200 p-10 rounded-xl" style={{ minWidth: '300px' }}>
             <p className="text-light text-xl font-bold">Register</p>
             <Formik
               initialValues={{
