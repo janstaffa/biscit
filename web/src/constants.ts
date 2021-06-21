@@ -6,7 +6,7 @@ export const genericErrorMessage = 'Something went wrong, please try again later
 export const webSocketURL = 'ws://localhost:9000/socket';
 export const attachmentUploadURL = serverURL + '/upload/attachment';
 export const profilepUploadURL = serverURL + '/upload/profilep';
-export const peerServerURL = 'http://localhost:8000/peer';
+export const peerServerURL = 'localhost';
 
 export const fileApiURL = serverURL + '/files';
 export const profilepApiURL = serverURL + '/files/profilep';

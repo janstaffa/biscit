@@ -11,6 +11,7 @@ import { Session } from '../entities/Session';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
+import { Connections } from './Connections';
 import { handleMessage } from './handleMessage';
 
 export interface SocketMessage {
@@ -40,8 +41,6 @@ export interface ThreadUpdateMessage extends SocketThreadMessage {
   updatedThread: Thread;
 }
 
-export type IncomingCreateCallMessage = SocketThreadMessage;
-
 export interface OutgoingCreateCallMessage extends SocketThreadMessage {
   user: User;
   thread: Thread;
@@ -49,15 +48,17 @@ export interface OutgoingCreateCallMessage extends SocketThreadMessage {
 }
 
 export type OutgoingCancelCallMessage = SocketThreadMessage;
-export interface OutgoingStartCallMessage extends SocketThreadMessage {
+export interface OutgoingJoinCallMessage extends SocketThreadMessage {
   callId: string;
 }
 export interface OutgoingKillCallMessage extends SocketThreadMessage {
   callId: string;
 }
-export type IncomingCancelCallMessage = SocketThreadMessage;
-export type IncomingAcceptCallMessage = SocketThreadMessage;
 
+export interface SocketPeerJoinMessage extends SocketMessage {
+  callId: string;
+  peerId: string;
+}
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -70,14 +71,16 @@ export const READY_CODE = 3005;
 export const THREAD_CHANGE_CODE = 3009;
 export const CREATE_CALL_CODE = 3010;
 export const CANCEL_CALL_CODE = 3011;
-export const START_CALL_CODE = 3012;
+export const JOIN_CALL_CODE = 3012;
 export const KILL_CALL_CODE = 3013;
+export const PEER_JOIN_CODE = 3100;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
 const THROTTLE_LIMIT = 200;
 const THROTTLE_INTERVAL = 500;
 
+export const connections = new Connections();
 export const closeConnection = (ws: WebSocket) => {
   ws.removeAllListeners();
   ws.terminate();
@@ -157,6 +160,7 @@ export const socketController = (server: Server) => {
     'connection',
     async (ws: WebSocket, req: http.IncomingMessage, user: User, subClient: RedisClient, pubClient: RedisClient) => {
       console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
+      connections.addSocket(user.id, ws);
 
       await User.update({ id: user.id }, { status: 'online' });
       const heartbeat = setInterval(async () => {
@@ -193,18 +197,20 @@ export const socketController = (server: Server) => {
           relations: ['threads', 'threads.thread', 'threads.thread.call']
         });
         latestUser?.threads?.forEach(async (thread) => {
-          const { memberIds } = thread.thread.call;
-          if (!memberIds) return;
-          const newMemberIds = [...memberIds];
-          if (newMemberIds.includes(user.id)) {
-            newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
-            await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
-            const payload: OutgoingCancelCallMessage = {
-              code: CANCEL_CALL_CODE,
-              threadId: thread.id
-            };
+          if (thread.thread.call) {
+            const { memberIds } = thread.thread.call;
+            if (!memberIds) return;
+            const newMemberIds = [...memberIds];
+            if (newMemberIds.includes(user.id)) {
+              newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
+              await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
+              const payload: OutgoingCancelCallMessage = {
+                code: CANCEL_CALL_CODE,
+                threadId: thread.id
+              };
 
-            pubClient.publish(thread.id, JSON.stringify(payload));
+              pubClient.publish(thread.id, JSON.stringify(payload));
+            }
           }
         });
       };

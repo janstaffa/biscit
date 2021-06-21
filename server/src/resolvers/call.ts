@@ -1,6 +1,9 @@
+import fetch from 'node-fetch';
 import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from 'type-graphql';
+import { peerIdEndpoint } from '../constants';
 import { Call } from '../entities/Call';
+import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import {
   CancelCallMutationInput,
@@ -13,12 +16,12 @@ import { isAuth } from '../middleware/isAuth';
 import {
   CANCEL_CALL_CODE,
   CREATE_CALL_CODE,
+  JOIN_CALL_CODE,
   KILL_CALL_CODE,
   OutgoingCancelCallMessage,
   OutgoingCreateCallMessage,
-  OutgoingKillCallMessage,
-  OutgoingStartCallMessage,
-  START_CALL_CODE
+  OutgoingJoinCallMessage,
+  OutgoingKillCallMessage
 } from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
@@ -99,11 +102,18 @@ export class CallResolver {
       member.thread.name = otherUser[0].user.username;
     }
 
+    const callingThread = {
+      ...member.thread,
+      members: member.thread.members.map((member) => {
+        return { ...member, user: pickUser(member.user) };
+      })
+    };
+
     const pickedMember = pickUser(member.user);
     const payload: OutgoingCreateCallMessage = {
       code: CREATE_CALL_CODE,
       threadId: options.threadId,
-      thread: member.thread,
+      thread: callingThread as Thread,
       user: pickedMember as User,
       callId
     };
@@ -184,12 +194,12 @@ export class CallResolver {
     };
   }
 
-  @Mutation(() => BooleanResponse)
+  @Mutation(() => StringResponse)
   @UseMiddleware(isAuth)
   async JoinCall(
     @Ctx() { req, res }: ContextType,
     @Arg('options') options: JoinCallMutationInput
-  ): Promise<ResponseType<boolean>> {
+  ): Promise<ResponseType<string>> {
     const userId = req.session.userId;
 
     const call = await Call.findOne({
@@ -207,7 +217,7 @@ export class CallResolver {
         })
       );
       return {
-        data: false,
+        data: null,
         errors
       };
     }
@@ -222,7 +232,7 @@ export class CallResolver {
         })
       );
       return {
-        data: false,
+        data: null,
         errors
       };
     }
@@ -236,7 +246,7 @@ export class CallResolver {
         })
       );
       return {
-        data: false,
+        data: null,
         errors
       };
     }
@@ -248,16 +258,19 @@ export class CallResolver {
     }
     await Call.update({ id: options.callId }, partialCall);
 
-    const payload: OutgoingStartCallMessage = {
-      code: START_CALL_CODE,
+    const payload: OutgoingJoinCallMessage = {
+      code: JOIN_CALL_CODE,
       threadId: call.threadId,
       callId: call.id
     };
-
     pubClient.publish(call.threadId, JSON.stringify(payload));
 
+    const peerId = await fetch(peerIdEndpoint)
+      .then((res) => res.text())
+      .then((data) => data);
+
     return {
-      data: true,
+      data: peerId,
       errors
     };
   }

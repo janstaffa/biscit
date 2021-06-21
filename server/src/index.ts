@@ -6,6 +6,7 @@ import fileUpload from 'express-fileupload';
 import session from 'express-session';
 import http from 'http';
 import path from 'path';
+import { PeerServer } from 'peer';
 import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { createConnection, getConnection } from 'typeorm';
@@ -22,6 +23,7 @@ import { fileUploadController } from './rest/fileUpload';
 import { getFilesController } from './rest/getFiles';
 import { socketController } from './sockets';
 import { ContextType } from './types';
+
 dotenv.config();
 
 (async () => {
@@ -124,5 +126,10 @@ dotenv.config();
 
   server.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);
+  });
+
+  const peerServer = PeerServer({
+    port: 8000,
+    path: '/peer'
   });
 })().catch((err) => console.error(err));

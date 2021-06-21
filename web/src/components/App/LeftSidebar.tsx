@@ -5,7 +5,7 @@ import { HiUserGroup } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { MdSettings } from 'react-icons/md';
 import { VscSearchStop } from 'react-icons/vsc';
-import { Link, useHistory, useParams } from 'react-router-dom';
+import { Link, useHistory } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { Modal } from 'react-tiny-modals';
 import { currentUrl, genericErrorMessage, profilepApiURL } from '../../constants';
@@ -40,7 +40,6 @@ interface LeftSidebarProps {
   threadId?: string;
 }
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId }) => {
-  const params = useParams();
   const history = useHistory();
   const { setAuthenticated } = useAuth();
   const { setToken } = useTokenStore();

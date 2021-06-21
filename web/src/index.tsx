@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { QueryClientProvider } from 'react-query';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import App from './App';
 import './styles/fonts.css';
 import './styles/globals.css';
@@ -12,6 +14,7 @@ ReactDOM.render(
     <QueryClientProvider client={queryClient}>
       <GetToken />
       <App />
+      <ToastContainer />
     </QueryClientProvider>
   </React.StrictMode>,
   document.getElementById('root')

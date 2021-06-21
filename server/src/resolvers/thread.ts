@@ -223,10 +223,11 @@ export class ThreadResolver {
     if (options.members) {
       members = [...members, ...options.members];
     }
+    console.log('MEMBERS', members);
     const errors: GQLValidationError[] = [];
     for (const member of members) {
       const userToAdd = await User.findOne({ where: { id: member } });
-      if (userToAdd && userToAdd?.allowThreads) {
+      if (userToAdd && !userToAdd?.allowThreads) {
         errors.push(
           new GQLValidationError({
             field: 'members',
@@ -237,6 +238,7 @@ export class ThreadResolver {
         continue;
       }
       await ThreadMembers.create({ threadId: id, userId: member, isAdmin: member === userId ? true : false }).save();
+      console.log('created');
     }
     return {
       data: id,

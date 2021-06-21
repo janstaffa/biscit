@@ -22,7 +22,7 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
   }, [currentUrl()]);
 
   const [modalShow, setModalShow] = useState<boolean>(false);
-  const [newFriendInput, setNewFriendInput] = useState<string>();
+  const [newFriendInput, setNewFriendInput] = useState<string>('');
 
   const { mutate: sendRequest } = useSendRequestMutation();
 
@@ -93,7 +93,7 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
                 Cancel
               </button>
               <SubmitButton
-                onClick={async () => {
+                onClick={() => {
                   if (!newFriendInput || !/\S/.test(newFriendInput)) return;
                   if (!newFriendInput.includes('#')) {
                     errorToast('You must include a # before the users tag.');
@@ -109,7 +109,8 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
                     errorToast('Invalid format. Please try again.');
                     return;
                   }
-                  await sendRequest(
+                  console.log(inputArr);
+                  sendRequest(
                     { options: { usernameAndTag: newFriendInput } },
                     {
                       onSuccess: (data) => {
