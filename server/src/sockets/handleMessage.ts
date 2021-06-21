@@ -70,7 +70,7 @@ export const handleMessage = async (
     ws.send(JSON.stringify(payload));
     closeConnection(ws);
     await User.update({ id: user.id }, { status: 'offline' });
-    subClient.removeAllListeners();
+    // subClient.removeAllListeners();
 
     return;
   }
@@ -173,7 +173,6 @@ export const handleMessage = async (
       };
 
       membership.thread.members.forEach((member) => {
-        console.log(member.id, connections.getSocket(member.id));
         connections.getSocket(member.userId)?.send(JSON.stringify(payload));
       });
       // pubClient.publish(threadId, JSON.stringify(payload));
@@ -191,7 +190,7 @@ export const handleMessage = async (
         ws.send(JSON.stringify(payload));
         return;
       }
-      subClient.subscribe(threadId);
+      // subClient.subscribe(threadId);
     } catch (e) {
       console.error(e);
     }
@@ -205,7 +204,12 @@ export const handleMessage = async (
         username: user.username
       };
 
-      pubClient.publish(threadId, JSON.stringify(payload));
+      const thread = await Thread.findOne({ where: { id: threadId }, relations: ['members'] });
+      if (!thread) return;
+      thread.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(threadId, JSON.stringify(payload));
     } catch (e) {
       console.error(e);
     }

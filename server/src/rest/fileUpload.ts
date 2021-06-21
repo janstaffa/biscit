@@ -10,7 +10,7 @@ import { File } from '../entities/File';
 import { ProfilePicture } from '../entities/ProfilePicture';
 import { Thread } from '../entities/Thread';
 import { User } from '../entities/User';
-import { SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
+import { connections, SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
 import { getId } from '../utils/generateId';
 
 export const fileUploadController = (app: Express) => {
@@ -191,12 +191,17 @@ export const fileUploadController = (app: Express) => {
               await newFile.save();
               if (isThreadPicture) {
                 await Thread.update({ id: req.body.threadId }, { thread_pictureId: newFile.id });
+
+                const thread = await Thread.findOne({ where: { id: req.body.threadId }, relations: ['members'] });
+
                 const payload: SocketThreadMessage = {
                   code: THREAD_CHANGE_CODE,
                   threadId: req.body.threadId
                 };
-
-                pubClient.publish(req.body.threadId, JSON.stringify(payload));
+                thread?.members.forEach((member) => {
+                  connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+                });
+                // pubClient.publish(req.body.threadId, JSON.stringify(payload));
               } else {
                 await User.update({ id: user.id }, { profile_pictureId: newFile.id });
               }

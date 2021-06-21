@@ -5,6 +5,7 @@ import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql
 import { createQueryBuilder, getRepository } from 'typeorm';
 import { File } from '../entities/File';
 import { Message } from '../entities/Message';
+import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
 import {
   DeleteMessageMutationInput,
@@ -12,7 +13,7 @@ import {
   UpdateMessageMutationInput
 } from '../entities/types/message';
 import { isAuth } from '../middleware/isAuth';
-import { DELETE_MESSAGE_CODE, UPDATE_MESSAGE_CODE } from '../sockets';
+import { connections, DELETE_MESSAGE_CODE, UPDATE_MESSAGE_CODE } from '../sockets';
 import { ContextType } from '../types';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType, ThreadMessagesResponse, ThreadMessagesResponseType } from './types';
@@ -159,6 +160,7 @@ export class MessageResolver {
         );
       });
     }
+    const threadMembers = message.thread.members;
     await Message.remove(message);
     const payload = {
       code: DELETE_MESSAGE_CODE,
@@ -166,7 +168,10 @@ export class MessageResolver {
       messageId: options.messageId
     };
 
-    pubClient.publish(message.threadId, JSON.stringify(payload));
+    threadMembers.forEach((member) => {
+      connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+    });
+    // pubClient.publish(message.threadId, JSON.stringify(payload));
     return {
       data: true,
       errors
@@ -216,7 +221,13 @@ export class MessageResolver {
       messageId: options.messageId,
       newContent: options.newContent
     };
-    pubClient.publish(rawMessage.threadId, JSON.stringify(payload));
+
+    const thread = await Thread.findOne({ where: { id: rawMessage.threadId }, relations: ['members'] });
+
+    thread?.members.forEach((member) => {
+      connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+    });
+    // pubClient.publish(rawMessage.threadId, JSON.stringify(payload));
 
     return {
       data: true,

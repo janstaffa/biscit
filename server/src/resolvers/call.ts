@@ -15,6 +15,7 @@ import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import {
   CANCEL_CALL_CODE,
+  connections,
   CREATE_CALL_CODE,
   JOIN_CALL_CODE,
   KILL_CALL_CODE,
@@ -118,7 +119,10 @@ export class CallResolver {
       callId
     };
 
-    pubClient.publish(options.threadId, JSON.stringify(payload));
+    member.thread.members.forEach((member) => {
+      connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+    });
+    // pubClient.publish(options.threadId, JSON.stringify(payload));
 
     return {
       data: callId,
@@ -186,7 +190,10 @@ export class CallResolver {
       threadId: options.threadId
     };
 
-    pubClient.publish(options.threadId, JSON.stringify(payload));
+    member.thread.members.forEach((member) => {
+      connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+    });
+    // pubClient.publish(options.threadId, JSON.stringify(payload));
 
     return {
       data: true,
@@ -263,7 +270,10 @@ export class CallResolver {
       threadId: call.threadId,
       callId: call.id
     };
-    pubClient.publish(call.threadId, JSON.stringify(payload));
+    call.memberIds.forEach((memberId) => {
+      connections.getSocket(memberId)?.send(JSON.stringify(payload));
+    });
+    // pubClient.publish(call.threadId, JSON.stringify(payload));
 
     const peerId = await fetch(peerIdEndpoint)
       .then((res) => res.text())
@@ -325,7 +335,10 @@ export class CallResolver {
         callId: call.id
       };
 
-      pubClient.publish(call.threadId, JSON.stringify(payload));
+      call.memberIds.forEach((memberId) => {
+        connections.getSocket(memberId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(call.threadId, JSON.stringify(payload));
 
       return {
         data: true,

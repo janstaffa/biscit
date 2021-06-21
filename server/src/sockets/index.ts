@@ -9,7 +9,6 @@ import { Call } from '../entities/Call';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
 import { Thread } from '../entities/Thread';
-import { ThreadMembers } from '../entities/ThreadMembers';
 import { User } from '../entities/User';
 import { Connections } from './Connections';
 import { handleMessage } from './handleMessage';
@@ -186,8 +185,8 @@ export const socketController = (server: Server) => {
       const closeConnectionAndClear = async () => {
         console.log('connection closed');
         closeConnection(ws);
-        subClient.removeAllListeners();
-        subClient.unsubscribe();
+        // subClient.removeAllListeners();
+        // subClient.unsubscribe();
         clearTimeout(elapsed);
         clearInterval(heartbeat);
         await User.update({ id: user.id }, { status: 'offline' });
@@ -209,7 +208,10 @@ export const socketController = (server: Server) => {
                 threadId: thread.id
               };
 
-              pubClient.publish(thread.id, JSON.stringify(payload));
+              newMemberIds.forEach((memberId) => {
+                connections.getSocket(memberId)?.send(JSON.stringify(payload));
+              });
+              // pubClient.publish(thread.id, JSON.stringify(payload));
             }
           }
         });
@@ -252,30 +254,30 @@ export const socketController = (server: Server) => {
         await closeConnectionAndClear();
       });
 
-      try {
-        const threads = await ThreadMembers.find({ where: { userId: user.id } });
+      // try {
+      //   const threads = await ThreadMembers.find({ where: { userId: user.id } });
 
-        threads.map((thread) => {
-          const { threadId } = thread;
-          subClient.subscribe(threadId);
-        });
-      } catch (e) {
-        console.error(e);
-      }
+      //   threads.map((thread) => {
+      //     const { threadId } = thread;
+      //     subClient.subscribe(threadId);
+      //   });
+      // } catch (e) {
+      //   console.error(e);
+      // }
 
-      subClient.on('message', async (channel, message) => {
-        const parsed = JSON.parse(message);
-        if (parsed.code === CHAT_MESSAGE_CODE) {
-          const { message, threadId } = parsed as SocketChatMessage;
-          if (message.userId !== user.id) {
-            const latestUser = await User.findOne({ where: { id: user.id } });
-            if (latestUser && latestUser.setAsUnread) {
-              await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
-            }
-          }
-        }
-        ws.send(message);
-      });
+      // subClient.on('message', async (channel, message) => {
+      //   const parsed = JSON.parse(message);
+      //   if (parsed.code === CHAT_MESSAGE_CODE) {
+      //     const { message, threadId } = parsed as SocketChatMessage;
+      //     if (message.userId !== user.id) {
+      //       const latestUser = await User.findOne({ where: { id: user.id } });
+      //       if (latestUser && latestUser.setAsUnread) {
+      //         await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+      //       }
+      //     }
+      //   }
+      //   ws.send(message);
+      // });
     }
   );
 };

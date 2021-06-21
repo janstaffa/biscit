@@ -18,7 +18,7 @@ import {
 } from '../entities/types/thread';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
-import { SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
+import { connections, SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
@@ -255,8 +255,11 @@ export class ThreadResolver {
     const userId = req.session.userId;
 
     const thread = await Thread.findOne({
-      id: options.threadId,
-      creatorId: userId
+      where: {
+        id: options.threadId,
+        creatorId: userId
+      },
+      relations: ['members']
     });
 
     const errors: GQLValidationError[] = [];
@@ -296,7 +299,10 @@ export class ThreadResolver {
         threadId: options.threadId
       };
 
-      pubClient.publish(options.threadId, JSON.stringify(payload));
+      thread?.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(options.threadId, JSON.stringify(payload));
 
       await Thread.update(
         {
@@ -328,8 +334,11 @@ export class ThreadResolver {
     const errors: GQLValidationError[] = [];
 
     const thread = await Thread.findOne({
-      id: options.threadId,
-      creatorId: userId
+      where: {
+        id: options.threadId,
+        creatorId: userId
+      },
+      relations: ['members']
     });
 
     if (!thread) {
@@ -370,7 +379,10 @@ export class ThreadResolver {
           threadId: options.threadId
         };
 
-        pubClient.publish(options.threadId, JSON.stringify(payload));
+        thread?.members.forEach((member) => {
+          connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+        });
+        // pubClient.publish(options.threadId, JSON.stringify(payload));
 
         await Thread.update(
           {
@@ -410,8 +422,11 @@ export class ThreadResolver {
     const errors: GQLValidationError[] = [];
 
     const thread = await Thread.findOne({
-      id: options.threadId,
-      creatorId: userId
+      where: {
+        id: options.threadId,
+        creatorId: userId
+      },
+      relations: ['members']
     });
 
     if (!thread) {
@@ -463,7 +478,10 @@ export class ThreadResolver {
         threadId: options.threadId
       };
 
-      pubClient.publish(options.threadId, JSON.stringify(payload));
+      thread?.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(options.threadId, JSON.stringify(payload));
 
       await Thread.update(
         {
@@ -495,8 +513,11 @@ export class ThreadResolver {
     const errors: GQLValidationError[] = [];
 
     const thread = await Thread.findOne({
-      id: options.threadId,
-      creatorId: userId
+      where: {
+        id: options.threadId,
+        creatorId: userId
+      },
+      relations: ['members']
     });
 
     if (!thread) {
@@ -521,7 +542,10 @@ export class ThreadResolver {
           threadId: options.threadId
         };
 
-        pubClient.publish(options.threadId, JSON.stringify(payload));
+        thread?.members.forEach((member) => {
+          connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+        });
+        // pubClient.publish(options.threadId, JSON.stringify(payload));
 
         await Thread.update(
           {
@@ -554,8 +578,11 @@ export class ThreadResolver {
     const errors: GQLValidationError[] = [];
 
     const thread = await Thread.findOne({
-      id: options.threadId,
-      creatorId: userId
+      where: {
+        id: options.threadId,
+        creatorId: userId
+      },
+      relations: ['members']
     });
 
     if (!thread) {
@@ -569,13 +596,17 @@ export class ThreadResolver {
     }
 
     if (errors.length === 0 && thread) {
+      const threadMembers = thread.members;
       await thread.remove();
       const payload: SocketThreadMessage = {
         code: THREAD_CHANGE_CODE,
         threadId: options.threadId
       };
 
-      pubClient.publish(options.threadId, JSON.stringify(payload));
+      threadMembers.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(options.threadId, JSON.stringify(payload));
 
       return {
         data: true,
@@ -600,7 +631,7 @@ export class ThreadResolver {
 
     const membership = await ThreadMembers.findOne({
       where: { threadId: options.threadId, userId },
-      relations: ['thread']
+      relations: ['thread', 'thread.members']
     });
 
     if (!membership) {
@@ -629,8 +660,10 @@ export class ThreadResolver {
         threadId: options.threadId
       };
 
-      pubClient.publish(options.threadId, JSON.stringify(payload));
-
+      membership.thread?.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+      // pubClient.publish(options.threadId, JSON.stringify(payload));
       return {
         data: true,
         errors
