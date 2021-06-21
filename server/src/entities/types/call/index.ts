@@ -9,13 +9,16 @@ export class CreateCallMutationInput {
 @InputType()
 export class CancelCallMutationInput {
   @Field()
-  threadId: string;
+  callId: string;
 }
 
 @InputType()
 export class JoinCallMutationInput {
   @Field()
   callId: string;
+
+  @Field()
+  peerId: string;
 }
 
 @InputType()

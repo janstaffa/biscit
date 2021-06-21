@@ -134,19 +134,15 @@ const Chat: React.FC = () => {
         setCallingUser(user);
         setCallingThread(thread);
         setCallId(cId);
-      } else if (incoming.code === 3011) {
-        // const { threadId: tID } = incoming as CancelCallMessage;
-
+      } else if (incoming.code === 3014) {
+        setIsInCall(true);
         setIsCalling(false);
-        setCallingUser(null);
-        setCallingThread(null);
       } else if (incoming.code === 3012) {
-        // const { threadId: tID } = incoming as IncomingStartCallMessage;
         setIsInCall(true);
         setIsCalling(false);
       } else if (incoming.code === 3013) {
-        // const { threadId: tID } = incoming as IncomingStartCallMessage;
         setIsInCall(false);
+        setIsCalling(false);
       }
     };
     ws?.addEventListener('message', handleMessage);

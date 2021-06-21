@@ -6,7 +6,9 @@ import { HiDotsVertical, HiPhoneMissedCall } from 'react-icons/hi';
 import { MdScreenShare } from 'react-icons/md';
 import { VscMute } from 'react-icons/vsc';
 import { useLeaveCallMutation, UserSnippetFragment } from '../../../generated/graphql';
+import { IncomingJoinCallMessage } from '../../../types';
 import { RTCconnection } from '../../../utils/createRTCconnection';
+import { socket } from '../../../utils/createWSconnection';
 import { errorToast } from '../../../utils/toasts';
 import Video from './Video';
 
@@ -25,6 +27,8 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   const videoContainer = useRef<HTMLDivElement | null>(null);
   const videoContainerPadding = 20;
   const [videos, setVideos] = useState<VideoType[]>([]);
+  const videosRef = useRef<VideoType[]>([]);
+  videosRef.current = videos;
   const { mutate: leaveCall } = useLeaveCallMutation();
 
   const createVideo = (
@@ -34,7 +38,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
     mic: boolean,
     user?: UserSnippetFragment
   ) => {
-    if (videos.find((video) => video.peerId === peerId)) return;
+    if (videosRef.current.find((video) => video.peerId === peerId)) return;
     const newVideo: VideoType = {
       peerId,
       stream,
@@ -42,10 +46,11 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
       mic,
       user
     };
-    setVideos([...videos, newVideo]);
+
+    setVideos([...videosRef.current, newVideo]);
   };
   const removeVideo = (peerId: string) => {
-    const newVideos = [...videos];
+    const newVideos = [...videosRef.current];
     const thisVideo = newVideos.find((video) => video.peerId === peerId);
     if (!thisVideo) return;
     newVideos.splice(newVideos.indexOf(thisVideo), 1);
@@ -75,13 +80,41 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
           removeVideo(call.metadata.id);
         });
       });
-    });
 
+      const ws = socket.connect();
+      console.log('mounted ws', ws);
+      const handleMessage = (e) => {
+        const { data: m } = e;
+        const incoming = JSON.parse(m);
+
+        console.log('message');
+        if (incoming.code === 3012) {
+          const { user, peerId } = incoming as IncomingJoinCallMessage;
+          console.log(user.username, 'has joined the call', peerId, RTCconnection.peerId);
+          const call = rtc.call(peerId, stream, { metadata: { id: RTCconnection.peerId } });
+          console.log('call');
+          call.on('stream', (userVideoStream) => {
+            console.log('recieved stream');
+            createVideo(peerId, userVideoStream, true, true, user);
+          });
+          call.on('close', () => {
+            console.log('closing 2');
+            removeVideo(peerId);
+          });
+          call.on('error', () => {
+            console.log('closing 3');
+            removeVideo(peerId);
+          });
+        }
+      };
+      ws.addEventListener('message', handleMessage);
+    });
     return () => {
       RTCconnection.close();
       setVideos([]);
     };
   }, []);
+
   return (
     <div
       className="w-full bg-dark-300 absolute top-0 left-0 border-b-2 border-dark-50 pt-12"
@@ -94,7 +127,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
           style={{ padding: videoContainerPadding + 'px' }}
         >
           {videos.map((video) => {
-            return <Video key={video.peerId} stream={video.stream} />;
+            return <Video key={video.peerId} stream={video.stream} peerId={video.peerId} />;
           })}
         </div>
         <div

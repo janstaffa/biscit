@@ -41,6 +41,7 @@ export const handleMessage = async (
       message: 'Invalid socket token.'
     };
     ws.send(JSON.stringify(payload));
+    ws.terminate();
     return;
   };
   const incoming = JSON.parse(data);

@@ -7,12 +7,10 @@ import App from './App';
 import './styles/fonts.css';
 import './styles/globals.css';
 import { queryClient } from './utils/createQueryClient';
-import GetToken from './utils/GetToken';
 
 ReactDOM.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <GetToken />
       <App />
       <ToastContainer />
     </QueryClientProvider>

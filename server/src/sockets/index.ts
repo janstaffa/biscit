@@ -13,6 +13,7 @@ import { User } from '../entities/User';
 import { Connections } from './Connections';
 import { handleMessage } from './handleMessage';
 
+//generic message types
 export interface SocketMessage {
   code: number;
   // token: string;
@@ -24,40 +25,51 @@ export interface SocketChatMessage extends SocketThreadMessage {
   message: Message;
 }
 
+//chat message types
 export interface IncomingSocketChatMessage extends SocketThreadMessage {
   content: string;
   replyingToId?: string;
   resendId?: string;
   media?: string[];
 }
-
-export interface IncomingLoadMessagesMessage extends SocketThreadMessage {
-  cursor: string | null;
-  limit: number;
-}
-
 export interface ThreadUpdateMessage extends SocketThreadMessage {
   updatedThread: Thread;
 }
 
+//call message types
+
+// when user creates a call, this message is sent to everyone in the thread
 export interface OutgoingCreateCallMessage extends SocketThreadMessage {
   user: User;
   thread: Thread;
   callId: string;
 }
 
-export type OutgoingCancelCallMessage = SocketThreadMessage;
-export interface OutgoingJoinCallMessage extends SocketThreadMessage {
-  callId: string;
-}
-export interface OutgoingKillCallMessage extends SocketThreadMessage {
+// to close the calling dialog
+export interface OutgoingCancelCallMessage extends SocketMessage {
   callId: string;
 }
 
-export interface SocketPeerJoinMessage extends SocketMessage {
+//when a new user joins the thread, this message is sent to everyone in the call
+export interface OutgoingJoinCallMessage extends SocketMessage {
   callId: string;
   peerId: string;
+  userId: string;
+  user: User;
 }
+
+//when there are 2 members in the call, this message indicates the actual start of the call
+export interface OutgoingStartCallMessage extends SocketMessage {
+  callId: string;
+  user: User;
+  thread: Thread;
+}
+
+//to cancel the call for everyone
+export interface OutgoingKillCallMessage extends SocketMessage {
+  callId: string;
+}
+
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -69,10 +81,10 @@ export const AUTH_CODE = 3004;
 export const READY_CODE = 3005;
 export const THREAD_CHANGE_CODE = 3009;
 export const CREATE_CALL_CODE = 3010;
+export const START_CALL_CODE = 3014;
 export const CANCEL_CALL_CODE = 3011;
 export const JOIN_CALL_CODE = 3012;
 export const KILL_CALL_CODE = 3013;
-export const PEER_JOIN_CODE = 3100;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -205,7 +217,7 @@ export const socketController = (server: Server) => {
               await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
               const payload: OutgoingCancelCallMessage = {
                 code: CANCEL_CALL_CODE,
-                threadId: thread.id
+                callId: thread.thread.call.id
               };
 
               newMemberIds.forEach((memberId) => {

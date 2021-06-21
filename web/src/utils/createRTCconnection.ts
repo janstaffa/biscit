@@ -1,10 +1,5 @@
 import Peer from 'peerjs';
-import { socket } from './createWSconnection';
-
-interface CallData {
-  userId: string;
-  callId: string;
-}
+import { serverIP } from '../constants';
 
 interface RTCconnection {
   peer: Peer | undefined;
@@ -27,7 +22,7 @@ export const RTCconnection: RTCconnection = {
     RTCconnection.callId = callId;
     if (!RTCconnection.peer) {
       RTCconnection.peer = new Peer('', {
-        host: 'localhost',
+        host: serverIP,
         port: 8000,
         path: '/peer',
         secure: false
@@ -35,12 +30,6 @@ export const RTCconnection: RTCconnection = {
     }
     RTCconnection.peer.on('open', (id) => {
       RTCconnection.peerId = id;
-      const payload = {
-        code: 3100,
-        peerId: id,
-        callId
-      };
-      socket.send(JSON.stringify(payload));
     });
     RTCconnection.peer.on('error', (err) => {
       console.error(err);

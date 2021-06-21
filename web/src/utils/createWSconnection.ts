@@ -17,7 +17,7 @@ export const WS_OPTIONS: Options = {
 };
 interface Socket {
   ws: ReconnectingWebSocket | undefined;
-  connect: () => ReconnectingWebSocket | undefined;
+  connect: () => ReconnectingWebSocket;
   close: () => boolean;
   restart: () => ReconnectingWebSocket | undefined;
   send: (payload: string) => void;

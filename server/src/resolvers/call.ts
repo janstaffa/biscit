@@ -1,7 +1,4 @@
-import fetch from 'node-fetch';
-import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Resolver, UseMiddleware } from 'type-graphql';
-import { peerIdEndpoint } from '../constants';
 import { Call } from '../entities/Call';
 import { Thread } from '../entities/Thread';
 import { ThreadMembers } from '../entities/ThreadMembers';
@@ -14,29 +11,21 @@ import {
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import {
-  CANCEL_CALL_CODE,
   connections,
   CREATE_CALL_CODE,
   JOIN_CALL_CODE,
   KILL_CALL_CODE,
-  OutgoingCancelCallMessage,
   OutgoingCreateCallMessage,
   OutgoingJoinCallMessage,
-  OutgoingKillCallMessage
+  OutgoingKillCallMessage,
+  OutgoingStartCallMessage,
+  START_CALL_CODE
 } from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { pickUser } from '../utils/pickUser';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType, StringResponse } from './types';
-
-const pubClient = createClient({
-  url: process.env.REDIS_URL
-});
-
-pubClient.on('error', (error) => {
-  console.error(error);
-});
 
 @Resolver(Call)
 export class CallResolver {
@@ -138,81 +127,11 @@ export class CallResolver {
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
 
-    const member = await ThreadMembers.findOne({
-      where: { userId, threadId: options.threadId },
-      relations: ['user', 'thread', 'thread.call', 'thread.members']
-    });
-    const errors: GQLValidationError[] = [];
-
-    if (!member) {
-      errors.push(
-        new GQLValidationError({
-          field: 'threadId',
-          value: options.threadId,
-          message: "You aren't a member of this thread."
-        })
-      );
-      return {
-        data: false,
-        errors
-      };
-    }
-
-    if (!member.thread.call) {
-      errors.push(
-        new GQLValidationError({
-          field: 'threadId',
-          value: options.threadId,
-          message: 'This call was not found.'
-        })
-      );
-      return {
-        data: false,
-        errors
-      };
-    }
-    if (member.thread.call.accepted) return { data: true, errors };
-    if (!member.thread.isDm && userId !== member.thread.call.creatorId) {
-      const { memberIds } = member.thread.call;
-      const newMemberIds = [...memberIds];
-      if (newMemberIds.includes(userId)) {
-        newMemberIds.splice(newMemberIds.indexOf(userId), 1);
-
-        await Call.update({ id: member.thread.call.id }, { memberIds: newMemberIds });
-        return { data: true, errors };
-      }
-    }
-
-    await Call.delete({ id: member.thread.call.id });
-
-    const payload: OutgoingCancelCallMessage = {
-      code: CANCEL_CALL_CODE,
-      threadId: options.threadId
-    };
-
-    member.thread.members.forEach((member) => {
-      connections.getSocket(member.userId)?.send(JSON.stringify(payload));
-    });
-    // pubClient.publish(options.threadId, JSON.stringify(payload));
-
-    return {
-      data: true,
-      errors
-    };
-  }
-
-  @Mutation(() => StringResponse)
-  @UseMiddleware(isAuth)
-  async JoinCall(
-    @Ctx() { req, res }: ContextType,
-    @Arg('options') options: JoinCallMutationInput
-  ): Promise<ResponseType<string>> {
-    const userId = req.session.userId;
-
-    const call = await Call.findOne({
-      where: { id: options.callId },
-      relations: ['thread', 'thread.members']
-    });
+    const call = await Call.findOne({ where: { id: options.callId }, relations: ['thread', 'thread.members'] });
+    // const member = await ThreadMembers.findOne({
+    //   where: { userId, threadId: options.threadId },
+    //   relations: ['user', 'thread', 'thread.call', 'thread.members']
+    // });
     const errors: GQLValidationError[] = [];
 
     if (!call) {
@@ -224,7 +143,93 @@ export class CallResolver {
         })
       );
       return {
-        data: null,
+        data: false,
+        errors
+      };
+    }
+    const isMember = call.thread.members.find((m) => m.userId === userId);
+    if (!isMember) {
+      errors.push(
+        new GQLValidationError({
+          field: 'callId',
+          value: options.callId,
+          message: "You aren't a member of the thread where this call originates."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    if (call.accepted) return { data: true, errors };
+    if (userId === call.creatorId) {
+      await Call.delete({ id: call.id });
+    }
+    // const { memberIds } = call;
+    // const newMemberIds = [...memberIds];
+    // if (newMemberIds.includes(userId)) {
+    //   newMemberIds.splice(newMemberIds.indexOf(userId), 1);
+
+    //   await Call.update({ id: member.thread.call.id }, { memberIds: newMemberIds });
+    //   return { data: true, errors };
+    // }
+
+    // const payload: OutgoingCancelCallMessage = {
+    //   code: CANCEL_CALL_CODE,
+    //   threadId: options.threadId
+    // };
+
+    // member.thread.members.forEach((member) => {
+    //   connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+    // });
+    // pubClient.publish(options.threadId, JSON.stringify(payload));
+
+    return {
+      data: true,
+      errors
+    };
+  }
+
+  @Mutation(() => BooleanResponse)
+  @UseMiddleware(isAuth)
+  async JoinCall(
+    @Ctx() { req, res }: ContextType,
+    @Arg('options') options: JoinCallMutationInput
+  ): Promise<ResponseType<boolean>> {
+    const userId = req.session.userId;
+    const user = await User.findOne({ where: { id: userId } });
+    const errors: GQLValidationError[] = [];
+
+    if (!user) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: userId,
+          message: "It seems like, you don't exist."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
+    const call = await Call.findOne({
+      where: { id: options.callId },
+      relations: ['thread', 'thread.members']
+    });
+
+    if (!call) {
+      errors.push(
+        new GQLValidationError({
+          field: 'callId',
+          value: options.callId,
+          message: 'This call was not found.'
+        })
+      );
+      return {
+        data: false,
         errors
       };
     }
@@ -239,7 +244,7 @@ export class CallResolver {
         })
       );
       return {
-        data: null,
+        data: false,
         errors
       };
     }
@@ -253,34 +258,51 @@ export class CallResolver {
         })
       );
       return {
-        data: null,
+        data: false,
         errors
       };
     }
 
-    let partialCall: any = { accepted: true };
-    if (call.memberIds.length === 1) {
-      const newMemberIds = [...call.memberIds, userId];
-      partialCall = { ...partialCall, memberIds: newMemberIds };
-    }
-    await Call.update({ id: options.callId }, partialCall);
+    const newMembers = [...call.memberIds, userId];
+    const partialCallEntity: Pick<Call, 'accepted' | 'memberIds'> = { memberIds: newMembers, accepted: call.accepted };
+    const isInitial = newMembers.length === 2;
 
-    const payload: OutgoingJoinCallMessage = {
-      code: JOIN_CALL_CODE,
-      threadId: call.threadId,
-      callId: call.id
+    if (isInitial) {
+      partialCallEntity.accepted = true;
+    }
+
+    await Call.update({ id: options.callId }, partialCallEntity);
+
+    const startCallPayload: OutgoingStartCallMessage = {
+      code: START_CALL_CODE,
+      callId: call.id,
+      user: pickUser(user) as User,
+      thread: call.thread
     };
-    call.memberIds.forEach((memberId) => {
-      connections.getSocket(memberId)?.send(JSON.stringify(payload));
+
+    const joinCallPayload: OutgoingJoinCallMessage = {
+      code: JOIN_CALL_CODE,
+      callId: call.id,
+      peerId: options.peerId,
+      userId,
+      user: pickUser(user) as User
+    };
+    newMembers.forEach((memberId) => {
+      console.log('isInitial', isInitial);
+      if (isInitial) {
+        connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
+      }
+      if (memberId === userId) return;
+      console.log('sending JOIN_CALL_CODE to', memberId);
+      setTimeout(() => {
+        console.log('sent to', memberId, joinCallPayload);
+        connections.getSocket(memberId)?.send(JSON.stringify(joinCallPayload));
+      }, 6000);
     });
     // pubClient.publish(call.threadId, JSON.stringify(payload));
 
-    const peerId = await fetch(peerIdEndpoint)
-      .then((res) => res.text())
-      .then((data) => data);
-
     return {
-      data: peerId,
+      data: true,
       errors
     };
   }
@@ -312,13 +334,14 @@ export class CallResolver {
         errors
       };
     }
+
     const isMember = call.thread.members?.find((member) => member.userId === userId);
     if (!isMember || !call.memberIds.includes(userId)) {
       errors.push(
         new GQLValidationError({
           field: 'callId',
           value: options.callId,
-          message: "You aren't a member of this call."
+          message: "You aren't a member of the thread where this call originates."
         })
       );
       return {
@@ -331,7 +354,6 @@ export class CallResolver {
       await Call.delete({ id: options.callId });
       const payload: OutgoingKillCallMessage = {
         code: KILL_CALL_CODE,
-        threadId: call.threadId,
         callId: call.id
       };
 

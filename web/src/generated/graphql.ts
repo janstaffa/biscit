@@ -40,7 +40,7 @@ export type Call = {
 };
 
 export type CancelCallMutationInput = {
-  threadId: Scalars['String'];
+  callId: Scalars['String'];
 };
 
 export type ChangeAdminInput = {
@@ -143,6 +143,7 @@ export type GqlValidationError = {
 
 export type JoinCallMutationInput = {
   callId: Scalars['String'];
+  peerId: Scalars['String'];
 };
 
 export type LeaveCallMutationInput = {
