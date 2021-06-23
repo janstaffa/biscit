@@ -70,26 +70,27 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
 
   const callUser = (rtc: Peer, peerId: string, stream: MediaStream, user: UserSnippetFragment | undefined) => {
     const call = rtc.call(peerId, stream, { metadata: { id: rtc.id } });
-    call.on('stream', (userVideoStream) => {
+    call?.on('stream', (userVideoStream) => {
       createVideo(peerId, userVideoStream, true, true, user);
     });
-    call.on('close', () => {
+    call?.on('close', () => {
       removeVideo(peerId);
     });
-    call.on('error', () => {
+    call?.on('error', () => {
       removeVideo(peerId);
     });
   };
+
   useEffect(() => {
     const ws = socket.connect();
 
     const rtc = new RTCconnection(callId);
     const { mic, camera } = options;
-    rtc.peer.on('open', (id) => {
+    const onOpen = (id) => {
       rtc.getMyStream(camera, mic).then((stream) => {
         if (stream) {
           rtc.streaming = true;
-          createVideo(rtc.peerId, stream, camera, false);
+          createVideo(id, stream, camera, false);
         }
 
         rtc.peer.on('call', (call) => {
@@ -125,12 +126,15 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
         };
         socket.send(JSON.stringify(payload));
       });
-      return () => {
-        rtc.close();
-        setVideos([]);
-      };
-    });
-  }, [options]);
+    };
+    rtc.peer.on('open', onOpen);
+
+    return () => {
+      setVideos([]);
+      rtc.peer.off('open', onOpen);
+      rtc.close();
+    };
+  }, []);
 
   return (
     <div

@@ -15,27 +15,27 @@ import { serverIP } from '../constants';
 
 export class RTCconnection {
   streaming = false;
-  peer;
+  peer: Peer;
   peerId = '';
   callId = '';
 
   constructor(callId) {
     this.callId = callId;
-    if (!this.peer) {
-      this.peer = new Peer('', {
-        host: serverIP,
-        port: 8000,
-        path: '/peer',
-        secure: false
-      });
-    }
-    this.peer.on('open', (id) => {
-      this.peerId = id;
+    // if (!this.peer) {
+    this.peer = new Peer('', {
+      host: serverIP,
+      port: 8000,
+      path: '/peer',
+      secure: false
     });
-    this.peer.on('error', (err) => {
-      console.error(err);
-      this.peer?.reconnect();
-    });
+    // }
+    // this.peer.on('open', (id) => {
+    //   this.peerId = id;
+    // });
+    // this.peer.on('error', (err) => {
+    //   console.error(err);
+    //   this.peer?.reconnect();
+    // });
   }
 
   getMyStream = (video = true, audio = true): Promise<MediaStream> => {
