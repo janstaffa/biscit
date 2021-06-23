@@ -13,10 +13,8 @@ import { isAuth } from '../middleware/isAuth';
 import {
   connections,
   CREATE_CALL_CODE,
-  JOIN_CALL_CODE,
   KILL_CALL_CODE,
   OutgoingCreateCallMessage,
-  OutgoingJoinCallMessage,
   OutgoingKillCallMessage,
   OutgoingStartCallMessage,
   START_CALL_CODE
@@ -249,6 +247,7 @@ export class CallResolver {
       };
     }
 
+    console.log(call.memberIds, userId);
     if (call.memberIds.includes(userId)) {
       errors.push(
         new GQLValidationError({
@@ -280,26 +279,12 @@ export class CallResolver {
       thread: call.thread
     };
 
-    const joinCallPayload: OutgoingJoinCallMessage = {
-      code: JOIN_CALL_CODE,
-      callId: call.id,
-      peerId: options.peerId,
-      userId,
-      user: pickUser(user) as User
-    };
     newMembers.forEach((memberId) => {
       console.log('isInitial', isInitial);
       if (isInitial) {
         connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
       }
-      if (memberId === userId) return;
-      console.log('sending JOIN_CALL_CODE to', memberId);
-      setTimeout(() => {
-        console.log('sent to', memberId, joinCallPayload);
-        connections.getSocket(memberId)?.send(JSON.stringify(joinCallPayload));
-      }, 6000);
     });
-    // pubClient.publish(call.threadId, JSON.stringify(payload));
 
     return {
       data: true,

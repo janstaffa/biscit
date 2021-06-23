@@ -2,9 +2,7 @@ import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import http, { Server } from 'http';
 import * as net from 'net';
-import { createClient, RedisClient } from 'redis';
 import WebSocket from 'ws';
-import { browserOrigin } from '../constants';
 import { Call } from '../entities/Call';
 import { Message } from '../entities/Message';
 import { Session } from '../entities/Session';
@@ -57,7 +55,10 @@ export interface OutgoingJoinCallMessage extends SocketMessage {
   userId: string;
   user: User;
 }
-
+export interface IncomingJoinCallMessage extends SocketMessage {
+  callId: string;
+  peerId: string;
+}
 //when there are 2 members in the call, this message indicates the actual start of the call
 export interface OutgoingStartCallMessage extends SocketMessage {
   callId: string;
@@ -100,18 +101,21 @@ export const closeConnection = (ws: WebSocket) => {
 export const socketController = (server: Server) => {
   const wss = new WebSocket.Server({
     noServer: true,
+    // server,
+    // port: 7000,
+    // host: '192.168.8.105',
     path: '/socket',
     maxPayload: 10 * 1024
   });
 
   server.on('upgrade', async (req: http.IncomingMessage, socket: net.Socket, head) => {
+    console.log('upgrade');
     let userId: string | undefined;
 
     try {
-      if (req.headers.origin !== browserOrigin) {
-        return socket.destroy();
-      }
-
+      // if (req.headers.origin !== browserOrigin) {
+      //   return socket.destroy();
+      // }
       const rawCookies = req.headers.cookie;
 
       if (!rawCookies) {
@@ -147,149 +151,147 @@ export const socketController = (server: Server) => {
       };
       ws.send(JSON.stringify(payload));
 
-      const subClient = createClient({
-        url: process.env.REDIS_URL
-      });
+      // const subClient = createClient({
+      //   url: process.env.REDIS_URL
+      // });
 
-      subClient.on('error', (error) => {
-        console.error(error);
-      });
+      // subClient.on('error', (error) => {
+      //   console.error(error);
+      // });
 
-      const pubClient = createClient({
-        url: process.env.REDIS_URL
-      });
+      // const pubClient = createClient({
+      //   url: process.env.REDIS_URL
+      // });
 
-      pubClient.on('error', (error) => {
-        console.error(error);
-      });
+      // pubClient.on('error', (error) => {
+      //   console.error(error);
+      // });
 
-      wss.emit('connection', ws, req, user, subClient, pubClient);
+      wss.emit('connection', ws, req, user);
     });
   });
 
-  wss.on(
-    'connection',
-    async (ws: WebSocket, req: http.IncomingMessage, user: User, subClient: RedisClient, pubClient: RedisClient) => {
-      console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
-      connections.addSocket(user.id, ws);
+  wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, user: User) => {
+    console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
+    if (!user.id) return;
+    connections.addSocket(user.id, ws);
 
-      await User.update({ id: user.id }, { status: 'online' });
-      const heartbeat = setInterval(async () => {
-        if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
-          clearInterval(heartbeat);
-          await closeConnectionAndClear();
-
-          return;
-        }
-        ws.ping('ping', false, async (err) => {
-          if (err) {
-            console.error(err);
-            await closeConnectionAndClear();
-            clearInterval(heartbeat);
-          }
-        });
-      }, HEARTBEAT_INTERVAL);
-
-      const elapsed = setTimeout(async () => {
-        await closeConnectionAndClear();
-      }, ELAPSED_TIME);
-
-      const closeConnectionAndClear = async () => {
-        console.log('connection closed');
-        closeConnection(ws);
-        // subClient.removeAllListeners();
-        // subClient.unsubscribe();
-        clearTimeout(elapsed);
+    await User.update({ id: user.id }, { status: 'online' });
+    const heartbeat = setInterval(async () => {
+      if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
         clearInterval(heartbeat);
-        await User.update({ id: user.id }, { status: 'offline' });
-
-        const latestUser = await User.findOne({
-          where: { id: user.id },
-          relations: ['threads', 'threads.thread', 'threads.thread.call']
-        });
-        latestUser?.threads?.forEach(async (thread) => {
-          if (thread.thread.call) {
-            const { memberIds } = thread.thread.call;
-            if (!memberIds) return;
-            const newMemberIds = [...memberIds];
-            if (newMemberIds.includes(user.id)) {
-              newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
-              await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
-              const payload: OutgoingCancelCallMessage = {
-                code: CANCEL_CALL_CODE,
-                callId: thread.thread.call.id
-              };
-
-              newMemberIds.forEach((memberId) => {
-                connections.getSocket(memberId)?.send(JSON.stringify(payload));
-              });
-              // pubClient.publish(thread.id, JSON.stringify(payload));
-            }
-          }
-        });
-      };
-
-      let sentMessages = 0;
-      const delayedMessages: string[] = [];
-
-      const throttle = setInterval(async () => {
-        if (delayedMessages.length > 0) {
-          await handleMessage(delayedMessages[0], ws, subClient, pubClient, user);
-          delayedMessages.shift();
-        } else {
-          if (sentMessages > 0) sentMessages -= 3;
-        }
-      }, THROTTLE_INTERVAL);
-
-      ws.on('message', async (data: string) => {
-        if (sentMessages >= THROTTLE_LIMIT) {
-          delayedMessages.push(data);
-
-          const payload = {
-            code: ERROR_MESSAGE_CODE,
-            message: 'Throttle limit reached. Your messages will be sent shortly after.'
-          };
-          ws.send(JSON.stringify(payload));
-          return;
-        }
-        sentMessages++;
-
-        await handleMessage(data, ws, subClient, pubClient, user);
-      });
-
-      ws.on('pong', () => {
-        clearTimeout(elapsed);
-        elapsed.refresh();
-      });
-
-      ws.on('close', async () => {
         await closeConnectionAndClear();
+
+        return;
+      }
+      ws.ping('ping', false, async (err) => {
+        if (err) {
+          console.error(err);
+          await closeConnectionAndClear();
+          clearInterval(heartbeat);
+        }
       });
+    }, HEARTBEAT_INTERVAL);
 
-      // try {
-      //   const threads = await ThreadMembers.find({ where: { userId: user.id } });
+    const elapsed = setTimeout(async () => {
+      await closeConnectionAndClear();
+    }, ELAPSED_TIME);
 
-      //   threads.map((thread) => {
-      //     const { threadId } = thread;
-      //     subClient.subscribe(threadId);
-      //   });
-      // } catch (e) {
-      //   console.error(e);
-      // }
+    const closeConnectionAndClear = async () => {
+      console.log('connection closed');
+      closeConnection(ws);
+      // subClient.removeAllListeners();
+      // subClient.unsubscribe();
+      clearTimeout(elapsed);
+      clearInterval(heartbeat);
+      await User.update({ id: user.id }, { status: 'offline' });
 
-      // subClient.on('message', async (channel, message) => {
-      //   const parsed = JSON.parse(message);
-      //   if (parsed.code === CHAT_MESSAGE_CODE) {
-      //     const { message, threadId } = parsed as SocketChatMessage;
-      //     if (message.userId !== user.id) {
-      //       const latestUser = await User.findOne({ where: { id: user.id } });
-      //       if (latestUser && latestUser.setAsUnread) {
-      //         await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
-      //       }
-      //     }
-      //   }
-      //   ws.send(message);
-      // });
-    }
-  );
+      const latestUser = await User.findOne({
+        where: { id: user.id },
+        relations: ['threads', 'threads.thread', 'threads.thread.call']
+      });
+      latestUser?.threads?.forEach(async (thread) => {
+        if (thread.thread.call) {
+          const { memberIds } = thread.thread.call;
+          if (!memberIds) return;
+          const newMemberIds = [...memberIds];
+          if (newMemberIds.includes(user.id)) {
+            newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
+            await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
+            const payload: OutgoingCancelCallMessage = {
+              code: CANCEL_CALL_CODE,
+              callId: thread.thread.call.id
+            };
+
+            newMemberIds.forEach((memberId) => {
+              connections.getSocket(memberId)?.send(JSON.stringify(payload));
+            });
+            // pubClient.publish(thread.id, JSON.stringify(payload));
+          }
+        }
+      });
+    };
+
+    let sentMessages = 0;
+    const delayedMessages: string[] = [];
+
+    const throttle = setInterval(async () => {
+      if (delayedMessages.length > 0) {
+        await handleMessage(delayedMessages[0], ws, /*subClient, pubClient,*/ user);
+        delayedMessages.shift();
+      } else {
+        if (sentMessages > 0) sentMessages -= 3;
+      }
+    }, THROTTLE_INTERVAL);
+
+    ws.on('message', async (data: string) => {
+      if (sentMessages >= THROTTLE_LIMIT) {
+        delayedMessages.push(data);
+
+        const payload = {
+          code: ERROR_MESSAGE_CODE,
+          message: 'Throttle limit reached. Your messages will be sent shortly after.'
+        };
+        ws.send(JSON.stringify(payload));
+        return;
+      }
+      sentMessages++;
+
+      await handleMessage(data, ws, user);
+    });
+
+    ws.on('pong', () => {
+      clearTimeout(elapsed);
+      elapsed.refresh();
+    });
+
+    ws.on('close', async () => {
+      await closeConnectionAndClear();
+    });
+
+    // try {
+    //   const threads = await ThreadMembers.find({ where: { userId: user.id } });
+
+    //   threads.map((thread) => {
+    //     const { threadId } = thread;
+    //     subClient.subscribe(threadId);
+    //   });
+    // } catch (e) {
+    //   console.error(e);
+    // }
+
+    // subClient.on('message', async (channel, message) => {
+    //   const parsed = JSON.parse(message);
+    //   if (parsed.code === CHAT_MESSAGE_CODE) {
+    //     const { message, threadId } = parsed as SocketChatMessage;
+    //     if (message.userId !== user.id) {
+    //       const latestUser = await User.findOne({ where: { id: user.id } });
+    //       if (latestUser && latestUser.setAsUnread) {
+    //         await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
+    //       }
+    //     }
+    //   }
+    //   ws.send(message);
+    // });
+  });
 };

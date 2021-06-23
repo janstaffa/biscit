@@ -108,6 +108,10 @@ dotenv.config();
   apolloServer.applyMiddleware({ app, cors: false });
 
   const port = process.env.PORT || 9000;
+  // const key = fs.readFileSync(path.join(__dirname, '..', 'certificates/biscit.key'));
+  // const cert = fs.readFileSync(path.join(__dirname, '..', 'certificates/biscit.crt'));
+
+  // console.log(key, cert);
   const server = http.createServer(app);
   socketController(server);
 

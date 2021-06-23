@@ -143,7 +143,6 @@ export type GqlValidationError = {
 
 export type JoinCallMutationInput = {
   callId: Scalars['String'];
-  peerId: Scalars['String'];
 };
 
 export type LeaveCallMutationInput = {

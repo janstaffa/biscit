@@ -1,4 +1,5 @@
 // export interface VideoChatProps {}
+import Peer from 'peerjs';
 import { useEffect, useRef, useState } from 'react';
 import { AiOutlineAudioMuted } from 'react-icons/ai';
 import { BiVideoOff } from 'react-icons/bi';
@@ -6,7 +7,7 @@ import { HiDotsVertical, HiPhoneMissedCall } from 'react-icons/hi';
 import { MdScreenShare } from 'react-icons/md';
 import { VscMute } from 'react-icons/vsc';
 import { useLeaveCallMutation, UserSnippetFragment } from '../../../generated/graphql';
-import { IncomingJoinCallMessage } from '../../../types';
+import { IncomingJoinCallMessage, OutgoingJoinCallMessage } from '../../../types';
 import { RTCconnection } from '../../../utils/createRTCconnection';
 import { socket } from '../../../utils/createWSconnection';
 import { errorToast } from '../../../utils/toasts';
@@ -19,6 +20,14 @@ interface VideoType {
   mic: boolean;
   camera: boolean;
 }
+
+interface MeanwhileJoinedType {
+  peerId: string;
+  user?: UserSnippetFragment;
+  mic: boolean;
+  camera: boolean;
+}
+
 type VideoChatProps = {
   callId: string;
   setIsInCall: React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,6 +39,8 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   const videosRef = useRef<VideoType[]>([]);
   videosRef.current = videos;
   const { mutate: leaveCall } = useLeaveCallMutation();
+
+  const [options, setOptions] = useState<{ mic: boolean; camera: boolean }>({ mic: true, camera: true });
 
   const createVideo = (
     peerId: string,
@@ -57,61 +68,71 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
     setVideos(newVideos);
   };
 
+  const callUser = (rtc: Peer, peerId: string, stream: MediaStream, user: UserSnippetFragment | undefined) => {
+    const call = rtc.call(peerId, stream, { metadata: { id: rtc.id } });
+    call?.on('stream', (userVideoStream) => {
+      createVideo(peerId, userVideoStream, true, true, user);
+    });
+    call?.on('close', () => {
+      removeVideo(peerId);
+    });
+    call?.on('error', () => {
+      removeVideo(peerId);
+    });
+  };
+
   useEffect(() => {
-    const rtc = RTCconnection.connect(callId);
-    RTCconnection.getMyStream(true, true).then((stream) => {
-      if (stream) {
-        RTCconnection.streaming = true;
-        createVideo(RTCconnection.peerId, stream, true, true);
-      }
+    const ws = socket.connect();
 
-      rtc.on('call', (call) => {
-        call.answer(stream);
-        call.on('stream', (userVideoStream) => {
-          console.log('user stream data', userVideoStream);
-          createVideo(call.metadata.id, userVideoStream, true, true);
-        });
-        call.on('close', () => {
-          console.log('closing peers listeners', call.metadata.id);
-          removeVideo(call.metadata.id);
-        });
-        call.on('error', () => {
-          console.log('peer error ------');
-          removeVideo(call.metadata.id);
-        });
-      });
+    const rtc = new RTCconnection(callId);
+    const { mic, camera } = options;
+    const onOpen = (id) => {
+      rtc.getMyStream(camera, mic).then((stream) => {
+        if (stream) {
+          rtc.streaming = true;
+          createVideo(id, stream, camera, false);
+        }
 
-      const ws = socket.connect();
-      console.log('mounted ws', ws);
-      const handleMessage = (e) => {
-        const { data: m } = e;
-        const incoming = JSON.parse(m);
-
-        console.log('message');
-        if (incoming.code === 3012) {
-          const { user, peerId } = incoming as IncomingJoinCallMessage;
-          console.log(user.username, 'has joined the call', peerId, RTCconnection.peerId);
-          const call = rtc.call(peerId, stream, { metadata: { id: RTCconnection.peerId } });
-          console.log('call');
+        rtc.peer.on('call', (call) => {
+          if (stream) {
+            call.answer(stream);
+          }
           call.on('stream', (userVideoStream) => {
-            console.log('recieved stream');
-            createVideo(peerId, userVideoStream, true, true, user);
+            createVideo(call.metadata.id, userVideoStream, true, true);
           });
           call.on('close', () => {
-            console.log('closing 2');
-            removeVideo(peerId);
+            removeVideo(call.metadata.id);
           });
           call.on('error', () => {
-            console.log('closing 3');
-            removeVideo(peerId);
+            removeVideo(call.metadata.id);
           });
-        }
-      };
-      ws.addEventListener('message', handleMessage);
-    });
+        });
+
+        const handleMessage = (e) => {
+          const { data: m } = e;
+          const incoming = JSON.parse(m);
+
+          if (incoming.code === 3012) {
+            const { user, peerId } = incoming as IncomingJoinCallMessage;
+            callUser(rtc.peer, peerId, stream, user);
+          }
+        };
+        ws.addEventListener('message', handleMessage);
+
+        const payload: OutgoingJoinCallMessage = {
+          code: 3012,
+          callId,
+          peerId: id
+        };
+        socket.send(JSON.stringify(payload));
+      });
+    };
+    rtc.peer.on('open', onOpen);
+
     return () => {
-      RTCconnection.close();
       setVideos([]);
+      rtc.peer.off('open', onOpen);
+      rtc.close();
     };
   }, []);
 
@@ -127,7 +148,15 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
           style={{ padding: videoContainerPadding + 'px' }}
         >
           {videos.map((video) => {
-            return <Video key={video.peerId} stream={video.stream} peerId={video.peerId} />;
+            return (
+              <Video
+                key={video.peerId}
+                stream={video.stream}
+                peerId={video.peerId}
+                camera={video.camera}
+                mic={video.mic}
+              />
+            );
           })}
         </div>
         <div
@@ -136,13 +165,15 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
         >
           <button
             className="w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 text-light-300 hover:bg-light-400 hover:text-black transition-all delay-75"
-            title="Volume off"
+            title="Turn off your camera"
+            onClick={() => setOptions({ ...options, camera: !options.camera })}
           >
             <BiVideoOff size={20} />
           </button>
           <button
             className="w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 text-light-300 hover:bg-light-400 hover:text-black transition-all delay-75"
             title="Mute your microphone"
+            onClick={() => setOptions({ ...options, mic: !options.mic })}
           >
             <AiOutlineAudioMuted size={20} />
           </button>

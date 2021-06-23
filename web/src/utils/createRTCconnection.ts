@@ -1,43 +1,44 @@
 import Peer from 'peerjs';
 import { serverIP } from '../constants';
 
-interface RTCconnection {
-  peer: Peer | undefined;
-  streaming: boolean;
-  peerId: string;
-  callId: string;
-  connect: (callId: string) => Peer;
-  getMyStream: (video?: boolean, audio?: boolean) => Promise<MediaStream>;
-  close: () => boolean;
-  // restart: () => ReconnectingWebSocket | undefined;
-  // send: (payload: string) => void;
-}
+// interface RTCconnection {
+//   peer: Peer | undefined;
+//   streaming: boolean;
+//   peerId: string;
+//   callId: string;
+//   connect: (callId: string) => Peer;
+//   getMyStream: (video?: boolean, audio?: boolean) => Promise<MediaStream>;
+//   close: () => boolean;
+//   // restart: () => ReconnectingWebSocket | undefined;
+//   // send: (payload: string) => void;
+// }
 
-export const RTCconnection: RTCconnection = {
-  streaming: false,
-  peer: undefined,
-  peerId: '',
-  callId: '',
-  connect: (callId) => {
-    RTCconnection.callId = callId;
-    if (!RTCconnection.peer) {
-      RTCconnection.peer = new Peer('', {
-        host: serverIP,
-        port: 8000,
-        path: '/peer',
-        secure: false
-      });
-    }
-    RTCconnection.peer.on('open', (id) => {
-      RTCconnection.peerId = id;
+export class RTCconnection {
+  streaming = false;
+  peer: Peer;
+  peerId = '';
+  callId = '';
+
+  constructor(callId) {
+    this.callId = callId;
+    // if (!this.peer) {
+    this.peer = new Peer('', {
+      host: serverIP,
+      port: 8000,
+      path: '/peer',
+      secure: false
     });
-    RTCconnection.peer.on('error', (err) => {
-      console.error(err);
-      RTCconnection.peer?.reconnect();
-    });
-    return RTCconnection.peer;
-  },
-  getMyStream: (video = true, audio = true) => {
+    // }
+    // this.peer.on('open', (id) => {
+    //   this.peerId = id;
+    // });
+    // this.peer.on('error', (err) => {
+    //   console.error(err);
+    //   this.peer?.reconnect();
+    // });
+  }
+
+  getMyStream = (video = true, audio = true): Promise<MediaStream> => {
     const nav =
       navigator.getUserMedia ||
       // @ts-ignore
@@ -46,6 +47,7 @@ export const RTCconnection: RTCconnection = {
       navigator.mozGetUserMedia ||
       // @ts-ignore
       navigator.msGetUserMedia;
+
     return new Promise((resolve, reject) => {
       nav(
         {
@@ -69,35 +71,10 @@ export const RTCconnection: RTCconnection = {
         }
       );
     });
-  },
-  close: () => {
-    RTCconnection.peer?.destroy();
-    return true;
-  }
-  // initializePeersEvents = () => {
-  //   this.peer.on('open', (id) => {
-  //     this.peerId = id;
-  //     const callData: CallData = {
-  //       userId: id,
-  //       callId: this.callId
-  //     };
-  //     console.log('peers established and joined room', callData);
-  //     this.setNavigatorToStream();
-  //   });
-  //   this.peer.on('error', (err) => {
-  //     console.log('peer connection error', err);
-  //     this.peer.reconnect();
-  //   });
-  // };
+  };
 
-  // setNavigatorToStream = () => {
-  //   this.getVideoAudioStream().then((stream) => {
-  //     if (stream) {
-  //       this.streaming = true;
-  //       // this.createVideo({ id: this.peerId, stream });
-  //       // this.setPeersListeners(stream);
-  //       // this.newUserConnection(stream);
-  //     }
-  //   });
-  // };
-};
+  close = () => {
+    this.peer?.destroy();
+    return true;
+  };
+}

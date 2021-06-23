@@ -22,7 +22,9 @@ import {
   MessageSnippetFragment,
   ThreadSnippetFragment,
   useAddMembersMutation,
+  useCancelCallMutation,
   useCreateCallMutation,
+  useJoinCallMutation,
   useMeQuery,
   UserSnippetFragment,
   useThreadQuery,
@@ -52,11 +54,21 @@ const Chat: React.FC = () => {
       }
     }
   );
-
+  const { mutate: joinCall } = useJoinCallMutation({
+    onSuccess: (d) => {
+      if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
+        d.JoinCall.errors.forEach((err) => {
+          errorToast('bbbbbbbbbbbbbbb' + err.details?.message);
+        });
+      }
+    }
+  });
   const { data: meData, isLoading } = useMeQuery();
   const { data: loadedThreads } = useThreadsQuery();
 
   const { mutate: addMembers } = useAddMembersMutation();
+  const { mutate: cancelCallMutate } = useCancelCallMutation();
+
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
   const [addMemberModalShow, setAddMemberModalShow] = useState<boolean>(false);
@@ -168,6 +180,31 @@ const Chat: React.FC = () => {
       setCallingThread(null);
     }
   }, [isCalling, callingUser]);
+
+  const startCall = () => {
+    if (!callId) return;
+    setIsCalling(false);
+    setIsInCall(true);
+    joinCall({ options: { callId } });
+  };
+
+  const cancelCall = () => {
+    if (!callId) return;
+    cancelCallMutate(
+      { options: { callId } },
+      {
+        onSuccess: (d) => {
+          if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
+            d.CancelCall.errors.forEach((err) => {
+              errorToast(err.details?.message);
+            });
+          }
+        }
+      }
+    );
+    setIsCalling(false);
+  };
+
   return (
     <>
       <Helmet>
@@ -201,8 +238,9 @@ const Chat: React.FC = () => {
                           d.CreateCall.errors.forEach((err) => {
                             errorToast(err.details?.message);
                           });
+                        } else {
+                          setCallId(d.CreateCall.data);
                         }
-                        setCallId(d.CreateCall.data);
                       }
                     }
                   )
@@ -245,7 +283,8 @@ const Chat: React.FC = () => {
                     user={callingUser}
                     thread={callingThread}
                     myId={meData?.me?.id}
-                    setIsCalling={setIsCalling}
+                    startCall={startCall}
+                    cancelCall={cancelCall}
                   />
                 )}
                 {isInCall && <VideoChat callId={callId} setIsInCall={setIsInCall} />}

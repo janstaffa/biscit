@@ -45,6 +45,12 @@ const ProtectedWrap: React.FC<ProtectedWrapProps> = ({ children }) => {
 
   useEffect(() => {
     socket.connect();
+
+    window.addEventListener('focus', () => socket.connect());
+
+    return () => {
+      window.removeEventListener('focus', () => socket.connect());
+    };
   }, []);
 
   return <>{children}</>;

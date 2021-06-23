@@ -42,6 +42,11 @@ export interface IncomingCreateCallMessage extends SocketThreadMessage {
   thread: ThreadSnippetFragment;
   callId: string;
 }
+
+export interface OutgoingJoinCallMessage extends SocketMessage {
+  callId: string;
+  peerId: string;
+}
 export interface IncomingJoinCallMessage extends SocketMessage {
   callId: string;
   peerId: string;
