@@ -16,9 +16,6 @@ export class CancelCallMutationInput {
 export class JoinCallMutationInput {
   @Field()
   callId: string;
-
-  @Field()
-  peerId: string;
 }
 
 @InputType()

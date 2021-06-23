@@ -69,7 +69,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   };
 
   const callUser = (rtc: Peer, peerId: string, stream: MediaStream, user: UserSnippetFragment | undefined) => {
-    const call = rtc.call(peerId, stream, { metadata: { id: RTCconnection.peerId } });
+    const call = rtc.call(peerId, stream, { metadata: { id: rtc.id } });
     call.on('stream', (userVideoStream) => {
       createVideo(peerId, userVideoStream, true, true, user);
     });
@@ -82,16 +82,17 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   };
   useEffect(() => {
     const ws = socket.connect();
-    const rtc = RTCconnection.connect(callId);
+
+    const rtc = new RTCconnection(callId);
     const { mic, camera } = options;
-    rtc.on('open', (id) => {
-      RTCconnection.getMyStream(camera, mic).then((stream) => {
+    rtc.peer.on('open', (id) => {
+      rtc.getMyStream(camera, mic).then((stream) => {
         if (stream) {
-          RTCconnection.streaming = true;
-          createVideo(RTCconnection.peerId, stream, camera, false);
+          rtc.streaming = true;
+          createVideo(rtc.peerId, stream, camera, false);
         }
 
-        rtc.on('call', (call) => {
+        rtc.peer.on('call', (call) => {
           if (stream) {
             call.answer(stream);
           }
@@ -112,7 +113,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
 
           if (incoming.code === 3012) {
             const { user, peerId } = incoming as IncomingJoinCallMessage;
-            callUser(rtc, peerId, stream, user);
+            callUser(rtc.peer, peerId, stream, user);
           }
         };
         ws.addEventListener('message', handleMessage);
@@ -125,7 +126,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
         socket.send(JSON.stringify(payload));
       });
       return () => {
-        RTCconnection.close();
+        rtc.close();
         setVideos([]);
       };
     });
@@ -161,14 +162,14 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
           <button
             className="w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 text-light-300 hover:bg-light-400 hover:text-black transition-all delay-75"
             title="Turn off your camera"
-            // onClick={() => setOptions({ ...options, camera: !options.camera })}
+            onClick={() => setOptions({ ...options, camera: !options.camera })}
           >
             <BiVideoOff size={20} />
           </button>
           <button
             className="w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 text-light-300 hover:bg-light-400 hover:text-black transition-all delay-75"
             title="Mute your microphone"
-            // onClick={() => setOptions({ ...options, mic: !options.mic })}
+            onClick={() => setOptions({ ...options, mic: !options.mic })}
           >
             <AiOutlineAudioMuted size={20} />
           </button>

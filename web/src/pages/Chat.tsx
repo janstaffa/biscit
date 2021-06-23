@@ -31,7 +31,6 @@ import {
   useThreadsQuery
 } from '../generated/graphql';
 import { IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../types';
-import { RTCconnection } from '../utils/createRTCconnection';
 import { socket } from '../utils/createWSconnection';
 import { errorToast, successToast } from '../utils/toasts';
 
@@ -186,10 +185,7 @@ const Chat: React.FC = () => {
     if (!callId) return;
     setIsCalling(false);
     setIsInCall(true);
-    const rtc = RTCconnection.connect(callId);
-    rtc.on('open', (id) => {
-      joinCall({ options: { callId, peerId: id } });
-    });
+    joinCall({ options: { callId } });
   };
 
   const cancelCall = () => {
