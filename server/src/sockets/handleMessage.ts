@@ -1,7 +1,6 @@
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
-import { RedisClient } from 'redis';
 import { createQueryBuilder } from 'typeorm';
 import WebSocket from 'ws';
 import {
@@ -10,12 +9,16 @@ import {
   closeConnection,
   connections,
   ERROR_MESSAGE_CODE,
+  IncomingJoinCallMessage,
   IncomingSocketChatMessage,
+  JOIN_CALL_CODE,
   JOIN_THREAD_CODE,
+  OutgoingJoinCallMessage,
   SocketChatMessage,
   SocketThreadMessage
 } from '.';
 import { fallbackTokenSecret } from '../constants';
+import { Call } from '../entities/Call';
 import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { Thread } from '../entities/Thread';
@@ -28,13 +31,7 @@ export type JWTWSTokenType = {
   userId: string;
 };
 
-export const handleMessage = async (
-  data: string,
-  ws: WebSocket,
-  subClient: RedisClient,
-  pubClient: RedisClient,
-  user: User
-) => {
+export const handleMessage = async (data: string, ws: WebSocket, user: User) => {
   const returnInvalidTokenError = () => {
     const payload = {
       code: ERROR_MESSAGE_CODE,
@@ -214,19 +211,34 @@ export const handleMessage = async (
     } catch (e) {
       console.error(e);
     }
-  }
-  //  else if (code === PEER_JOIN_CODE) {
-  //   const { callId, peerId } = incoming as SocketPeerJoinMessage;
-  //   if (!callId) return;
-  //   try {
-  //     const call = await Call.findOne({ where: { id: callId }, relations: ['thread', 'thread.members'] });
-  //     if (!call?.thread) return;
-  //     if (!call.memberIds.includes(user.id)) {
-  //     }
-  //     const payload: SocketPeerJoinMessage & { user: User } = {
-  //       code: PEER_JOIN_CODE,
+  } else if (code === JOIN_CALL_CODE) {
+    const { callId, peerId } = incoming as IncomingJoinCallMessage;
+    if (!callId || !peerId) return;
+    try {
+      const call = await Call.findOne({ where: { id: callId }, relations: ['thread', 'thread.members'] });
+      if (!call?.thread) return;
+      if (!call.memberIds.includes(user.id)) {
+        const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this call.' };
+        ws.send(JSON.stringify(payload));
+        return;
+      }
 
-  //     };
+      const payload: OutgoingJoinCallMessage = {
+        code: JOIN_CALL_CODE,
+        callId,
+        userId: user.id,
+        user,
+        peerId
+      };
+
+      call.memberIds.forEach((memberId) => {
+        if (memberId === user.id) return;
+        connections.getSocket(memberId)?.send(JSON.stringify(payload));
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   //     pubClient.publish(threadId, JSON.stringify(payload));
   //   } catch (e) {

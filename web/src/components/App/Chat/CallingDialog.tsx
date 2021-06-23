@@ -1,21 +1,15 @@
 // export interface CallingDialogProps {}
 import React, { useEffect, useRef, useState } from 'react';
 import { HiPhone, HiPhoneMissedCall } from 'react-icons/hi';
-import {
-  ThreadSnippetFragment,
-  useCancelCallMutation,
-  useJoinCallMutation,
-  UserSnippetFragment
-} from '../../../generated/graphql';
-import { RTCconnection } from '../../../utils/createRTCconnection';
-import { errorToast } from '../../../utils/toasts';
+import { ThreadSnippetFragment, UserSnippetFragment } from '../../../generated/graphql';
 
 export type CallingDialog = {
   callId: string;
   user: UserSnippetFragment | null;
   thread: ThreadSnippetFragment | null;
   myId: string | undefined;
-  setIsCalling: React.Dispatch<React.SetStateAction<boolean>>;
+  cancelCall: () => void;
+  startCall: () => void;
 };
 
 const Clock = () => {
@@ -39,36 +33,9 @@ const Clock = () => {
 
   return <p className="text-light-400 mt-2">{clock}</p>;
 };
-const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalling, callId }) => {
-  const { mutate: joinCall } = useJoinCallMutation({
-    onSuccess: (d) => {
-      if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
-        d.JoinCall.errors.forEach((err) => {
-          errorToast(err.details?.message);
-        });
-      }
-    }
-  });
-  const { mutate: cancelCallMutate } = useCancelCallMutation();
-
+const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, startCall, cancelCall, callId }) => {
   const isMe = user?.id === myId;
 
-  const cancelCall = () => {
-    if (!thread) return;
-    cancelCallMutate(
-      { options: { callId } },
-      {
-        onSuccess: (d) => {
-          if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
-            d.CancelCall.errors.forEach((err) => {
-              errorToast(err.details?.message);
-            });
-          }
-        }
-      }
-    );
-    setIsCalling(false);
-  };
   return (
     <div
       className="w-72 h-52 bg-dark-300 absolute top-20 p-2 text-center rounded-md"
@@ -85,9 +52,7 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalli
             <div className="w-full flex flex-row justify-center flex-grow items-end">
               <button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 flex flex-row items-center font-roboto"
-                onClick={() => {
-                  cancelCall();
-                }}
+                onClick={() => cancelCall()}
               >
                 <HiPhoneMissedCall size={20} className="mr-2" />
                 Cancel
@@ -104,32 +69,14 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, setIsCalli
             <div className="w-full flex flex-row justify-center flex-grow items-end">
               <button
                 className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
-                onClick={() => {
-                  const rtc = RTCconnection.connect(callId);
-                  rtc.on('open', (id) => {
-                    joinCall(
-                      { options: { callId, peerId: id } },
-                      {
-                        onSuccess: (d) => {
-                          if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
-                            d.JoinCall.errors.forEach((err) => {
-                              errorToast(err.details?.message);
-                            });
-                          }
-                        }
-                      }
-                    );
-                  });
-                }}
+                onClick={() => startCall()}
               >
                 <HiPhone size={20} className="mr-2" />
                 {thread?.isDm ? 'Accept' : 'Join'}
               </button>
               <button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
-                onClick={() => {
-                  cancelCall();
-                }}
+                onClick={() => cancelCall()}
               >
                 <HiPhoneMissedCall size={20} className="mr-2" />
                 {thread?.isDm ? 'Decline' : 'Ignore'}

@@ -3,7 +3,6 @@ import { Express, Request } from 'express';
 import { UploadedFile } from 'express-fileupload';
 import fs from 'fs';
 import path from 'path';
-import { createClient } from 'redis';
 import sharp from 'sharp';
 import { validProfilePictureUploadRegExp } from '../constants';
 import { File } from '../entities/File';
@@ -14,9 +13,9 @@ import { connections, SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets
 import { getId } from '../utils/generateId';
 
 export const fileUploadController = (app: Express) => {
-  const pubClient = createClient({
-    url: process.env.REDIS_URL
-  });
+  // const pubClient = createClient({
+  //   url: process.env.REDIS_URL
+  // });
   app.post('/upload/attachment', (req: Request, res) => {
     if (!req.files?.file) {
       return res.send({ error: 'No files were included.' });

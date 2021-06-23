@@ -1,4 +1,3 @@
-import { createClient } from 'redis';
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
 import { File } from '../entities/File';
@@ -24,9 +23,9 @@ import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType, StringResponse, ThreadResponse } from './types';
 
-const pubClient = createClient({
-  url: process.env.REDIS_URL
-});
+// const pubClient = createClient({
+//   url: process.env.REDIS_URL
+// });
 
 @Resolver(Thread)
 export class ThreadResolver {

@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { createClient } from 'redis';
 import { Arg, Ctx, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder, getRepository } from 'typeorm';
 import { File } from '../entities/File';
@@ -18,13 +17,13 @@ import { ContextType } from '../types';
 import { GQLValidationError } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType, ThreadMessagesResponse, ThreadMessagesResponseType } from './types';
 
-const pubClient = createClient({
-  url: process.env.REDIS_URL
-});
+// const pubClient = createClient({
+//   url: process.env.REDIS_URL
+// });
 
-pubClient.on('error', (error) => {
-  console.error(error);
-});
+// pubClient.on('error', (error) => {
+//   console.error(error);
+// });
 
 @Resolver(Message)
 export class MessageResolver {

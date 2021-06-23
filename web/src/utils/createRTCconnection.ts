@@ -46,6 +46,7 @@ export const RTCconnection: RTCconnection = {
       navigator.mozGetUserMedia ||
       // @ts-ignore
       navigator.msGetUserMedia;
+
     return new Promise((resolve, reject) => {
       nav(
         {
