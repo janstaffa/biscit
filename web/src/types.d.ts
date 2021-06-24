@@ -64,3 +64,16 @@ export interface IncomingStartCallMessage extends SocketMessage {
 export interface IncomingKillCallMessage extends SocketMessage {
   callId: string;
 }
+export interface IncomingPeerChangeMessage extends SocketMessage {
+  peerId: string;
+  userId: string;
+  audio: boolean;
+  camera: boolean;
+}
+
+export interface OutgoingPeerChangeMessage extends SocketMessage {
+  peerId: string;
+  callId: string;
+  audio: boolean;
+  camera: boolean;
+}

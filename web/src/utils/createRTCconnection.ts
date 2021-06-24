@@ -1,4 +1,4 @@
-import Peer from 'peerjs';
+import Peer, { MediaConnection } from 'peerjs';
 import { serverIP } from '../constants';
 
 // interface RTCconnection {
@@ -18,6 +18,7 @@ export class RTCconnection {
   peer: Peer;
   peerId = '';
   callId = '';
+  peers: MediaConnection[] = [];
 
   constructor(callId) {
     this.callId = callId;
@@ -28,10 +29,11 @@ export class RTCconnection {
       path: '/peer',
       secure: false
     });
+
     // }
-    // this.peer.on('open', (id) => {
-    //   this.peerId = id;
-    // });
+    this.peer.on('open', (id) => {
+      this.peerId = id;
+    });
     // this.peer.on('error', (err) => {
     //   console.error(err);
     //   this.peer?.reconnect();
@@ -39,6 +41,7 @@ export class RTCconnection {
   }
 
   getMyStream = (video = true, audio = true): Promise<MediaStream> => {
+    console.log('getMyStream', video, audio);
     const nav =
       navigator.getUserMedia ||
       // @ts-ignore
@@ -58,7 +61,7 @@ export class RTCconnection {
                 height: { min: 480, ideal: 720, max: 1080 }
               }
             : false,
-          audio
+          audio: audio
         },
         (stream) => {
           resolve(stream);
@@ -70,6 +73,50 @@ export class RTCconnection {
           }
         }
       );
+    });
+  };
+
+  changeStream = (audio: boolean, video: boolean) => {
+    this.getMyStream(true, true).then((newStream) => {
+      console.log(this.peers);
+      Object.values(this.peers).forEach((peer: MediaConnection) => {
+        peer.peerConnection?.getSenders().forEach((sender) => {
+          if (sender) {
+            if (sender.track?.kind === 'audio') {
+              console.log('HERE:', sender.track.enabled, audio);
+              sender.track.enabled = audio;
+            }
+            if (sender.track?.kind === 'video') {
+              sender.track.enabled = video;
+            }
+          }
+        });
+      });
+    });
+  };
+
+  replaceStream = (newStream: MediaStream) => {
+    console.log('replace stream', this.peers);
+    Object.values(this.peers).forEach((peer: MediaConnection) => {
+      console.log(peer.peerConnection?.getSenders());
+      peer.peerConnection?.getSenders().forEach((sender) => {
+        console.log(newStream, sender, sender.track?.kind);
+        if (sender) {
+          if (sender.track?.kind === 'audio') {
+            sender.replaceTrack(null);
+            if (newStream.getAudioTracks().length > 0) {
+              console.log('REPLACING AUDIO');
+              sender.replaceTrack(newStream.getAudioTracks()[0]);
+            }
+          }
+          if (sender.track?.kind === 'video') {
+            console.log('REPLACING VIDEO');
+            if (newStream.getVideoTracks().length > 0) {
+              sender.replaceTrack(newStream.getVideoTracks()[0]);
+            }
+          }
+        }
+      });
     });
   };
 

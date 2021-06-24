@@ -10,10 +10,13 @@ import {
   connections,
   ERROR_MESSAGE_CODE,
   IncomingJoinCallMessage,
+  IncomingPeerChangeMessage,
   IncomingSocketChatMessage,
   JOIN_CALL_CODE,
   JOIN_THREAD_CODE,
   OutgoingJoinCallMessage,
+  OutgoingPeerChangeMessage,
+  PEER_CHANGE_CODE,
   SocketChatMessage,
   SocketThreadMessage
 } from '.';
@@ -227,8 +230,35 @@ export const handleMessage = async (data: string, ws: WebSocket, user: User) => 
         code: JOIN_CALL_CODE,
         callId,
         userId: user.id,
-        user,
+        user: pickUser(user) as User,
         peerId
+      };
+
+      call.memberIds.forEach((memberId) => {
+        if (memberId === user.id) return;
+        connections.getSocket(memberId)?.send(JSON.stringify(payload));
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  } else if (code === PEER_CHANGE_CODE) {
+    const { callId, peerId, audio, camera } = incoming as IncomingPeerChangeMessage;
+    if (!callId || !peerId) return;
+    try {
+      const call = await Call.findOne({ where: { id: callId }, relations: ['thread', 'thread.members'] });
+      if (!call?.thread) return;
+      if (!call.memberIds.includes(user.id)) {
+        const payload = { code: ERROR_MESSAGE_CODE, message: 'You are not a member of this call.' };
+        ws.send(JSON.stringify(payload));
+        return;
+      }
+
+      const payload: OutgoingPeerChangeMessage = {
+        code: PEER_CHANGE_CODE,
+        userId: user.id,
+        peerId,
+        audio,
+        camera
       };
 
       call.memberIds.forEach((memberId) => {

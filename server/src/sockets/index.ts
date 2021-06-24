@@ -71,6 +71,18 @@ export interface OutgoingKillCallMessage extends SocketMessage {
   callId: string;
 }
 
+export interface IncomingPeerChangeMessage extends SocketMessage {
+  peerId: string;
+  callId: string;
+  audio: boolean;
+  camera: boolean;
+}
+export interface OutgoingPeerChangeMessage extends SocketMessage {
+  peerId: string;
+  userId: string;
+  audio: boolean;
+  camera: boolean;
+}
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -86,6 +98,7 @@ export const START_CALL_CODE = 3014;
 export const CANCEL_CALL_CODE = 3011;
 export const JOIN_CALL_CODE = 3012;
 export const KILL_CALL_CODE = 3013;
+export const PEER_CHANGE_CODE = 3015;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;

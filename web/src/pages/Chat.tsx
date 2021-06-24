@@ -149,12 +149,6 @@ const Chat: React.FC = () => {
       } else if (incoming.code === 3014) {
         setIsInCall(true);
         setIsCalling(false);
-      } else if (incoming.code === 3012) {
-        setIsInCall(true);
-        setIsCalling(false);
-      } else if (incoming.code === 3013) {
-        setIsInCall(false);
-        setIsCalling(false);
       }
     };
     ws?.addEventListener('message', handleMessage);
