@@ -1,6 +1,6 @@
 import Peer, { MediaConnection } from 'peerjs';
 import adapter from 'webrtc-adapter';
-import { serverIP } from '../constants';
+import { isPhoneRegExp, serverIP } from '../constants';
 
 export class RTCconnection {
   streaming = false;
@@ -34,7 +34,8 @@ export class RTCconnection {
   getMyStream = (video = true, audio = true): Promise<MediaStream> | undefined => {
     const browser = adapter.browserDetails;
 
-    if (!video && !audio) return;
+    if (!video && !audio) return new Promise((resolve) => resolve(new MediaStream()));
+
     const nav =
       navigator.getUserMedia ||
       // @ts-ignore
@@ -70,10 +71,16 @@ export class RTCconnection {
   };
 
   changeStream = (audio: boolean, video: boolean, screenShare?: boolean): Promise<MediaStream> | undefined => {
-    const media: Promise<any> = screenShare
-      ? // @ts-ignore
-        navigator.mediaDevices?.getDisplayMedia()
-      : this.getMyStream(audio, video);
+    let media: Promise<any> | undefined;
+
+    if (screenShare) {
+      if (!isPhoneRegExp.test(navigator.userAgent)) {
+        // @ts-ignore
+        media = navigator.mediaDevices?.getDisplayMedia?.();
+      }
+    } else {
+      media = this.getMyStream(video, audio);
+    }
 
     if (!media) return;
     return new Promise((resolve) => {

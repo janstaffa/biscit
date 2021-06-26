@@ -22,3 +22,5 @@ export const videoRegExp = /mkv|flv|ogv|ogg|avi|mov|mp4|wmv|m4v|3gp|3g2|flv|webm
 export const audioRegExp = /wav|mp3|aac|flac|alac/;
 
 export const urlRegExp = /(https?:\/\/[^\s]+)/g;
+
+export const isPhoneRegExp = /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i;

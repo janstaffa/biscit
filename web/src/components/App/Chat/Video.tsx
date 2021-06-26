@@ -12,10 +12,14 @@ interface VideoProps {
 }
 const Video: React.FC<VideoProps> = ({ stream, peerId, mic = true, camera = true, screenShare, username, isMe }) => {
   const video = useRef<HTMLVideoElement | null>(null);
+  const audio = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (video.current) {
       video.current.srcObject = stream;
+    }
+    if (audio.current) {
+      audio.current.srcObject = stream;
     }
   });
 
@@ -28,13 +32,13 @@ const Video: React.FC<VideoProps> = ({ stream, peerId, mic = true, camera = true
       }}
     >
       {camera || screenShare ? (
-        <video id={peerId} autoPlay={true} ref={video} className="w-full h-full" muted={isMe || !mic}></video>
+        <video id={peerId} autoPlay={true} ref={video} className="w-full h-full" muted={true}></video>
       ) : (
         <div className="w-full h-full flex flex-col justify-center items-center">
           <div className="w-20 h-20 bg-white rounded-full"></div>
         </div>
       )}
-
+      <audio autoPlay={true} ref={audio} muted={isMe || !mic} className="hidden"></audio>
       <div className="absolute right-0 bottom-0 bg-dark-100 w-full px-5 py-2 flex flex-row justify-between items-center rounded-b-md">
         <span className="text-light-200 font-bold text-lg">
           {username || 'unknown user'}

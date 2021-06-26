@@ -86,12 +86,17 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
   };
 
   const handleStreamChange = (audio: boolean, video: boolean, screenShare: boolean) => {
-    rtcRef.current?.changeStream(audio, video, screenShare)?.then((newStream) => {
+    const realScreenShare = screenShare && !optionsRef.current.screenShare;
+
+    if (audio === optionsRef.current.mic && optionsRef.current.screenShare) return;
+    rtcRef.current?.changeStream(audio, video, realScreenShare)?.then((newStream) => {
       if (!rtcRef.current) return;
-      setOptions({ ...optionsRef.current, mic: audio, camera: video, screenShare });
+
+      setOptions({ ...optionsRef.current, mic: audio, camera: video });
 
       const oldVideos = [...videosRef.current];
       const myVideo = oldVideos.find((vid) => vid.peerId === rtcRef.current?.peerId);
+
       if (myVideo) {
         const updatedVideo = {
           ...myVideo,
@@ -99,11 +104,12 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
           camera: video,
           screenShare
         };
-        if (screenShare) {
+        if (screenShare && !optionsRef.current.screenShare) {
+          setOptions({ ...optionsRef.current, screenShare: true });
           updatedVideo.stream = newStream;
           newStream.getVideoTracks()[0].onended = () => {
             setOptions({ ...optionsRef.current, screenShare: false });
-            rtcRef.current?.getMyStream(audio, video)?.then((stream) => {
+            rtcRef.current?.getMyStream(video, audio)?.then((stream) => {
               rtcRef.current?.replaceStream(stream);
               if (rtcRef.current) {
                 rtcRef.current.myStream = stream;
@@ -112,7 +118,11 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
               const newOldVideos = [...videosRef.current];
               const myNewVideo = newOldVideos.find((vid) => vid.peerId === rtcRef.current?.peerId);
               if (myNewVideo) {
-                newOldVideos.splice(newOldVideos.indexOf(myNewVideo), 1, { ...myNewVideo, stream, screenShare: false });
+                newOldVideos.splice(newOldVideos.indexOf(myNewVideo), 1, {
+                  ...myNewVideo,
+                  stream,
+                  screenShare: false
+                });
                 setVideos(newOldVideos);
               }
             });
@@ -134,6 +144,31 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
       socket.send(JSON.stringify(payload));
     });
   };
+
+  const handleScreenShare = () => {
+    if (!optionsRef.current.screenShare) {
+      handleStreamChange(options.mic, options.camera, !options.screenShare);
+    } else {
+      setOptions({ ...optionsRef.current, screenShare: false });
+      const tracks = rtcRef.current?.myStream.getTracks();
+      tracks?.forEach((track) => track.stop());
+
+      rtcRef.current?.getMyStream(optionsRef.current.camera, optionsRef.current.mic)?.then((stream) => {
+        rtcRef.current?.replaceStream(stream);
+        if (rtcRef.current) {
+          rtcRef.current.myStream = stream;
+        }
+
+        const newOldVideos = [...videosRef.current];
+        const myNewVideo = newOldVideos.find((vid) => vid.peerId === rtcRef.current?.peerId);
+        if (myNewVideo) {
+          newOldVideos.splice(newOldVideos.indexOf(myNewVideo), 1, { ...myNewVideo, stream, screenShare: false });
+          setVideos(newOldVideos);
+        }
+      });
+    }
+  };
+
   useEffect(() => {
     const rtc = new RTCconnection(callId);
     rtcRef.current = rtc;
@@ -260,7 +295,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
               'w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 hover:text-black transition-all delay-75' +
               (options.camera ? ' text-light-300 hover:bg-light-400' : ' text-black bg-red-500 border-none')
             }
-            title="Turn off your camera"
+            title={options.camera ? 'Turn off your camera' : 'Turn on your camera'}
             onClick={() => handleStreamChange(options.mic, !options.camera, options.screenShare)}
           >
             <BiVideoOff size={20} />
@@ -270,7 +305,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
               'w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 hover:text-black transition-all delay-75' +
               (options.mic ? ' text-light-300 hover:bg-light-400' : ' text-black bg-red-500 border-none')
             }
-            title="Mute your microphone"
+            title={options.mic ? 'Mute your microphone' : 'Unmute your microphone'}
             onClick={() => handleStreamChange(!options.mic, options.camera, options.screenShare)}
           >
             <AiOutlineAudioMuted size={20} />
@@ -303,9 +338,12 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
             <VscMute size={20} />
           </button>
           <button
-            className="w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 text-light-300 hover:bg-light-400 hover:text-black transition-all delay-75"
-            title="Share your screen"
-            onClick={() => handleStreamChange(options.mic, options.camera, !options.screenShare)}
+            className={
+              'w-12 h-12 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-2 hover:text-black transition-all delay-75' +
+              (options.screenShare ? ' text-black bg-red-500 border-none' : ' text-light-300 hover:bg-light-400')
+            }
+            title={options.screenShare ? 'Cancel screen sharing' : 'Share your screen'}
+            onClick={() => handleScreenShare()}
           >
             <MdScreenShare size={20} />
           </button>
