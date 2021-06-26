@@ -76,12 +76,14 @@ export interface IncomingPeerChangeMessage extends SocketMessage {
   callId: string;
   audio: boolean;
   camera: boolean;
+  screenShare: boolean;
 }
 export interface OutgoingPeerChangeMessage extends SocketMessage {
   peerId: string;
   userId: string;
   audio: boolean;
   camera: boolean;
+  screenShare: boolean;
 }
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;

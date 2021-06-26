@@ -242,7 +242,7 @@ export const handleMessage = async (data: string, ws: WebSocket, user: User) => 
       console.error(e);
     }
   } else if (code === PEER_CHANGE_CODE) {
-    const { callId, peerId, audio, camera } = incoming as IncomingPeerChangeMessage;
+    const { callId, peerId, audio, camera, screenShare } = incoming as IncomingPeerChangeMessage;
     if (!callId || !peerId) return;
     try {
       const call = await Call.findOne({ where: { id: callId }, relations: ['thread', 'thread.members'] });
@@ -258,7 +258,8 @@ export const handleMessage = async (data: string, ws: WebSocket, user: User) => 
         userId: user.id,
         peerId,
         audio,
-        camera
+        camera,
+        screenShare
       };
 
       call.memberIds.forEach((memberId) => {

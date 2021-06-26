@@ -1,17 +1,6 @@
 import Peer, { MediaConnection } from 'peerjs';
+import adapter from 'webrtc-adapter';
 import { serverIP } from '../constants';
-
-// interface RTCconnection {
-//   peer: Peer | undefined;
-//   streaming: boolean;
-//   peerId: string;
-//   callId: string;
-//   connect: (callId: string) => Peer;
-//   getMyStream: (video?: boolean, audio?: boolean) => Promise<MediaStream>;
-//   close: () => boolean;
-//   // restart: () => ReconnectingWebSocket | undefined;
-//   // send: (payload: string) => void;
-// }
 
 export class RTCconnection {
   streaming = false;
@@ -40,8 +29,10 @@ export class RTCconnection {
     // });
   }
 
-  getMyStream = (video = true, audio = true): Promise<MediaStream> => {
-    console.log('getMyStream', video, audio);
+  getMyStream = (video = true, audio = true): Promise<MediaStream> | undefined => {
+    const browser = adapter.browserDetails;
+
+    if (!video && !audio) return;
     const nav =
       navigator.getUserMedia ||
       // @ts-ignore
@@ -76,17 +67,29 @@ export class RTCconnection {
     });
   };
 
-  changeStream = (audio: boolean, video: boolean) => {
-    this.getMyStream(true, true).then((newStream) => {
-      console.log(this.peers);
+  changeStream = (audio: boolean, video: boolean, screenShare: boolean) => {
+    // @ts-ignore
+    const media: Promise<any> = screenShare ? navigator.mediaDevices.getDisplayMedia() : this.getMyStream(audio, video);
+
+    media?.then((newStream: MediaStream) => {
+      if (screenShare) {
+        this.replaceStream(newStream);
+        newStream.getVideoTracks()[0].onended = () => {
+          this.getMyStream(audio, video)?.then((stream) => {
+            this.replaceStream(stream);
+          });
+        };
+        return;
+      }
       Object.values(this.peers).forEach((peer: MediaConnection) => {
+        // if (peer.metadata.id === this.peerId) return;
         peer.peerConnection?.getSenders().forEach((sender) => {
           if (sender) {
             if (sender.track?.kind === 'audio') {
-              console.log('HERE:', sender.track.enabled, audio);
               sender.track.enabled = audio;
             }
             if (sender.track?.kind === 'video') {
+              console.log('setting video track for', peer.metadata, video);
               sender.track.enabled = video;
             }
           }
@@ -95,30 +98,48 @@ export class RTCconnection {
     });
   };
 
-  replaceStream = (newStream: MediaStream) => {
-    console.log('replace stream', this.peers);
+  replaceStream = (mediaStream: MediaStream) => {
     Object.values(this.peers).forEach((peer: MediaConnection) => {
-      console.log(peer.peerConnection?.getSenders());
       peer.peerConnection?.getSenders().forEach((sender) => {
-        console.log(newStream, sender, sender.track?.kind);
         if (sender) {
           if (sender.track?.kind === 'audio') {
-            sender.replaceTrack(null);
-            if (newStream.getAudioTracks().length > 0) {
-              console.log('REPLACING AUDIO');
-              sender.replaceTrack(newStream.getAudioTracks()[0]);
+            if (mediaStream.getAudioTracks().length > 0) {
+              sender.replaceTrack(mediaStream.getAudioTracks()[0]);
             }
           }
           if (sender.track?.kind === 'video') {
-            console.log('REPLACING VIDEO');
-            if (newStream.getVideoTracks().length > 0) {
-              sender.replaceTrack(newStream.getVideoTracks()[0]);
+            if (mediaStream.getVideoTracks().length > 0) {
+              sender.replaceTrack(mediaStream.getVideoTracks()[0]);
             }
           }
         }
       });
     });
   };
+  // replaceStream = (newStream: MediaStream) => {
+  //   console.log('replace stream', this.peers);
+  //   Object.values(this.peers).forEach((peer: MediaConnection) => {
+  //     console.log(peer.peerConnection?.getSenders());
+  //     peer.peerConnection?.getSenders().forEach((sender) => {
+  //       console.log(newStream, sender, sender.track?.kind);
+  //       if (sender) {
+  //         if (sender.track?.kind === 'audio') {
+  //           sender.replaceTrack(null);
+  //           if (newStream.getAudioTracks().length > 0) {
+  //             console.log('REPLACING AUDIO');
+  //             sender.replaceTrack(newStream.getAudioTracks()[0]);
+  //           }
+  //         }
+  //         if (sender.track?.kind === 'video') {
+  //           console.log('REPLACING VIDEO');
+  //           if (newStream.getVideoTracks().length > 0) {
+  //             sender.replaceTrack(newStream.getVideoTracks()[0]);
+  //           }
+  //         }
+  //       }
+  //     });
+  //   });
+  // };
 
   close = () => {
     this.peer?.destroy();

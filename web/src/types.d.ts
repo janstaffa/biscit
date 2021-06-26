@@ -69,6 +69,7 @@ export interface IncomingPeerChangeMessage extends SocketMessage {
   userId: string;
   audio: boolean;
   camera: boolean;
+  screenShare: boolean;
 }
 
 export interface OutgoingPeerChangeMessage extends SocketMessage {
@@ -76,4 +77,5 @@ export interface OutgoingPeerChangeMessage extends SocketMessage {
   callId: string;
   audio: boolean;
   camera: boolean;
+  screenShare: boolean;
 }
