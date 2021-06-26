@@ -8,6 +8,8 @@ export class RTCconnection {
   peerId = '';
   callId = '';
   peers: MediaConnection[] = [];
+  isScreenSharing = false;
+  myStream: MediaStream;
 
   constructor(callId) {
     this.callId = callId;
@@ -67,33 +69,35 @@ export class RTCconnection {
     });
   };
 
-  changeStream = (audio: boolean, video: boolean, screenShare: boolean) => {
-    // @ts-ignore
-    const media: Promise<any> = screenShare ? navigator.mediaDevices.getDisplayMedia() : this.getMyStream(audio, video);
+  changeStream = (audio: boolean, video: boolean, screenShare?: boolean): Promise<MediaStream> | undefined => {
+    const media: Promise<any> = screenShare
+      ? // @ts-ignore
+        navigator.mediaDevices?.getDisplayMedia()
+      : this.getMyStream(audio, video);
 
-    media?.then((newStream: MediaStream) => {
-      if (screenShare) {
-        this.replaceStream(newStream);
-        newStream.getVideoTracks()[0].onended = () => {
-          this.getMyStream(audio, video)?.then((stream) => {
-            this.replaceStream(stream);
+    if (!media) return;
+    return new Promise((resolve) => {
+      media?.then((newStream: MediaStream) => {
+        if (screenShare) {
+          this.replaceStream(newStream);
+          this.myStream = newStream;
+
+          resolve(newStream);
+          return;
+        }
+        Object.values(this.peers).forEach((peer: MediaConnection) => {
+          peer.peerConnection?.getSenders().forEach((sender) => {
+            if (sender) {
+              if (sender.track?.kind === 'audio') {
+                sender.track.enabled = audio;
+              }
+              if (sender.track?.kind === 'video') {
+                sender.track.enabled = video;
+              }
+            }
           });
-        };
-        return;
-      }
-      Object.values(this.peers).forEach((peer: MediaConnection) => {
-        // if (peer.metadata.id === this.peerId) return;
-        peer.peerConnection?.getSenders().forEach((sender) => {
-          if (sender) {
-            if (sender.track?.kind === 'audio') {
-              sender.track.enabled = audio;
-            }
-            if (sender.track?.kind === 'video') {
-              console.log('setting video track for', peer.metadata, video);
-              sender.track.enabled = video;
-            }
-          }
         });
+        resolve(newStream);
       });
     });
   };
