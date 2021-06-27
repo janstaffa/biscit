@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AiOutlineAudioMuted } from 'react-icons/ai';
 
 interface VideoProps {
@@ -9,8 +9,20 @@ interface VideoProps {
   camera: boolean;
   screenShare: boolean;
   username?: string;
+  volume: number;
+  isDeafened: boolean;
 }
-const Video: React.FC<VideoProps> = ({ stream, peerId, mic = true, camera = true, screenShare, username, isMe }) => {
+const Video: React.FC<VideoProps> = ({
+  stream,
+  peerId,
+  mic = true,
+  camera = true,
+  screenShare,
+  username,
+  isMe,
+  volume,
+  isDeafened
+}) => {
   const video = useRef<HTMLVideoElement | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
 
@@ -20,6 +32,7 @@ const Video: React.FC<VideoProps> = ({ stream, peerId, mic = true, camera = true
     }
     if (audio.current) {
       audio.current.srcObject = stream;
+      audio.current.volume = volume / 100;
     }
   });
 
@@ -38,7 +51,7 @@ const Video: React.FC<VideoProps> = ({ stream, peerId, mic = true, camera = true
           <div className="w-20 h-20 bg-white rounded-full"></div>
         </div>
       )}
-      <audio autoPlay={true} ref={audio} muted={isMe || !mic} className="hidden"></audio>
+      <audio autoPlay={true} ref={audio} muted={isMe || !mic || isDeafened} className="hidden"></audio>
       <div className="absolute right-0 bottom-0 bg-dark-100 w-full px-5 py-2 flex flex-row justify-between items-center rounded-b-md">
         <span className="text-light-200 font-bold text-lg">
           {username || 'unknown user'}
@@ -50,4 +63,4 @@ const Video: React.FC<VideoProps> = ({ stream, peerId, mic = true, camera = true
   );
 };
 
-export default Video;
+export default React.memo(Video);

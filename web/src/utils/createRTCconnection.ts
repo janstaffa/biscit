@@ -10,6 +10,8 @@ export class RTCconnection {
   peers: MediaConnection[] = [];
   isScreenSharing = false;
   myStream: MediaStream;
+  audioDeviceId: string | undefined;
+  videoDeviceId: string | undefined;
 
   constructor(callId) {
     this.callId = callId;
@@ -31,8 +33,16 @@ export class RTCconnection {
     // });
   }
 
-  getMyStream = (video = true, audio = true): Promise<MediaStream> | undefined => {
+  getMyStream = (
+    video = true,
+    audio = true,
+    audioDeviceId: string | undefined,
+    videoDeviceId: string | undefined
+  ): Promise<MediaStream> | undefined => {
     const browser = adapter.browserDetails;
+
+    video = video && !!videoDeviceId;
+    audio = audio && !!audioDeviceId;
 
     if (!video && !audio) return new Promise((resolve) => resolve(new MediaStream()));
 
@@ -52,10 +62,11 @@ export class RTCconnection {
             ? {
                 noiseSuppression: true,
                 width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 }
+                height: { min: 480, ideal: 720, max: 1080 },
+                deviceId: { exact: videoDeviceId }
               }
             : false,
-          audio: audio
+          audio: audio ? { deviceId: { exact: audioDeviceId } } : false
         },
         (stream) => {
           resolve(stream);
@@ -70,24 +81,32 @@ export class RTCconnection {
     });
   };
 
-  changeStream = (audio: boolean, video: boolean, screenShare?: boolean): Promise<MediaStream> | undefined => {
+  changeStream = (
+    audio: boolean,
+    video: boolean,
+    audioDeviceId: string | undefined,
+    videoDeviceId: string | undefined,
+    screenShare?: boolean
+  ): Promise<MediaStream> | undefined => {
     let media: Promise<any> | undefined;
 
-    if (screenShare) {
+    console.log(screenShare, this.isScreenSharing);
+    if (screenShare && !this.isScreenSharing) {
       if (!isPhoneRegExp.test(navigator.userAgent)) {
         // @ts-ignore
         media = navigator.mediaDevices?.getDisplayMedia?.();
       }
     } else {
-      media = this.getMyStream(video, audio);
+      media = this.getMyStream(video, audio, audioDeviceId, videoDeviceId);
     }
 
     if (!media) return;
     return new Promise((resolve) => {
       media?.then((newStream: MediaStream) => {
-        if (screenShare) {
+        if (screenShare && !this.isScreenSharing) {
+          console.log('AAAAAAAAAA');
           this.replaceStream(newStream);
-          this.myStream = newStream;
+          this.isScreenSharing = true;
 
           resolve(newStream);
           return;
@@ -110,6 +129,7 @@ export class RTCconnection {
   };
 
   replaceStream = (mediaStream: MediaStream) => {
+    this.myStream = mediaStream;
     Object.values(this.peers).forEach((peer: MediaConnection) => {
       peer.peerConnection?.getSenders().forEach((sender) => {
         if (sender) {
@@ -127,6 +147,14 @@ export class RTCconnection {
       });
     });
   };
+
+  // changeDevice = (audioDeviceId: string | undefined, videoDeviceId: string | undefined) => {
+  //   if (!audioDeviceId || !videoDeviceId) return;
+
+  //   this.changeStream()
+  //   this.audioDeviceId = audioDeviceId;
+  //   this.videoDeviceId = videoDeviceId;
+  // };
   // replaceStream = (newStream: MediaStream) => {
   //   console.log('replace stream', this.peers);
   //   Object.values(this.peers).forEach((peer: MediaConnection) => {
