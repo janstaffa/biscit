@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { FaHashtag, FaVideo } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
@@ -20,18 +20,16 @@ import EditThreadModal from '../components/Modals/EditThreadModal';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
-  ThreadSnippetFragment,
   useAddMembersMutation,
   useCancelCallMutation,
-  useCreateCallMutation,
   useJoinCallMutation,
   useMeQuery,
-  UserSnippetFragment,
   useThreadQuery,
   useThreadsQuery
 } from '../generated/graphql';
-import { IncomingCreateCallMessage, OutgoingSocketChatMessage } from '../types';
+import { OutgoingSocketChatMessage } from '../types';
 import { socket } from '../utils/createWSconnection';
+import { RTCcontext } from '../utils/RTCProvider';
 import { errorToast, successToast } from '../utils/toasts';
 
 const Chat: React.FC = () => {
@@ -58,7 +56,7 @@ const Chat: React.FC = () => {
     onSuccess: (d) => {
       if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
         d.JoinCall.errors.forEach((err) => {
-          errorToast('bbbbbbbbbbbbbbb' + err.details?.message);
+          errorToast(err.details?.message);
         });
       }
     }
@@ -127,77 +125,77 @@ const Chat: React.FC = () => {
     return !data?.thread.data?.members.find((member) => member.userId === friend.friend.id);
   });
 
-  const [isCalling, setIsCalling] = useState<boolean>(false);
-  const [callingUser, setCallingUser] = useState<UserSnippetFragment | null>(null);
-  const [callingThread, setCallingThread] = useState<ThreadSnippetFragment | null>(null);
-  const [callId, setCallId] = useState<string | undefined | null>(null);
-  const [isInCall, setIsInCall] = useState<boolean>(false);
+  // const [isCalling, setIsCalling] = useState<boolean>(false);
+  // const [callingUser, setCallingUser] = useState<UserSnippetFragment | null>(null);
+  // const [callingThread, setCallingThread] = useState<ThreadSnippetFragment | null>(null);
+  // const [callId, setCallId] = useState<string | undefined | null>(null);
+  // const [isInCall, setIsInCall] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!meData?.me) return;
-    const ws = socket.connect();
-    const handleMessage = (e) => {
-      const { data: m } = e;
-      const incoming = JSON.parse(m);
+  // useEffect(() => {
+  //   if (!meData?.me) return;
+  //   const ws = socket.connect();
+  //   const handleMessage = (e) => {
+  //     const { data: m } = e;
+  //     const incoming = JSON.parse(m);
 
-      if (incoming.code === 3010) {
-        const { user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
-        setIsCalling(true);
-        setCallingUser(user);
-        setCallingThread(thread);
-        setCallId(cId);
-      } else if (incoming.code === 3014) {
-        setIsInCall(true);
-        setIsCalling(false);
-      }
-    };
-    ws?.addEventListener('message', handleMessage);
-  }, [meData?.me]);
+  //     if (incoming.code === 3010) {
+  //       const { user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
+  //       setIsCalling(true);
+  //       setCallingUser(user);
+  //       setCallingThread(thread);
+  //       setCallId(cId);
+  //     } else if (incoming.code === 3014) {
+  //       setIsInCall(true);
+  //       setIsCalling(false);
+  //     }
+  //   };
+  //   ws?.addEventListener('message', handleMessage);
+  // }, [meData?.me]);
 
-  const { mutate: createCall } = useCreateCallMutation();
+  // const ringtone = useRef<HTMLAudioElement>();
+  // useEffect(() => {
+  //   ringtone.current = new Audio('/ringtone.mp3');
+  //   ringtone.current.loop = true;
+  // }, []);
+  // useEffect(() => {
+  //   if (!ringtone.current || !callingUser) return;
+  //   if (isCalling) {
+  //     if (callingUser.id !== meData?.me?.id) {
+  //       ringtone.current.play().catch((e) => console.error(e));
+  //     }
+  //   } else {
+  //     ringtone.current.pause();
+  //     ringtone.current.currentTime = 0;
+  //     setCallingUser(null);
+  //     setCallingThread(null);
+  //   }
+  // }, [isCalling, callingUser]);
 
-  const ringtone = useRef<HTMLAudioElement>();
-  useEffect(() => {
-    ringtone.current = new Audio('/ringtone.mp3');
-    ringtone.current.loop = true;
-  }, []);
-  useEffect(() => {
-    if (!ringtone.current || !callingUser) return;
-    if (isCalling) {
-      if (callingUser.id !== meData?.me?.id) {
-        ringtone.current.play().catch((e) => console.error(e));
-      }
-    } else {
-      ringtone.current.pause();
-      ringtone.current.currentTime = 0;
-      setCallingUser(null);
-      setCallingThread(null);
-    }
-  }, [isCalling, callingUser]);
+  // const startCall = () => {
+  //   if (!callId) return;
+  //   setIsCalling(false);
+  //   setIsInCall(true);
+  //   joinCall({ options: { callId } });
+  // };
 
-  const startCall = () => {
-    if (!callId) return;
-    setIsCalling(false);
-    setIsInCall(true);
-    joinCall({ options: { callId } });
-  };
+  // const cancelCall = () => {
+  //   if (!callId) return;
+  //   cancelCallMutate(
+  //     { options: { callId } },
+  //     {
+  //       onSuccess: (d) => {
+  //         if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
+  //           d.CancelCall.errors.forEach((err) => {
+  //             errorToast(err.details?.message);
+  //           });
+  //         }
+  //       }
+  //     }
+  //   );
+  //   setIsCalling(false);
+  // };
 
-  const cancelCall = () => {
-    if (!callId) return;
-    cancelCallMutate(
-      { options: { callId } },
-      {
-        onSuccess: (d) => {
-          if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
-            d.CancelCall.errors.forEach((err) => {
-              errorToast(err.details?.message);
-            });
-          }
-        }
-      }
-    );
-    setIsCalling(false);
-  };
+  const rtcContext = useContext(RTCcontext);
 
   return (
     <>

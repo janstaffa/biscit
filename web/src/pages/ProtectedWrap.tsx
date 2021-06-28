@@ -3,7 +3,7 @@ import { useMeQuery, useTokenQuery } from '../generated/graphql';
 import { useTokenStore } from '../stores/useTokenStore';
 import { IncomingSocketChatMessage } from '../types';
 import { socket } from '../utils/createWSconnection';
-import RTCwrap from '../utils/RTCwrap';
+import RTCProvider from '../utils/RTCProvider';
 
 export interface ProtectedWrapProps {
   children: ReactNode;
@@ -56,7 +56,7 @@ const ProtectedWrap: React.FC<ProtectedWrapProps> = ({ children }) => {
 
   return (
     <>
-      <RTCwrap>{children}</RTCwrap>
+      <RTCProvider>{children}</RTCProvider>
     </>
   );
 };
