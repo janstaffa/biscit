@@ -59,6 +59,12 @@ export interface IncomingJoinCallMessage extends SocketMessage {
   callId: string;
   peerId: string;
 }
+
+export interface OutgoingLeaveCallMessage extends SocketMessage {
+  peerId: string;
+  callId: string;
+}
+
 //when there are 2 members in the call, this message indicates the actual start of the call
 export interface OutgoingStartCallMessage extends SocketMessage {
   callId: string;
@@ -101,6 +107,7 @@ export const CANCEL_CALL_CODE = 3011;
 export const JOIN_CALL_CODE = 3012;
 export const KILL_CALL_CODE = 3013;
 export const PEER_CHANGE_CODE = 3015;
+export const LEAVE_CALL_CODE = 3016;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -232,15 +239,18 @@ export const socketController = (server: Server) => {
           const newMemberIds = [...memberIds];
           if (newMemberIds.includes(user.id)) {
             newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
-            await Call.update({ id: thread.thread.call.id }, { memberIds: newMemberIds });
-            const payload: OutgoingCancelCallMessage = {
-              code: CANCEL_CALL_CODE,
-              callId: thread.thread.call.id
-            };
+            if (newMemberIds.length <= 1) {
+              await Call.delete({ id: thread.thread.call.id });
+              const payload: OutgoingKillCallMessage = {
+                code: KILL_CALL_CODE,
+                callId: thread.thread.call.id
+              };
+              newMemberIds.forEach((memberId) => {
+                connections.getSocket(memberId)?.send(JSON.stringify(payload));
+              });
+              return;
+            }
 
-            newMemberIds.forEach((memberId) => {
-              connections.getSocket(memberId)?.send(JSON.stringify(payload));
-            });
             // pubClient.publish(thread.id, JSON.stringify(payload));
           }
         }

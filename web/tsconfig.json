@@ -30,6 +30,6 @@
     "isolatedModules": true
   },
   "exclude": ["node_modules"],
-  "include": ["./src/**/*.ts", "./src/**/*.tsx", "declaration.d.ts"],
-  "typeRoots": ["./src/typings", "./node_modules/@types"]
+  "include": ["./src/**/*.ts", "./src/**/*.tsx"],
+  "typeRoots": ["./src/declaration", "./src/typings", "./node_modules/@types"]
 }

@@ -208,6 +208,7 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
     const thisDevice = devices.find((device) => device.deviceId === deviceId);
 
     if (!thisDevice) return;
+
     const key = thisDevice.kind === 'audioinput' ? 'audioDevice' : 'videoDevice';
     const newOptions = { ...options, [key]: thisDevice };
     setOptions(newOptions);
@@ -240,81 +241,79 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
       setDevices(d);
     });
     const onOpen = (id) => {
-      rtc
-        .getMyStream(camera, mic, optionsRef.current.audioDevice?.deviceId, optionsRef.current.videoDevice?.deviceId)
-        ?.then((stream) => {
-          if (stream) {
-            rtc.streaming = true;
-            rtc.myStream = stream;
-            createVideo(id, stream, camera, true, false, true, meData?.me?.username);
-          }
+      rtc.getMyStream(camera, mic, undefined, undefined)?.then((stream) => {
+        if (stream) {
+          rtc.streaming = true;
+          rtc.myStream = stream;
+          createVideo(id, stream, camera, true, false, true, meData?.me?.username);
+        }
 
-          rtc.peer.on('call', (call) => {
-            call.answer(stream);
-            call.on('stream', (userVideoStream) => {
-              createVideo(call.metadata.id, userVideoStream, true, true, false, false, call.metadata.username);
+        rtc.peer.on('call', (call) => {
+          call.answer(stream);
+          call.on('stream', (userVideoStream) => {
+            createVideo(call.metadata.id, userVideoStream, true, true, false, false, call.metadata.username);
+          });
+          call.on('close', () => {
+            removeVideo(call.metadata.id);
+          });
+          call.on('error', () => {
+            removeVideo(call.metadata.id);
+          });
+
+          rtc.peers.push(call);
+        });
+
+        const handleMessage = (e) => {
+          const { data: m } = e;
+          const incoming = JSON.parse(m);
+
+          if (incoming.code === 3012) {
+            const { user, peerId } = incoming as IncomingJoinCallMessage;
+            const call = rtc.peer.call(peerId, stream, {
+              metadata: { id: rtc.peer.id, username: meData?.me?.username }
             });
-            call.on('close', () => {
-              removeVideo(call.metadata.id);
+
+            call?.on('stream', (userVideoStream) => {
+              const hasAudio = userVideoStream.getAudioTracks().find((track) => track.enabled);
+              const hasVideo = userVideoStream.getVideoTracks().find((track) => track.enabled);
+
+              createVideo(peerId, userVideoStream, !!hasAudio, !!hasVideo, false, false, user.username);
             });
-            call.on('error', () => {
-              removeVideo(call.metadata.id);
+            call?.on('close', () => {
+              removeVideo(peerId);
+            });
+            call?.on('error', () => {
+              removeVideo(peerId);
             });
 
             rtc.peers.push(call);
-          });
+          } else if (incoming.code === 3013) {
+            setIsInCall(false);
+            rtc.close();
+          } else if (incoming.code === 3015) {
+            const { peerId, userId, camera: cam, audio, screenShare } = incoming as IncomingPeerChangeMessage;
+            const oldVideos = [...videosRef.current];
+            let thisVideo = oldVideos.find((video) => video.peerId === peerId);
+            if (!thisVideo) return;
+            thisVideo = {
+              ...thisVideo,
+              camera: cam,
+              mic: audio,
+              screenShare
+            };
+            oldVideos.splice(oldVideos.indexOf(thisVideo), 1, thisVideo);
+            setVideos(oldVideos);
+          }
+        };
+        ws.addEventListener('message', handleMessage);
 
-          const handleMessage = (e) => {
-            const { data: m } = e;
-            const incoming = JSON.parse(m);
-
-            if (incoming.code === 3012) {
-              const { user, peerId } = incoming as IncomingJoinCallMessage;
-              const call = rtc.peer.call(peerId, stream, {
-                metadata: { id: rtc.peer.id, username: meData?.me?.username }
-              });
-
-              call?.on('stream', (userVideoStream) => {
-                const hasAudio = userVideoStream.getAudioTracks().find((track) => track.enabled);
-                const hasVideo = userVideoStream.getVideoTracks().find((track) => track.enabled);
-
-                createVideo(peerId, userVideoStream, !!hasAudio, !!hasVideo, false, false, user.username);
-              });
-              call?.on('close', () => {
-                removeVideo(peerId);
-              });
-              call?.on('error', () => {
-                removeVideo(peerId);
-              });
-
-              rtc.peers.push(call);
-            } else if (incoming.code === 3013) {
-              setIsInCall(false);
-              rtc.close();
-            } else if (incoming.code === 3015) {
-              const { peerId, userId, camera: cam, audio, screenShare } = incoming as IncomingPeerChangeMessage;
-              const oldVideos = [...videosRef.current];
-              let thisVideo = oldVideos.find((video) => video.peerId === peerId);
-              if (!thisVideo) return;
-              thisVideo = {
-                ...thisVideo,
-                camera: cam,
-                mic: audio,
-                screenShare
-              };
-              oldVideos.splice(oldVideos.indexOf(thisVideo), 1, thisVideo);
-              setVideos(oldVideos);
-            }
-          };
-          ws.addEventListener('message', handleMessage);
-
-          const payload: OutgoingJoinCallMessage = {
-            code: 3012,
-            callId,
-            peerId: id
-          };
-          socket.send(JSON.stringify(payload));
-        });
+        const payload: OutgoingJoinCallMessage = {
+          code: 3012,
+          callId,
+          peerId: id
+        };
+        socket.send(JSON.stringify(payload));
+      });
     };
     rtc.peer.on('open', onOpen);
 
@@ -447,8 +446,9 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
                         >
                           {devices.map((device) => {
                             if (device.kind !== 'audioinput') return null;
+                            const isSelected = device.deviceId === optionsRef.current.audioDevice?.deviceId;
                             return (
-                              <option value={device.deviceId} key={device.deviceId}>
+                              <option value={device.deviceId} selected={isSelected} key={device.deviceId}>
                                 {device.label}
                               </option>
                             );
@@ -465,8 +465,9 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId, setIsInCall }) => {
                         >
                           {devices.map((device) => {
                             if (device.kind !== 'videoinput') return null;
+                            const isSelected = device.deviceId === optionsRef.current.videoDevice?.deviceId;
                             return (
-                              <option value={device.deviceId} key={device.deviceId}>
+                              <option value={device.deviceId} selected={isSelected} key={device.deviceId}>
                                 {device.label}
                               </option>
                             );

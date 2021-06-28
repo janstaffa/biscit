@@ -1,6 +1,8 @@
 import Peer, { MediaConnection } from 'peerjs';
 import adapter from 'webrtc-adapter';
 import { isPhoneRegExp, serverIP } from '../constants';
+import { createEmptyAudioTrack, createEmptyVideoTrack } from './fakeStream';
+import { errorToast } from './toasts';
 
 export class RTCconnection {
   streaming = false;
@@ -33,47 +35,64 @@ export class RTCconnection {
     // });
   }
 
-  getMyStream = (
+  getMyStream = async (
     video = true,
     audio = true,
     audioDeviceId: string | undefined,
     videoDeviceId: string | undefined
-  ): Promise<MediaStream> | undefined => {
+  ): Promise<MediaStream> => {
     const browser = adapter.browserDetails;
 
-    video = video && !!videoDeviceId;
-    audio = audio && !!audioDeviceId;
+    // video = video && !!videoDeviceId;
+    // audio = audio && !!audioDeviceId;
 
-    if (!video && !audio) return new Promise((resolve) => resolve(new MediaStream()));
+    if (!video && !audio)
+      return new Promise((resolve) => {
+        const audioTrack = createEmptyAudioTrack();
+        const videoTrack = createEmptyVideoTrack({ width: 1280, height: 720 });
 
-    const nav =
-      navigator.getUserMedia ||
-      // @ts-ignore
-      navigator.webkitGetUserMedia ||
-      // @ts-ignore
-      navigator.mozGetUserMedia ||
-      // @ts-ignore
-      navigator.msGetUserMedia;
+        const mediaStream = new MediaStream();
+        mediaStream.addTrack(audioTrack);
+        if (videoTrack) {
+          mediaStream.addTrack(videoTrack);
+        }
 
+        resolve(mediaStream);
+      });
+
+    const nav = navigator.mediaDevices.getUserMedia;
+    // // @ts-ignore
+    // navigator.webkitGetUserMedia ||
+    // // @ts-ignore
+    // navigator.mozGetUserMedia ||
+    // // @ts-ignore
+    // navigator.msGetUserMedia;
+
+    console.log('videoDeviceId', videoDeviceId);
     return new Promise((resolve, reject) => {
-      nav(
-        {
-          video: video
-            ? {
-                noiseSuppression: true,
-                width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 },
-                deviceId: { exact: videoDeviceId }
-              }
-            : false,
-          audio: audio ? { deviceId: { exact: audioDeviceId } } : false
-        },
+      nav({
+        video: video
+          ? {
+              noiseSuppression: true,
+              width: { min: 640, ideal: 1280, max: 1920 },
+              height: { min: 480, ideal: 720, max: 1080 },
+              deviceId: { exact: videoDeviceId }
+            }
+          : false,
+        audio: audio ? { deviceId: { exact: audioDeviceId } } : false
+      }).then(
         (stream) => {
           resolve(stream);
         },
-        (err) => {
+        (err: Error) => {
           if (err) {
-            console.error(err);
+            if (err.message === 'Could not start video source') {
+              errorToast(
+                "You can't join two calls with the same input hardware on one device. Please, select new input devices in call options."
+              );
+              this.getMyStream(false, false, undefined, undefined).then(resolve);
+              return;
+            }
             reject(err);
           }
         }
