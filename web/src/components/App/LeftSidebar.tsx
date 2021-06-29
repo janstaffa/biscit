@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { FaSearch, FaUserFriends } from 'react-icons/fa';
 import { GoSignOut } from 'react-icons/go';
 import { HiUserGroup } from 'react-icons/hi';
@@ -30,6 +30,7 @@ import {
 } from '../../types';
 import { queryClient } from '../../utils/createQueryClient';
 import { socket } from '../../utils/createWSconnection';
+import { RTCcontext } from '../../utils/RTCProvider';
 import { errorToast, successToast } from '../../utils/toasts';
 import SubmitButton from '../Buttons/SubmitButton';
 import ProfilePicture from './ProfilePicture';
@@ -193,6 +194,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId }) => {
 
   const profilePictureId = meData?.me?.profile_picture?.id;
   const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
+
+  const rtcContext = useContext(RTCcontext);
+
   return (
     <>
       <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
@@ -248,12 +252,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId }) => {
                   if (threadId === membership.threadId) {
                     threadList[i].unread = 0;
                   }
+                  const isCalling =
+                    (rtcContext?.isInCall && rtcContext?.callDetails?.threadId === membership.threadId) || false;
                   return (
                     <ThreadButton
                       thread={membership.thread}
                       threadId={membership.threadId}
                       unread={membership.unread > 0}
                       active={membership.threadId === threadId}
+                      isCalling={isCalling}
                       key={membership.threadId}
                     />
                   );

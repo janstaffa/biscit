@@ -11,9 +11,11 @@ import {
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
 import {
+  CANCEL_CALL_CODE,
   connections,
   CREATE_CALL_CODE,
   KILL_CALL_CODE,
+  OutgoingCancelCallMessage,
   OutgoingCreateCallMessage,
   OutgoingKillCallMessage,
   OutgoingStartCallMessage,
@@ -161,27 +163,18 @@ export class CallResolver {
     }
 
     if (call.accepted) return { data: true, errors };
-    if (userId === call.creatorId) {
+    if (userId === call.creatorId || call.thread.isDm) {
+      const payload: OutgoingCancelCallMessage = {
+        code: CANCEL_CALL_CODE,
+        callId: call.id
+      };
+
+      call.thread.members.forEach((member) => {
+        connections.getSocket(member.userId)?.send(JSON.stringify(payload));
+      });
+
       await Call.delete({ id: call.id });
     }
-    // const { memberIds } = call;
-    // const newMemberIds = [...memberIds];
-    // if (newMemberIds.includes(userId)) {
-    //   newMemberIds.splice(newMemberIds.indexOf(userId), 1);
-
-    //   await Call.update({ id: member.thread.call.id }, { memberIds: newMemberIds });
-    //   return { data: true, errors };
-    // }
-
-    // const payload: OutgoingCancelCallMessage = {
-    //   code: CANCEL_CALL_CODE,
-    //   threadId: options.threadId
-    // };
-
-    // member.thread.members.forEach((member) => {
-    //   connections.getSocket(member.userId)?.send(JSON.stringify(payload));
-    // });
-    // pubClient.publish(options.threadId, JSON.stringify(payload));
 
     return {
       data: true,
@@ -280,7 +273,7 @@ export class CallResolver {
     };
 
     newMembers.forEach((memberId) => {
-      console.log('isInitial', isInitial);
+      // console.log('isInitial', isInitial);
       if (isInitial) {
         connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
       }

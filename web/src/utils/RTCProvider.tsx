@@ -1,16 +1,20 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import {
+  MeQuery,
   ThreadSnippetFragment,
   useCancelCallMutation,
   useCreateCallMutation,
   useJoinCallMutation,
+  useLeaveCallMutation,
   useMeQuery,
   UserSnippetFragment
 } from '../generated/graphql';
 import {
+  IncomingCancelCallMessage,
   IncomingCreateCallMessage,
   IncomingJoinCallMessage,
   IncomingPeerChangeMessage,
+  IncomingStartCallMessage,
   OutgoingJoinCallMessage,
   OutgoingPeerChangeMessage
 } from '../types';
@@ -44,13 +48,7 @@ interface RingingDetails {
   user: UserSnippetFragment;
   thread: ThreadSnippetFragment;
 }
-interface RTCcontextType {
-  isInCall: boolean;
-  callDetails: CallDetails | undefined;
-  isRinging: boolean;
-  ringingDetails: RingingDetails | undefined;
-  joinCall: () => void;
-}
+
 interface PeerOptions {
   mic: boolean;
   camera: boolean;
@@ -60,6 +58,23 @@ interface PeerOptions {
   videoDevice: MediaDeviceInfo | undefined;
   audioDevice: MediaDeviceInfo | undefined;
 }
+interface RTCcontextType {
+  isInCall: boolean;
+  callDetails: CallDetails | undefined;
+  isRinging: boolean;
+  ringingDetails: RingingDetails | undefined;
+  options: PeerOptions;
+  devices: MediaDeviceInfo[];
+  joinCall: (callId: string) => void;
+  cancelCall: (callId: string) => void;
+  handleStreamChange: (audio: boolean, video: boolean, screenShare?: boolean) => void;
+  handleScreenShare: () => void;
+  handleDeviceSwitch: (deviceId: string) => void;
+  createCall: (threadId: string) => void;
+  leaveCall: () => void;
+  handleDeafen: (value: boolean) => void;
+  changeVolume: (newVolume: number) => void;
+}
 
 const defaultVolume = 100;
 
@@ -67,15 +82,18 @@ export const RTCcontext = React.createContext<RTCcontextType | null>(null);
 const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   // STATES
   const [isInCall, setIsInCall] = useState<boolean>(false);
+  const isInCallRef = useRef<boolean>(isInCall);
+  isInCallRef.current = isInCall;
   const [callDetails, setCallDetails] = useState<CallDetails | undefined>();
   const callDetailsRef = useRef<CallDetails | undefined>(callDetails);
   callDetailsRef.current = callDetails;
 
+  const [isRinging, setIsRinging] = useState<boolean>(false);
+  const isRingingRef = useRef<boolean>(isRinging);
+  isRingingRef.current = isRinging;
   const [ringingDetails, setRingingDetails] = useState<RingingDetails | undefined>();
   const ringingDetailsRef = useRef<RingingDetails | undefined>(ringingDetails);
   ringingDetailsRef.current = ringingDetails;
-
-  const [volume, setVolume] = useState<number>(defaultVolume);
 
   const [options, setOptions] = useState<PeerOptions>({
     mic: true,
@@ -91,73 +109,19 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
 
   const rtcRef = useRef<RTCconnection>();
 
-  const [isRinging, setIsRinging] = useState<boolean>(false);
-
   const ringtone = useRef<HTMLAudioElement>();
 
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 
   // QUERIES / MUTATIONS
   const { data: meData, isLoading } = useMeQuery();
-  const { mutate: joinCallMutation } = useJoinCallMutation({
-    onSuccess: (d) => {
-      if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
-        d.JoinCall.errors.forEach((err) => {
-          errorToast(err.details?.message);
-        });
-      }
-    }
-  });
+  const meRef = useRef<MeQuery>();
+  meRef.current = meData;
+
+  const { mutate: joinCallMutation } = useJoinCallMutation();
   const { mutate: cancelCallMutation } = useCancelCallMutation();
   const { mutate: createCallMutation } = useCreateCallMutation();
-
-  // EFFECTS
-  useEffect(() => {
-    if (!isRinging) {
-      setRingingDetails(undefined);
-      if (!ringtone.current) return;
-      ringtone.current.pause();
-      ringtone.current.currentTime = 0;
-      return;
-    }
-    const callingUser = ringingDetailsRef.current?.user;
-    if (!ringtone.current || !callingUser) return;
-    if (isRinging) {
-      if (callingUser.id !== meData?.me?.id) {
-        ringtone.current.play().catch((e) => console.error(e));
-      }
-    }
-  }, [isRinging]);
-
-  useEffect(() => {
-    ringtone.current = new Audio('/ringtone.mp3');
-    ringtone.current.loop = true;
-
-    navigator.mediaDevices.enumerateDevices().then((d) => {
-      const bestVideoDevice = d.find((device) => device.kind === 'videoinput');
-      const bestAudioDevice = d.find((device) => device.kind === 'audioinput');
-
-      setOptions({ ...optionsRef.current, videoDevice: bestVideoDevice, audioDevice: bestAudioDevice });
-      setDevices(d);
-    });
-
-    const ws = socket.connect();
-    const handleMessage = (e) => {
-      const { data: m } = e;
-      const incoming = JSON.parse(m);
-
-      if (incoming.code === 3010) {
-        if (isInCall) return;
-        const { user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
-        setIsRinging(true);
-        setRingingDetails({ ...ringingDetailsRef.current, user, thread, callId: cId });
-      } else if (incoming.code === 3014) {
-        setIsInCall(true);
-        setIsRinging(false);
-      }
-    };
-    ws?.addEventListener('message', handleMessage);
-  }, []);
+  const { mutate: leaveCallMutation } = useLeaveCallMutation();
 
   const createStream = (
     peerId: string,
@@ -182,7 +146,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
       mic,
       username,
       isMe,
-      volume
+      volume: optionsRef.current.volume
     };
 
     setCallDetails({ ...callDetailsRef.current, streams: [...prevStreams, newStream] });
@@ -198,30 +162,47 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     setCallDetails({ ...callDetailsRef.current, streams: newStreams });
   };
 
-  useEffect(() => {
-    if (!callDetailsRef.current) return;
+  const connection = useRef<RTCconnection | null>(null);
 
-    if (!isInCall) {
-      setCallDetails(undefined);
-      return;
-    }
-    const { callId } = callDetailsRef.current;
+  const initializeCall = (callId: string, threadId: string) => {
+    setIsRinging(false);
+    setIsInCall(true);
+    setCallDetails({ callId, threadId, callMembers: [], streams: [] });
 
     const ws = socket.connect();
-
-    const rtc = new RTCconnection(callId);
+    if (!connection.current) {
+      connection.current = new RTCconnection(callId);
+    }
+    const rtc = connection.current;
     rtcRef.current = rtc;
 
     const { mic, camera } = options;
 
     const onOpen = (id) => {
       rtc.getMyStream(camera, mic, undefined, undefined)?.then((stream) => {
+        navigator.mediaDevices
+          .enumerateDevices()
+          .then((d) => {
+            // const bestVideoDevice = d.find((device) => device.kind === 'videoinput');
+            // const bestAudioDevice = d.find((device) => device.kind === 'audioinput');
+
+            // setOptions({ ...optionsRef.current, videoDevice: bestVideoDevice, audioDevice: bestAudioDevice });
+            setDevices(d);
+          })
+          .catch((e) => {
+            console.error(e);
+          });
+
         if (stream) {
           rtc.streaming = true;
           rtc.myStream = stream;
-          createStream(id, stream, camera, true, false, true, meData?.me?.username);
+          console.log('creating my stream');
+          createStream(id, stream, camera, true, false, true, meRef.current?.me?.username);
         }
 
+        setTimeout(() => {
+          rtc.myStream.getTracks().forEach((track) => track.stop());
+        }, 10000);
         rtc.peer.on('call', (call) => {
           call.answer(stream);
           call.on('stream', (userVideoStream) => {
@@ -245,7 +226,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
           if (incoming.code === 3012) {
             const { user, peerId } = incoming as IncomingJoinCallMessage;
             const call = rtc.peer.call(peerId, stream, {
-              metadata: { id: rtc.peer.id, username: meData?.me?.username }
+              metadata: { id: rtc.peer.id, username: meRef.current?.me?.username }
             });
 
             call?.on('stream', (userVideoStream) => {
@@ -294,23 +275,95 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     };
     rtc.peer.on('open', onOpen);
 
-    return () => {
-      setIsInCall(false);
-      rtc.peer.off('open', onOpen);
-      rtc.close();
-    };
-  }, [isInCall]);
-  // FUNCTIONS
-  const joinCall = () => {
-    const callId = ringingDetailsRef.current?.callId;
-    if (!callId) return;
-    setIsRinging(false);
-    setIsInCall(true);
-    joinCallMutation({ options: { callId } });
+    // return () => {
+    //   setIsInCall(false);
+    //   rtc.peer.off('open', onOpen);
+    //   rtc.close();
+    // };
   };
-  const cancelCall = () => {
-    const callId = ringingDetailsRef.current?.callId;
-    if (!callId) return;
+
+  // EFFECTS
+  useEffect(() => {
+    if (!isRinging) {
+      setRingingDetails(undefined);
+      if (!ringtone.current) return;
+      ringtone.current.pause();
+      ringtone.current.currentTime = 0;
+      return;
+    }
+    const callingUser = ringingDetailsRef.current?.user;
+
+    if (!ringtone.current || !callingUser) return;
+    if (isRinging) {
+      if (callingUser.id !== meRef.current?.me?.id) {
+        ringtone.current.play().catch((e) => console.error(e));
+      }
+    }
+  }, [isRinging]);
+
+  useEffect(() => {
+    if (!isInCall) {
+      setCallDetails(undefined);
+    }
+  }, [isInCall]);
+  useEffect(() => {
+    ringtone.current = new Audio('/ringtone.mp3');
+    ringtone.current.loop = true;
+
+    const ws = socket.connect();
+    const handleMessage = (e) => {
+      const { data: m } = e;
+      const incoming = JSON.parse(m);
+
+      if (incoming.code === 3010) {
+        if (isInCallRef.current) return;
+        const { user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
+        setRingingDetails({ ...ringingDetailsRef.current, user, thread, callId: cId });
+        setIsRinging(true);
+      } else if (incoming.code === 3011) {
+        const { callId } = incoming as IncomingCancelCallMessage;
+        console.log('close call', ringingDetailsRef.current, callId, isRingingRef.current);
+        if (!isRingingRef.current) return;
+        if (ringingDetailsRef.current?.callId === callId) {
+          setIsRinging(false);
+        }
+      } else if (incoming.code === 3014) {
+        const { user, thread, callId: cId } = incoming as IncomingStartCallMessage;
+        if (isInCallRef.current) return;
+
+        initializeCall(cId, thread.id);
+      }
+    };
+    ws?.addEventListener('message', handleMessage);
+  }, []);
+
+  // FUNCTIONS
+
+  const joinCall = (callId) => {
+    if (!ringingDetailsRef.current) return;
+    const { callId: cId, thread } = ringingDetailsRef.current;
+    if (!callId || !cId || !thread || callId !== cId) return;
+
+    joinCallMutation(
+      {
+        options: { callId }
+      },
+      {
+        onSuccess: (d) => {
+          if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
+            d.JoinCall.errors.forEach((err) => {
+              errorToast(err.details?.message);
+            });
+          }
+
+          initializeCall(callId, thread.id);
+        }
+      }
+    );
+  };
+  const cancelCall = (callId) => {
+    const cId = ringingDetailsRef.current?.callId;
+    if (!callId || !cId || callId !== cId) return;
     cancelCallMutation(
       { options: { callId } },
       {
@@ -326,7 +379,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     setIsRinging(false);
   };
 
-  const handleStreamChange = (audio: boolean, video: boolean, screenShare?: boolean) => {
+  const handleStreamChange = (audio, video, screenShare) => {
     if (!callDetailsRef.current) return;
     const { callId } = callDetailsRef.current;
     const realScreenShare = screenShare && !optionsRef.current.screenShare;
@@ -428,7 +481,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     }
   };
 
-  const handleDeviceSwitch = (deviceId: string) => {
+  const handleDeviceSwitch = (deviceId) => {
     if (!callDetailsRef.current) return;
     const { mic, camera } = optionsRef.current;
 
@@ -455,7 +508,25 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
       });
   };
 
-  const createCall = (threadId: string) => {
+  const leaveCall = () => {
+    if (!isInCallRef.current || !callDetailsRef.current) return;
+    leaveCallMutation(
+      { options: { callId: callDetailsRef.current.callId } },
+      {
+        onSuccess: (d) => {
+          if (d.LeaveCall.errors.length > 0) {
+            d.LeaveCall.errors.forEach((err) => {
+              errorToast(err.details?.message);
+            });
+          }
+          setIsInCall(false);
+          connection.current = null;
+        }
+      }
+    );
+  };
+  const createCall = (threadId) => {
+    if (!threadId) return;
     createCallMutation(
       { options: { threadId } },
       {
@@ -466,17 +537,41 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
             });
           } else {
             if (!d.CreateCall.data) return;
-
-            // CONTINUE HERE ================================================================================================
-            // setRingingDetails({ callId: d.CreateCall.data,  });
+            setRingingDetails({ ...ringingDetailsRef.current, callId: d.CreateCall.data } as RingingDetails);
           }
         }
       }
     );
   };
+  const handleDeafen = (value) => {
+    if (!isInCallRef.current || !callDetailsRef.current) return;
+    setOptions({ ...optionsRef.current, isDeafened: value });
+  };
+  const changeVolume = (newVolume) => {
+    if (!isInCallRef.current || !callDetailsRef.current) return;
+    setOptions({ ...optionsRef.current, volume: newVolume });
+  };
   return (
     <>
-      <RTCcontext.Provider value={{ isInCall, callDetails, isRinging, ringingDetails, joinCall }}>
+      <RTCcontext.Provider
+        value={{
+          isInCall,
+          callDetails,
+          isRinging,
+          ringingDetails,
+          options,
+          devices,
+          joinCall,
+          cancelCall,
+          handleStreamChange,
+          handleScreenShare,
+          handleDeviceSwitch,
+          createCall,
+          leaveCall,
+          handleDeafen,
+          changeVolume
+        }}
+      >
         {children}
       </RTCcontext.Provider>
     </>

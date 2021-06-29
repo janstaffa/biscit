@@ -1,20 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { AiOutlineAudioMuted } from 'react-icons/ai';
 import { FaUser } from 'react-icons/fa';
+import { HiPhoneMissedCall } from 'react-icons/hi';
+import { IoMdCall } from 'react-icons/io';
+import { VscMute } from 'react-icons/vsc';
 import { Link } from 'react-router-dom';
 import { profilepApiURL } from '../../../constants';
 import { ThreadSnippetFragment } from '../../../generated/graphql';
 import { TypingMessage } from '../../../types';
 import { socket } from '../../../utils/createWSconnection';
 import { formatTime } from '../../../utils/formatTime';
+import { RTCcontext } from '../../../utils/RTCProvider';
 
 export interface ThreadButtonProps {
   thread: ThreadSnippetFragment;
   unread: boolean;
   threadId: string;
+  isCalling: boolean;
   active?: boolean;
 }
 
-const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, active = false }) => {
+const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, isCalling = false, active = false }) => {
   const [displayMessage, setDisplayMessage] = useState<string | null | undefined>();
   const [currentLatestMessage, setCurrentLatestMessage] = useState<string | null | undefined>();
   const currentDisplayMessageRef = useRef<string | null | undefined>();
@@ -68,6 +74,8 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, a
 
   const profilePictureId = thread.thread_picture?.id;
   const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
+
+  const rtcContext = useContext(RTCcontext);
   return (
     <Link to={`/app/chat/${threadId}`}>
       <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>
@@ -85,19 +93,72 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, a
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">
                 <div className=" text-light font-roboto">{thread.name}</div>
-                <div className=" text-light-200 text-sm font-roboto">{formatTime(thread.lastActivity)}</div>
+                {!isCalling && (
+                  <div className=" text-light-200 text-sm font-roboto">{formatTime(thread.lastActivity)}</div>
+                )}
               </div>
               <div className=" w-full flex flex-row justify-between">
-                <div className="text-light-300 w-48 font-roboto text-sm truncate">
-                  {userTyping
-                    ? `${userTyping} is typing...`
-                    : (thread.lastMessage?.media && thread.lastMessage.media.length > 0 ? '<attachment>' : '') +
-                      ' ' +
-                      (displayMessage || '')}
-                </div>
-                <div className="w-8 flex flex-row justify-center items-center">
-                  {unread && <div className="w-4 h-4 bg-light rounded-full"></div>}
-                </div>
+                {isCalling ? (
+                  <>
+                    <div className="text-lime-200 w-auto font-roboto text-sm truncate flex flex-row items-center">
+                      <IoMdCall size={24} className="mr-2" /> <span className="text-base font-bold">in call...</span>
+                    </div>
+                    <div className="w-36 flex flex-row justify-center items-center">
+                      <button
+                        className={
+                          'w-8 h-8 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-1 hover:text-black transition-all delay-75' +
+                          (rtcContext?.options.mic
+                            ? ' text-light-300 hover:bg-light-400'
+                            : ' text-black bg-red-500 border-none')
+                        }
+                        title={rtcContext?.options.mic ? 'Mute your microphone' : 'Unmute your microphone'}
+                        onClick={() =>
+                          rtcContext?.handleStreamChange(
+                            !rtcContext?.options.mic,
+                            rtcContext?.options.camera,
+                            rtcContext?.options.screenShare
+                          )
+                        }
+                      >
+                        <AiOutlineAudioMuted size={16} />
+                      </button>
+                      <button
+                        className={
+                          'w-8 h-8 bg-transparent border-2 border-light-300 rounded-full flex flex-col justify-center items-center mx-1 hover:text-black transition-all delay-75' +
+                          (rtcContext?.options.isDeafened
+                            ? ' text-black bg-red-500 border-none'
+                            : ' text-light-300 hover:bg-light-400')
+                        }
+                        title="Volume off"
+                        onClick={() => rtcContext?.handleDeafen(!rtcContext?.options.isDeafened)}
+                      >
+                        <VscMute size={16} />
+                      </button>
+                      <button
+                        className="w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex flex-col justify-center items-center mx-1"
+                        title="Leave call"
+                        onClick={() => {
+                          rtcContext?.leaveCall();
+                        }}
+                      >
+                        <HiPhoneMissedCall size={16} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-light-300 w-48 font-roboto text-sm truncate">
+                      {userTyping
+                        ? `${userTyping} is typing...`
+                        : (thread.lastMessage?.media && thread.lastMessage.media.length > 0 ? '<attachment>' : '') +
+                          ' ' +
+                          (displayMessage || '')}
+                    </div>
+                    <div className="w-8 flex flex-row justify-center items-center">
+                      {unread && <div className="w-4 h-4 bg-light rounded-full"></div>}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

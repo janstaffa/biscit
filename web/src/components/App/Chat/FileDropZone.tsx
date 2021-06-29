@@ -1,7 +1,8 @@
 // export interface FileDropZoneProps {}
 
 import { useEffect, useRef, useState } from 'react';
-import { attachment } from '../../..';
+import { useHistory, useParams } from 'react-router-dom';
+import { attachment } from '../../../types';
 import { errorToast } from '../../../utils/toasts';
 import { uploadAttachment } from '../../../utils/uploadFile';
 
@@ -11,12 +12,12 @@ export interface FileDropZoneProps {
 }
 
 const FileDropZone: React.FC<FileDropZoneProps> = ({ attachments, setAttachments }) => {
-  const router = useRouter();
-  if (!router.query.id) {
-    router.replace('/app/friends/all');
+  const history = useHistory();
+  const { id: threadId } = useParams<{ id: string }>();
+  if (!threadId) {
+    history.replace('/app/friends/all');
     return null;
   }
-  const threadId = typeof router.query.id === 'object' ? router.query.id[0] : router.query.id || '';
 
   const dropZone = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);

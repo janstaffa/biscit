@@ -1,15 +1,13 @@
 // export interface CallingDialogProps {}
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { HiPhone, HiPhoneMissedCall } from 'react-icons/hi';
-import { ThreadSnippetFragment, UserSnippetFragment } from '../../../generated/graphql';
+import { ThreadSnippetFragment, useMeQuery, UserSnippetFragment } from '../../../generated/graphql';
+import { RTCcontext } from '../../../utils/RTCProvider';
 
 export type CallingDialog = {
   callId: string;
   user: UserSnippetFragment | null;
   thread: ThreadSnippetFragment | null;
-  myId: string | undefined;
-  cancelCall: () => void;
-  startCall: () => void;
 };
 
 const Clock = () => {
@@ -33,12 +31,14 @@ const Clock = () => {
 
   return <p className="text-light-400 mt-2">{clock}</p>;
 };
-const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, startCall, cancelCall, callId }) => {
-  const isMe = user?.id === myId;
+const CallingDialog: React.FC<CallingDialog> = ({ user, thread, callId }) => {
+  const { data: meData } = useMeQuery();
+  const isMe = user?.id === meData?.me?.id;
 
+  const rtcContext = useContext(RTCcontext);
   return (
     <div
-      className="w-72 h-52 bg-dark-300 absolute top-20 p-2 text-center rounded-md"
+      className="w-72 h-52 bg-dark-300 absolute top-20 p-2 text-center rounded-md z-50"
       style={{ left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto' }}
     >
       <div className="w-full h-full flex flex-col">
@@ -52,7 +52,7 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, startCall,
             <div className="w-full flex flex-row justify-center flex-grow items-end">
               <button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 flex flex-row items-center font-roboto"
-                onClick={() => cancelCall()}
+                onClick={() => rtcContext?.cancelCall(callId)}
               >
                 <HiPhoneMissedCall size={20} className="mr-2" />
                 Cancel
@@ -69,14 +69,14 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, myId, startCall,
             <div className="w-full flex flex-row justify-center flex-grow items-end">
               <button
                 className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
-                onClick={() => startCall()}
+                onClick={() => rtcContext?.joinCall(callId)}
               >
                 <HiPhone size={20} className="mr-2" />
                 {thread?.isDm ? 'Accept' : 'Join'}
               </button>
               <button
                 className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
-                onClick={() => cancelCall()}
+                onClick={() => rtcContext?.cancelCall(callId)}
               >
                 <HiPhoneMissedCall size={20} className="mr-2" />
                 {thread?.isDm ? 'Decline' : 'Ignore'}

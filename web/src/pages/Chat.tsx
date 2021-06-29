@@ -5,7 +5,6 @@ import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { useHistory, useParams } from 'react-router-dom';
 import { Modal } from 'react-tiny-modals';
-import CallingDialog from '../components/App/Chat/CallingDialog';
 import ChatBottomBar from '../components/App/Chat/ChatBottomBar';
 import ChatFeed from '../components/App/Chat/ChatFeed';
 import ChatInfoBar from '../components/App/Chat/ChatInfoBar';
@@ -197,6 +196,7 @@ const Chat: React.FC = () => {
 
   const rtcContext = useContext(RTCcontext);
 
+  console.log(rtcContext);
   return (
     <>
       <Helmet>
@@ -221,22 +221,7 @@ const Chat: React.FC = () => {
                 size={24}
                 className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
                 title="Call"
-                onClick={() =>
-                  createCall(
-                    { options: { threadId } },
-                    {
-                      onSuccess: (d) => {
-                        if (d.CreateCall.errors.length > 0) {
-                          d.CreateCall.errors.forEach((err) => {
-                            errorToast(err.details?.message);
-                          });
-                        } else {
-                          setCallId(d.CreateCall.data);
-                        }
-                      }
-                    }
-                  )
-                }
+                onClick={() => rtcContext?.createCall(threadId)}
               />
               <HiDotsVertical
                 size={26}
@@ -267,20 +252,9 @@ const Chat: React.FC = () => {
               setAddMemberModalShow={setAddMemberModalShow}
               editModalShow={editModalShow}
             />
-            {!!callId && (
-              <>
-                {isCalling && (
-                  <CallingDialog
-                    callId={callId}
-                    user={callingUser}
-                    thread={callingThread}
-                    myId={meData?.me?.id}
-                    startCall={startCall}
-                    cancelCall={cancelCall}
-                  />
-                )}
-                {isInCall && <VideoChat callId={callId} setIsInCall={setIsInCall} />}
-              </>
+
+            {rtcContext?.isInCall && rtcContext?.callDetails && rtcContext.callDetails.threadId === threadId && (
+              <VideoChat callId={rtcContext.callDetails.callId} />
             )}
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} threadId={threadId} />

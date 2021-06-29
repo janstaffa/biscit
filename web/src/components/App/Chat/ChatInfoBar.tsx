@@ -30,7 +30,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
   editModalShow
 }) => {
   const [tab, setTab] = useState<number>(1);
-  const meData = useMeQuery();
+  const { data: meData } = useMeQuery();
   const { data: threads } = useThreadsQuery();
 
   return (
@@ -79,7 +79,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
             title="More info."
             onClick={() => setTab(3)}
           />
-          {!thread?.thread.data?.isDm && meData.data?.me?.id === thread?.thread.data?.creatorId && (
+          {!thread?.thread.data?.isDm && meData?.me?.id === thread?.thread.data?.creatorId && (
             <MdEdit
               size={28}
               className="cursor-pointer text-light-400 mx-2 hover:text-light-200"
@@ -96,7 +96,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
           setGalleryFile={setGalleryFile}
           setAddMemberModalShow={setAddMemberModalShow}
           tab={tab}
-          me={meData.data as MeQuery}
+          me={meData as MeQuery}
           myThreads={threads as ThreadsQuery | undefined}
         />
       </div>
