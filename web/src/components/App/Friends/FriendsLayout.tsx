@@ -109,7 +109,6 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
                     errorToast('Invalid format. Please try again.');
                     return;
                   }
-                  console.log(inputArr);
                   sendRequest(
                     { options: { usernameAndTag: newFriendInput } },
                     {

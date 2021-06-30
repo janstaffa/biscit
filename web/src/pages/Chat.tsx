@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FaHashtag, FaVideo } from 'react-icons/fa';
+import { FaHashtag } from 'react-icons/fa';
 import { HiDotsVertical } from 'react-icons/hi';
 import { IoMdCall, IoMdClose } from 'react-icons/io';
 import { useHistory, useParams } from 'react-router-dom';
@@ -38,7 +38,7 @@ const Chat: React.FC = () => {
     return null;
   }
 
-  const { data } = useThreadQuery(
+  const { data: threadData } = useThreadQuery(
     {
       options: { threadId }
     },
@@ -121,86 +121,15 @@ const Chat: React.FC = () => {
   const [showChatInfo, setShowChatInfo] = useState<boolean>(false);
 
   const availableNewThreadMembers = meData?.me?.friends?.filter((friend) => {
-    return !data?.thread.data?.members.find((member) => member.userId === friend.friend.id);
+    return !threadData?.thread.data?.members.find((member) => member.userId === friend.friend.id);
   });
-
-  // const [isCalling, setIsCalling] = useState<boolean>(false);
-  // const [callingUser, setCallingUser] = useState<UserSnippetFragment | null>(null);
-  // const [callingThread, setCallingThread] = useState<ThreadSnippetFragment | null>(null);
-  // const [callId, setCallId] = useState<string | undefined | null>(null);
-  // const [isInCall, setIsInCall] = useState<boolean>(false);
-
-  // useEffect(() => {
-  //   if (!meData?.me) return;
-  //   const ws = socket.connect();
-  //   const handleMessage = (e) => {
-  //     const { data: m } = e;
-  //     const incoming = JSON.parse(m);
-
-  //     if (incoming.code === 3010) {
-  //       const { user, thread, callId: cId } = incoming as IncomingCreateCallMessage;
-  //       setIsCalling(true);
-  //       setCallingUser(user);
-  //       setCallingThread(thread);
-  //       setCallId(cId);
-  //     } else if (incoming.code === 3014) {
-  //       setIsInCall(true);
-  //       setIsCalling(false);
-  //     }
-  //   };
-  //   ws?.addEventListener('message', handleMessage);
-  // }, [meData?.me]);
-
-  // const ringtone = useRef<HTMLAudioElement>();
-  // useEffect(() => {
-  //   ringtone.current = new Audio('/ringtone.mp3');
-  //   ringtone.current.loop = true;
-  // }, []);
-  // useEffect(() => {
-  //   if (!ringtone.current || !callingUser) return;
-  //   if (isCalling) {
-  //     if (callingUser.id !== meData?.me?.id) {
-  //       ringtone.current.play().catch((e) => console.error(e));
-  //     }
-  //   } else {
-  //     ringtone.current.pause();
-  //     ringtone.current.currentTime = 0;
-  //     setCallingUser(null);
-  //     setCallingThread(null);
-  //   }
-  // }, [isCalling, callingUser]);
-
-  // const startCall = () => {
-  //   if (!callId) return;
-  //   setIsCalling(false);
-  //   setIsInCall(true);
-  //   joinCall({ options: { callId } });
-  // };
-
-  // const cancelCall = () => {
-  //   if (!callId) return;
-  //   cancelCallMutate(
-  //     { options: { callId } },
-  //     {
-  //       onSuccess: (d) => {
-  //         if (!d.CancelCall.data && d.CancelCall.errors.length > 0) {
-  //           d.CancelCall.errors.forEach((err) => {
-  //             errorToast(err.details?.message);
-  //           });
-  //         }
-  //       }
-  //     }
-  //   );
-  //   setIsCalling(false);
-  // };
 
   const rtcContext = useContext(RTCcontext);
 
-  console.log(rtcContext);
   return (
     <>
       <Helmet>
-        <title>Biscit | Chat - {data?.thread.data?.name || ''} </title>
+        <title>Biscit | Chat - {threadData?.thread.data?.name || ''} </title>
       </Helmet>
       <Layout threadId={threadId}>
         <ContentNav>
@@ -209,20 +138,29 @@ const Chat: React.FC = () => {
               <div className="border-r border-light-300 px-4 mr-2">
                 <FaHashtag className="text-light-300 text-2xl" />
               </div>
-              <div className="text-light-200 text-lg font-bold font-opensans">{data?.thread.data?.name}</div>
+              <div className="text-light-200 text-lg font-bold font-opensans">{threadData?.thread.data?.name}</div>
             </div>
             <div className="flex flex-row items-center justify-center mr-2">
-              <FaVideo
-                size={24}
-                className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
-                title="Video call"
-              />
-              <IoMdCall
-                size={24}
-                className="text-light-300 hover:text-light-hover cursor-pointer mx-2"
-                title="Call"
-                onClick={() => rtcContext?.createCall(threadId)}
-              />
+              {threadData?.thread.data?.call?.id ? (
+                <IoMdCall
+                  size={24}
+                  className="cursor-pointer mx-2 text-lime-200"
+                  title="Call"
+                  onClick={() => {
+                    if (!threadData.thread.data?.call?.id) return;
+                    rtcContext?.joinCall(threadData.thread.data.call.id, threadId);
+                  }}
+                />
+              ) : (
+                <IoMdCall
+                  size={24}
+                  className="cursor-pointer mx-2 text-light-300 hover:text-light-hover"
+                  title="Call"
+                  onClick={() => {
+                    rtcContext?.createCall(threadId);
+                  }}
+                />
+              )}
               <HiDotsVertical
                 size={26}
                 className="text-light-200 hover:text-light-hover cursor-pointer mx-1"
@@ -245,7 +183,7 @@ const Chat: React.FC = () => {
             />
             <ChatInfoBar
               show={showChatInfo}
-              thread={data}
+              thread={threadData}
               threadId={threadId}
               setGalleryFile={setGalleryFile}
               setEditModalShow={setEditModalShow}
@@ -329,7 +267,7 @@ const Chat: React.FC = () => {
           </div>
         </div>
       </Modal>
-      <EditThreadModal isOpen={editModalShow} setIsOpen={setEditModalShow} thread={data?.thread.data} />
+      <EditThreadModal isOpen={editModalShow} setIsOpen={setEditModalShow} thread={threadData?.thread.data} />
       <Modal isOpen={addMemberModalShow} backOpacity={0.5} onClose={() => setToAddMembers([])}>
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">

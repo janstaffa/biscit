@@ -34,8 +34,10 @@ const Clock = () => {
 const CallingDialog: React.FC<CallingDialog> = ({ user, thread, callId }) => {
   const { data: meData } = useMeQuery();
   const isMe = user?.id === meData?.me?.id;
+  if (!thread) return null;
 
   const rtcContext = useContext(RTCcontext);
+
   return (
     <div
       className="w-72 h-52 bg-dark-300 absolute top-20 p-2 text-center rounded-md z-50"
@@ -69,7 +71,7 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, callId }) => {
             <div className="w-full flex flex-row justify-center flex-grow items-end">
               <button
                 className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
-                onClick={() => rtcContext?.joinCall(callId)}
+                onClick={() => rtcContext?.joinCall(callId, thread.id)}
               >
                 <HiPhone size={20} className="mr-2" />
                 {thread?.isDm ? 'Accept' : 'Join'}

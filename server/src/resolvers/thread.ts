@@ -1,5 +1,6 @@
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
+import { Call } from '../entities/Call';
 import { File } from '../entities/File';
 import { Message } from '../entities/Message';
 import { ProfilePicture } from '../entities/ProfilePicture';
@@ -29,6 +30,14 @@ import { BooleanResponse, ResponseType, StringResponse, ThreadResponse } from '.
 
 @Resolver(Thread)
 export class ThreadResolver {
+  @FieldResolver()
+  @UseMiddleware(isAuth)
+  async call(@Root() thread: Thread, @Ctx() { req, res }: ContextType): Promise<Call | undefined> {
+    const call = await Call.findOne({ where: { threadId: thread.id }, relations: ['creator'] });
+    if (!call) return;
+
+    return call;
+  }
   @FieldResolver()
   @UseMiddleware(isAuth)
   async thread_picture(@Root() thread: Thread, @Ctx() { req, res }: ContextType): Promise<ProfilePicture | undefined> {

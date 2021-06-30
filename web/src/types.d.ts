@@ -53,6 +53,10 @@ export interface IncomingJoinCallMessage extends SocketMessage {
   userId: string;
   user: UserSnippetFragment;
 }
+export interface IncomingLeaveCallMessage extends SocketMessage {
+  userId: string;
+  callId: string;
+}
 export interface IncomingCancelCallMessage extends SocketMessage {
   callId: string;
 }

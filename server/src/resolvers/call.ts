@@ -15,11 +15,15 @@ import {
   connections,
   CREATE_CALL_CODE,
   KILL_CALL_CODE,
+  LEAVE_CALL_CODE,
   OutgoingCancelCallMessage,
   OutgoingCreateCallMessage,
   OutgoingKillCallMessage,
+  OutgoingLeaveCallMessage,
   OutgoingStartCallMessage,
-  START_CALL_CODE
+  SocketThreadMessage,
+  START_CALL_CODE,
+  THREAD_CHANGE_CODE
 } from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
@@ -79,6 +83,7 @@ export class CallResolver {
     const membersIds = [userId];
     await Call.create({
       id: callId,
+      accepted: false,
       threadId: options.threadId,
       creatorId: userId,
       memberIds: membersIds
@@ -111,7 +116,6 @@ export class CallResolver {
     member.thread.members.forEach((member) => {
       connections.getSocket(member.userId)?.send(JSON.stringify(payload));
     });
-    // pubClient.publish(options.threadId, JSON.stringify(payload));
 
     return {
       data: callId,
@@ -240,7 +244,6 @@ export class CallResolver {
       };
     }
 
-    console.log(call.memberIds, userId);
     if (call.memberIds.includes(userId)) {
       errors.push(
         new GQLValidationError({
@@ -273,10 +276,17 @@ export class CallResolver {
     };
 
     newMembers.forEach((memberId) => {
-      // console.log('isInitial', isInitial);
       if (isInitial) {
         connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
       }
+    });
+
+    const threadChangePayload: SocketThreadMessage = {
+      code: THREAD_CHANGE_CODE,
+      threadId: call.threadId
+    };
+    call.thread?.members.forEach((member) => {
+      connections.getSocket(member.userId)?.send(JSON.stringify(threadChangePayload));
     });
 
     return {
@@ -346,10 +356,19 @@ export class CallResolver {
       };
     }
 
-    const newMemberIds = [...call.memberIds, userId];
+    const newMemberIds = [...call.memberIds];
     newMemberIds.splice(newMemberIds.indexOf(userId), 1);
 
     await Call.update({ id: options.callId }, { memberIds: newMemberIds });
+
+    const payload: OutgoingLeaveCallMessage = {
+      code: LEAVE_CALL_CODE,
+      callId: options.callId,
+      userId
+    };
+    newMemberIds.forEach((memberId) => {
+      connections.getSocket(memberId)?.send(JSON.stringify(payload));
+    });
 
     return {
       data: true,

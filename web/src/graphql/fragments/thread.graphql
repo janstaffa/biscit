@@ -20,6 +20,9 @@ fragment threadSnippet on Thread {
   }
   messagesCount
   lastActivity
+  call {
+    ...callSnippet
+  }
   createdAt
   updatedAt
 }

@@ -19,3 +19,15 @@ export const createEmptyVideoTrack = ({ width, height }) => {
   track.enabled = false;
   return track;
 };
+
+export const getEmptyStream = () => {
+  const audioTrack = createEmptyAudioTrack();
+  const videoTrack = createEmptyVideoTrack({ width: 1280, height: 720 });
+
+  const mediaStream = new MediaStream();
+  mediaStream.addTrack(audioTrack);
+  if (videoTrack) {
+    mediaStream.addTrack(videoTrack);
+  }
+  return mediaStream;
+};

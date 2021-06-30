@@ -1,7 +1,7 @@
 import Peer, { MediaConnection } from 'peerjs';
 import adapter from 'webrtc-adapter';
 import { isPhoneRegExp, serverIP } from '../constants';
-import { createEmptyAudioTrack, createEmptyVideoTrack } from './fakeStream';
+import { getEmptyStream } from './fakeStream';
 import { errorToast } from './toasts';
 
 export class RTCconnection {
@@ -46,20 +46,17 @@ export class RTCconnection {
     // video = video && !!videoDeviceId;
     // audio = audio && !!audioDeviceId;
 
-    if (!video && !audio)
+    if (!video && !audio) {
       return new Promise((resolve) => {
-        const audioTrack = createEmptyAudioTrack();
-        const videoTrack = createEmptyVideoTrack({ width: 1280, height: 720 });
-
-        const mediaStream = new MediaStream();
-        mediaStream.addTrack(audioTrack);
-        if (videoTrack) {
-          mediaStream.addTrack(videoTrack);
-        }
-
-        resolve(mediaStream);
+        resolve(getEmptyStream());
       });
+    }
 
+    if (!navigator.mediaDevices) {
+      return new Promise((resolve) => {
+        resolve(getEmptyStream());
+      });
+    }
     const nav = navigator.mediaDevices.getUserMedia;
     // // @ts-ignore
     // navigator.webkitGetUserMedia ||
@@ -68,7 +65,6 @@ export class RTCconnection {
     // // @ts-ignore
     // navigator.msGetUserMedia;
 
-    console.log('videoDeviceId', videoDeviceId);
     return new Promise((resolve, reject) => {
       nav({
         video: video
@@ -109,7 +105,6 @@ export class RTCconnection {
   ): Promise<MediaStream> | undefined => {
     let media: Promise<any> | undefined;
 
-    console.log(screenShare, this.isScreenSharing);
     if (screenShare && !this.isScreenSharing) {
       if (!isPhoneRegExp.test(navigator.userAgent)) {
         // @ts-ignore
@@ -123,7 +118,6 @@ export class RTCconnection {
     return new Promise((resolve) => {
       media?.then((newStream: MediaStream) => {
         if (screenShare && !this.isScreenSharing) {
-          console.log('AAAAAAAAAA');
           this.replaceStream(newStream);
           this.isScreenSharing = true;
 
@@ -166,38 +160,6 @@ export class RTCconnection {
       });
     });
   };
-
-  // changeDevice = (audioDeviceId: string | undefined, videoDeviceId: string | undefined) => {
-  //   if (!audioDeviceId || !videoDeviceId) return;
-
-  //   this.changeStream()
-  //   this.audioDeviceId = audioDeviceId;
-  //   this.videoDeviceId = videoDeviceId;
-  // };
-  // replaceStream = (newStream: MediaStream) => {
-  //   console.log('replace stream', this.peers);
-  //   Object.values(this.peers).forEach((peer: MediaConnection) => {
-  //     console.log(peer.peerConnection?.getSenders());
-  //     peer.peerConnection?.getSenders().forEach((sender) => {
-  //       console.log(newStream, sender, sender.track?.kind);
-  //       if (sender) {
-  //         if (sender.track?.kind === 'audio') {
-  //           sender.replaceTrack(null);
-  //           if (newStream.getAudioTracks().length > 0) {
-  //             console.log('REPLACING AUDIO');
-  //             sender.replaceTrack(newStream.getAudioTracks()[0]);
-  //           }
-  //         }
-  //         if (sender.track?.kind === 'video') {
-  //           console.log('REPLACING VIDEO');
-  //           if (newStream.getVideoTracks().length > 0) {
-  //             sender.replaceTrack(newStream.getVideoTracks()[0]);
-  //           }
-  //         }
-  //       }
-  //     });
-  //   });
-  // };
 
   close = () => {
     this.peer?.destroy();

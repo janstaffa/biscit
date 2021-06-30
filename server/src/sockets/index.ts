@@ -61,7 +61,7 @@ export interface IncomingJoinCallMessage extends SocketMessage {
 }
 
 export interface OutgoingLeaveCallMessage extends SocketMessage {
-  peerId: string;
+  userId: string;
   callId: string;
 }
 
