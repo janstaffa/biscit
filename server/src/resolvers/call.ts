@@ -61,6 +61,20 @@ export class CallResolver {
       };
     }
 
+    if (member.user.isInCall) {
+      errors.push(
+        new GQLValidationError({
+          field: 'threadId',
+          value: options.threadId,
+          message: 'You are already in a call.'
+        })
+      );
+      return {
+        data: null,
+        errors
+      };
+    }
+
     if (member.thread.call) {
       if (!member.thread.call?.memberIds || member.thread.call?.memberIds.length === 0) {
         await Call.delete({ threadId: options.threadId });
@@ -210,6 +224,19 @@ export class CallResolver {
       };
     }
 
+    if (user.isInCall) {
+      errors.push(
+        new GQLValidationError({
+          field: 'callId',
+          value: options.callId,
+          message: 'You are already in a call.'
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
     const call = await Call.findOne({
       where: { id: options.callId },
       relations: ['thread', 'thread.members']
@@ -264,9 +291,11 @@ export class CallResolver {
 
     if (isInitial) {
       partialCallEntity.accepted = true;
+      await Thread.update({ id: call.threadId }, { lastActivity: new Date() });
     }
 
     await Call.update({ id: options.callId }, partialCallEntity);
+    await User.update(user, { isInCall: true });
 
     const startCallPayload: OutgoingStartCallMessage = {
       code: START_CALL_CODE,
@@ -275,11 +304,11 @@ export class CallResolver {
       thread: call.thread
     };
 
-    newMembers.forEach((memberId) => {
-      if (isInitial) {
+    if (isInitial) {
+      newMembers.forEach((memberId) => {
         connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
-      }
-    });
+      });
+    }
 
     const threadChangePayload: SocketThreadMessage = {
       code: THREAD_CHANGE_CODE,
@@ -338,6 +367,8 @@ export class CallResolver {
       };
     }
 
+    await User.update({ id: userId }, { isInCall: false });
+
     if (call.memberIds.length - 1 < 2) {
       await Call.delete({ id: options.callId });
       const payload: OutgoingKillCallMessage = {
@@ -348,7 +379,6 @@ export class CallResolver {
       call.memberIds.forEach((memberId) => {
         connections.getSocket(memberId)?.send(JSON.stringify(payload));
       });
-      // pubClient.publish(call.threadId, JSON.stringify(payload));
 
       return {
         data: true,

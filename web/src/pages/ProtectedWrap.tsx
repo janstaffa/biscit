@@ -1,9 +1,11 @@
 import { ReactNode, useEffect } from 'react';
 import { useMeQuery, useTokenQuery } from '../generated/graphql';
 import { useTokenStore } from '../stores/useTokenStore';
-import { IncomingSocketChatMessage } from '../types';
+import { IncomingRequestAcceptMessage, IncomingSocketChatMessage } from '../types';
+import { queryClient } from '../utils/createQueryClient';
 import { socket } from '../utils/createWSconnection';
 import RTCProvider from '../utils/RTCProvider';
+import { infoToast } from '../utils/toasts';
 
 export interface ProtectedWrapProps {
   children: ReactNode;
@@ -31,6 +33,10 @@ const ProtectedWrap: React.FC<ProtectedWrapProps> = ({ children }) => {
       const { message } = incoming as IncomingSocketChatMessage;
       if (meData?.me?.soundNotifications && message.userId !== meData?.me?.id)
         audio.play().catch((err) => console.error(err));
+    } else if (incoming.code === 3017) {
+      const { userId, username } = incoming as IncomingRequestAcceptMessage;
+      infoToast(`${username} has accepted your friend request.`);
+      queryClient.invalidateQueries('Me');
     }
   };
   useEffect(() => {

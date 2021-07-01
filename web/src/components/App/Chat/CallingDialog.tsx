@@ -1,6 +1,7 @@
 // export interface CallingDialogProps {}
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { HiPhone, HiPhoneMissedCall } from 'react-icons/hi';
+import { useHistory } from 'react-router';
 import { ThreadSnippetFragment, useMeQuery, UserSnippetFragment } from '../../../generated/graphql';
 import { RTCcontext } from '../../../utils/RTCProvider';
 
@@ -32,6 +33,7 @@ const Clock = () => {
   return <p className="text-light-400 mt-2">{clock}</p>;
 };
 const CallingDialog: React.FC<CallingDialog> = ({ user, thread, callId }) => {
+  const history = useHistory();
   const { data: meData } = useMeQuery();
   const isMe = user?.id === meData?.me?.id;
   if (!thread) return null;
@@ -71,7 +73,10 @@ const CallingDialog: React.FC<CallingDialog> = ({ user, thread, callId }) => {
             <div className="w-full flex flex-row justify-center flex-grow items-end">
               <button
                 className="px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded-md mb-3 mx-1 flex flex-row items-center font-roboto"
-                onClick={() => rtcContext?.joinCall(callId, thread.id)}
+                onClick={() => {
+                  history.push(`/app/chat/${thread.id}`);
+                  rtcContext?.joinCall(callId, thread.id);
+                }}
               >
                 <HiPhone size={20} className="mr-2" />
                 {thread?.isDm ? 'Accept' : 'Join'}

@@ -1,16 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 import { AiOutlineAudioMuted } from 'react-icons/ai';
+import { profilepApiURL } from '../../../constants';
+import { ThreadSnippetFragment } from '../../../generated/graphql';
+import ProfilePicture from '../ProfilePicture';
 
 interface VideoProps {
   isMe: boolean;
   peerId: string;
+  userId: string;
   stream: MediaStream;
   mic: boolean;
   camera: boolean;
   screenShare: boolean;
-  username?: string;
   volume: number;
   isDeafened: boolean;
+  thread: ThreadSnippetFragment;
 }
 const Video: React.FC<VideoProps> = ({
   stream,
@@ -18,10 +22,11 @@ const Video: React.FC<VideoProps> = ({
   mic = true,
   camera = true,
   screenShare,
-  username,
+  userId,
   isMe,
   volume,
-  isDeafened
+  isDeafened,
+  thread
 }) => {
   const video = useRef<HTMLVideoElement | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
@@ -36,6 +41,10 @@ const Video: React.FC<VideoProps> = ({
     }
   });
 
+  const thisUser = thread.members.find((member) => member.userId === userId);
+
+  const profilePictureId = thisUser?.user.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <div
       className="bg-dark-200 m-3 relative rounded-md"
@@ -48,13 +57,13 @@ const Video: React.FC<VideoProps> = ({
         <video id={peerId} autoPlay={true} ref={video} className="w-full h-full" muted={true}></video>
       ) : (
         <div className="w-full h-full flex flex-col justify-center items-center">
-          <div className="w-20 h-20 bg-white rounded-full"></div>
+          <ProfilePicture size="120px" src={profilePictureSrc} />
         </div>
       )}
       <audio autoPlay={true} ref={audio} muted={isMe || !mic || isDeafened} className="hidden"></audio>
       <div className="absolute right-0 bottom-0 bg-dark-100 w-full px-5 py-2 flex flex-row justify-between items-center rounded-b-md">
         <span className="text-light-200 font-bold text-lg">
-          {username || 'unknown user'}
+          {thisUser?.user.username || 'unknown user'}
           {isMe ? ' (you)' : ''}
         </span>
         {!mic ? <AiOutlineAudioMuted size={25} className="text-red-600" /> : null}

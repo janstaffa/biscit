@@ -78,7 +78,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, i
   const rtcContext = useContext(RTCcontext);
   return (
     <Link to={`/app/chat/${threadId}`}>
-      <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100 hover:text-light-hover')}>
+      <div className={'py-1 rounded-sm' + (active ? '  bg-dark-50' : ' hover:bg-dark-100')}>
         <div className="w-full h-16 flex flex-row items-center cursor-pointer py-2">
           <div className="w-16 h-full flex flex-col justify-center items-center">
             <div className="w-11 h-11 rounded-full bg-light-400 flex flex-col justify-center items-center">
@@ -112,13 +112,14 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, i
                             : ' text-black bg-red-500 border-none')
                         }
                         title={rtcContext?.options.mic ? 'Mute your microphone' : 'Unmute your microphone'}
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.preventDefault();
                           rtcContext?.handleStreamChange(
                             !rtcContext?.options.mic,
                             rtcContext?.options.camera,
                             rtcContext?.options.screenShare
-                          )
-                        }
+                          );
+                        }}
                       >
                         <AiOutlineAudioMuted size={16} />
                       </button>
@@ -130,14 +131,18 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, i
                             : ' text-light-300 hover:bg-light-400')
                         }
                         title="Volume off"
-                        onClick={() => rtcContext?.handleDeafen(!rtcContext?.options.isDeafened)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          rtcContext?.handleDeafen(!rtcContext?.options.isDeafened);
+                        }}
                       >
                         <VscMute size={16} />
                       </button>
                       <button
                         className="w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex flex-col justify-center items-center mx-1"
                         title="Leave call"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
                           rtcContext?.leaveCall();
                         }}
                       >

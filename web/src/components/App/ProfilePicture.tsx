@@ -17,13 +17,17 @@ const ProfilePicture: React.FC<ProfilePictureProps> = ({ src, size, online, onCl
       style={{ width: size, height: size }}
       onClick={(e) => onClick?.(e)}
     >
-      {online !== null && (
+      {online !== null && online !== undefined && (
         <div
           className="w-3 h-3 absolute bottom-0 right-0 rounded-full"
           style={{ backgroundColor: online ? '#61e632' : '#ea830c' }}
         ></div>
       )}
-      {src ? <img src={src || ''} className="w-full h-full rounded-full" /> : <FaUser size={30} />}
+      {src ? (
+        <img src={src || ''} className="w-full h-full rounded-full" />
+      ) : (
+        <FaUser size={30} className="text-dark-300" />
+      )}
     </div>
   );
 };

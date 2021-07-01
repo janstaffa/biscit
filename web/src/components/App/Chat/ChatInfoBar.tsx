@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BsFillInfoCircleFill, BsFillPeopleFill } from 'react-icons/bs';
 import { MdEdit, MdPermMedia } from 'react-icons/md';
+import { profilepApiURL } from '../../../constants';
 import {
   FileSnippetFragment,
   MeQuery,
@@ -10,6 +11,7 @@ import {
   useThreadsQuery
 } from '../../../generated/graphql';
 import InfoBarTab from '../InfoBar/InfoBarTab';
+import ProfilePicture from '../ProfilePicture';
 export interface ChatInfoBarProps {
   show: boolean;
   thread: ThreadQuery | undefined;
@@ -33,6 +35,8 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
   const { data: meData } = useMeQuery();
   const { data: threads } = useThreadsQuery();
 
+  const profilePictureId = thread?.thread.data?.thread_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <div
       className="bg-dark-200 mt-12 border-l-2 border-dark-50 absolute right-0 overflow-x-hidden flex flex-col"
@@ -47,7 +51,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
         className="w-full h-60 flex flex-col items-center p-5 border-b-2 border-dark-50"
         style={{ minHeight: '15rem' }}
       >
-        <div className="w-28 h-28 bg-white rounded-full mb-3"></div>
+        <ProfilePicture src={profilePictureSrc} size="110px" className="mb-3" />
         <h3 className="text-xl text-light-200 text-center font-opensans">{thread?.thread.data?.name}</h3>
         <div className="mt-2 w-full flex flex-row justify-end">
           <MdPermMedia

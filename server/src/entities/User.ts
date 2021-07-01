@@ -115,6 +115,10 @@ export class User extends BaseEntity {
   @OneToOne(() => Call, (call) => call.creator, { nullable: true })
   callCreator: Call;
 
+  @Field(() => Boolean)
+  @Column({ default: false })
+  isInCall: boolean;
+
   //createdAt field
   @Field(() => String)
   @CreateDateColumn()

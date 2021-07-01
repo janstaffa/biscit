@@ -7,7 +7,8 @@ import {
   useJoinCallMutation,
   useLeaveCallMutation,
   useMeQuery,
-  UserSnippetFragment
+  UserSnippetFragment,
+  useThreadsQuery
 } from '../generated/graphql';
 import {
   IncomingCancelCallMessage,
@@ -30,7 +31,6 @@ export interface RTCwrapProps {
 interface StreamType {
   peerId: string;
   userId: string;
-  username?: string;
   stream: MediaStream;
   mic: boolean;
   camera: boolean;
@@ -78,6 +78,10 @@ interface RTCcontextType {
   changeVolume: (newVolume: number) => void;
 }
 
+interface CallMetadata {
+  peerId: string;
+  userId: string;
+}
 const defaultVolume = 100;
 
 export const RTCcontext = React.createContext<RTCcontextType | null>(null);
@@ -117,6 +121,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
 
   // QUERIES / MUTATIONS
   const { data: meData, isLoading } = useMeQuery();
+  const { data: loadedThreads } = useThreadsQuery();
   const meRef = useRef<MeQuery>();
   meRef.current = meData;
 
@@ -132,11 +137,15 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     camera: boolean,
     mic: boolean,
     screenShare: boolean,
-    isMe: boolean,
-    username?: string
+    isMe: boolean
   ) => {
-    console.log('creating a stream for', username, 'with id', userId);
     if (!callDetailsRef.current || !userId) return;
+    // const thisThread = loadedThreads?.threads.find((thread) => thread.threadId === callDetailsRef.current?.threadId);
+    // if (!thisThread) return;
+    // const thisUser = thisThread.thread.members.find((member) => member.userId === userId);
+    // if (!thisUser) return;
+    // console.log('creating a stream for', thisUser.user, 'with id', userId);
+
     const prevStreams = [...callDetailsRef.current.streams];
     const alreadyExists = callDetailsRef.current.streams.find((s) => s.peerId === peerId || s.userId === userId);
     if (alreadyExists) {
@@ -149,7 +158,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
       camera,
       screenShare,
       mic,
-      username,
       isMe,
       volume: optionsRef.current.volume
     };
@@ -201,7 +209,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         if (stream) {
           rtc.streaming = true;
           rtc.myStream = stream;
-          createStream(id, meRef.current?.me?.id, stream, camera, true, false, true, meRef.current?.me?.username);
+          createStream(id, meRef.current?.me?.id, stream, camera, true, false, true);
         }
 
         // setTimeout(() => {
@@ -209,24 +217,17 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         // }, 10000);
         rtc.peer.on('call', (call) => {
           call.answer(stream);
+
+          const { peerId, userId } = call.metadata as CallMetadata;
           call.on('stream', (userVideoStream) => {
-            createStream(
-              call.metadata.peerId,
-              call.metadata.userId,
-              userVideoStream,
-              true,
-              true,
-              false,
-              false,
-              call.metadata.username
-            );
+            createStream(peerId, userId, userVideoStream, true, true, false, false);
           });
           call.on('close', () => {
-            removeStream(call.metadata.peerId);
+            removeStream(peerId);
             rtc.peers?.splice(rtc.peers.indexOf(call), 1);
           });
           call.on('error', () => {
-            removeStream(call.metadata.peerId);
+            removeStream(peerId);
             rtc.peers?.splice(rtc.peers.indexOf(call), 1);
           });
 
@@ -240,19 +241,19 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
 
           if (incoming.code === 3012) {
             const { user, peerId } = incoming as IncomingJoinCallMessage;
+            if (!meRef.current?.me) return;
             const call = rtc.peer.call(peerId, stream, {
               metadata: {
                 peerId: rtc.peer.id,
-                userId: meRef.current?.me?.id,
-                username: meRef.current?.me?.username
-              }
+                userId: meRef.current.me.id
+              } as CallMetadata
             });
 
             call?.on('stream', (userVideoStream) => {
               const hasAudio = userVideoStream.getAudioTracks().find((track) => track.enabled);
               const hasVideo = userVideoStream.getVideoTracks().find((track) => track.enabled);
 
-              createStream(peerId, user.id, userVideoStream, !!hasAudio, !!hasVideo, false, false, user.username);
+              createStream(peerId, user.id, userVideoStream, !!hasAudio, !!hasVideo, false, false);
             });
             call?.on('close', () => {
               removeStream(peerId);
@@ -372,6 +373,10 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   // FUNCTIONS
 
   const joinCall = (callId, threadId) => {
+    if (isInCallRef.current || callDetailsRef.current) {
+      errorToast('You are already in a call.');
+      return;
+    }
     joinCallMutation(
       {
         options: { callId }
@@ -556,6 +561,11 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   };
   const createCall = (threadId) => {
     if (!threadId) return;
+
+    if (isInCallRef.current || callDetailsRef.current) {
+      errorToast('You are already in a call.');
+      return;
+    }
     createCallMutation(
       { options: { threadId } },
       {

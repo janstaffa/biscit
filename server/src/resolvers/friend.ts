@@ -11,6 +11,7 @@ import {
 } from '../entities/types/friend';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
+import { connections, OutgoingRequestAcceptMessage, REQUEST_ACCEPT_CODE } from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
@@ -44,9 +45,10 @@ export class FriendResolver {
 
     const inputArr = options.usernameAndTag?.split('#') || [];
     if (
-      inputArr.length <= 1 ||
-      !/[0-9]/.test(inputArr[inputArr.length - 1]) ||
-      inputArr[inputArr.length - 1].length !== 6
+      !options.userId &&
+      (inputArr.length <= 1 ||
+        !/[0-9]/.test(inputArr[inputArr.length - 1]) ||
+        inputArr[inputArr.length - 1].length !== 6)
     ) {
       errors.push(
         new GQLValidationError({
@@ -142,7 +144,8 @@ export class FriendResolver {
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
     const request = await FriendRequest.findOne({
-      where: { id: options.requestId, recieverId: userId }
+      where: { id: options.requestId, recieverId: userId },
+      relations: ['sender']
     });
     const errors: GQLValidationError[] = [];
 
@@ -165,6 +168,13 @@ export class FriendResolver {
     });
 
     if (isFriends) {
+      errors.push(
+        new GQLValidationError({
+          field: 'requestId',
+          value: options.requestId.toString(),
+          message: 'You are already friends with this user.'
+        })
+      );
       return {
         data: false,
         errors
@@ -201,6 +211,14 @@ export class FriendResolver {
         })
       ]);
     }
+
+    const payload: OutgoingRequestAcceptMessage = {
+      code: REQUEST_ACCEPT_CODE,
+      userId,
+      username: request.reciever.username
+    };
+    connections.getSocket(request.senderId)?.send(JSON.stringify(payload));
+
     await request.remove();
 
     return {

@@ -83,3 +83,10 @@ export interface OutgoingPeerChangeMessage extends SocketMessage {
   camera: boolean;
   screenShare: boolean;
 }
+
+// user update message types
+
+export interface IncomingRequestAcceptMessage extends SocketMessage {
+  userId: string;
+  username: string;
+}

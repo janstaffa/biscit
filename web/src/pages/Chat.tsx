@@ -20,8 +20,6 @@ import {
   FileSnippetFragment,
   MessageSnippetFragment,
   useAddMembersMutation,
-  useCancelCallMutation,
-  useJoinCallMutation,
   useMeQuery,
   useThreadQuery,
   useThreadsQuery
@@ -35,10 +33,10 @@ const Chat: React.FC = () => {
   const history = useHistory();
   const { id: threadId } = useParams<{ id: string }>();
   if (!threadId) {
-    return null;
+    history.push('/app/friends/all');
   }
 
-  const { data: threadData } = useThreadQuery(
+  const { data: threadData, isLoading } = useThreadQuery(
     {
       options: { threadId }
     },
@@ -46,25 +44,23 @@ const Chat: React.FC = () => {
       onSuccess: (d) => {
         if (d.thread.errors.length > 0) {
           console.error(d.thread.errors);
+          d.thread.errors.forEach((err) => {
+            errorToast(err.details?.message);
+          });
           history.replace('/app/friends/all');
         }
       }
     }
   );
-  const { mutate: joinCall } = useJoinCallMutation({
-    onSuccess: (d) => {
-      if (!d.JoinCall.data && d.JoinCall.errors.length > 0) {
-        d.JoinCall.errors.forEach((err) => {
-          errorToast(err.details?.message);
-        });
-      }
-    }
-  });
-  const { data: meData, isLoading } = useMeQuery();
+  if (!isLoading && !threadData?.thread.data) {
+    errorToast('This thread was not found.');
+    history.push('/app/friends/all');
+  }
+
+  const { data: meData } = useMeQuery();
   const { data: loadedThreads } = useThreadsQuery();
 
   const { mutate: addMembers } = useAddMembersMutation();
-  const { mutate: cancelCallMutate } = useCancelCallMutation();
 
   const [resendModalShow, setResendModalShow] = useState<boolean>(false);
   const [editModalShow, setEditModalShow] = useState<boolean>(false);
@@ -191,9 +187,12 @@ const Chat: React.FC = () => {
               editModalShow={editModalShow}
             />
 
-            {rtcContext?.isInCall && rtcContext?.callDetails && rtcContext.callDetails.threadId === threadId && (
-              <VideoChat callId={rtcContext.callDetails.callId} />
-            )}
+            {rtcContext?.isInCall &&
+              rtcContext?.callDetails &&
+              rtcContext.callDetails.threadId === threadId &&
+              threadData?.thread.data && (
+                <VideoChat callId={rtcContext.callDetails.callId} thread={threadData?.thread.data} />
+              )}
           </div>
           <ChatBottomBar replyMessage={replyMessage} setReplyMessage={setReplyMessage} threadId={threadId} />
         </div>

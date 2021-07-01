@@ -6,36 +6,18 @@ import { HiDotsVertical, HiPhoneMissedCall } from 'react-icons/hi';
 import { MdScreenShare } from 'react-icons/md';
 import { VscMute } from 'react-icons/vsc';
 import { Popup } from 'react-tiny-modals';
+import { ThreadSnippetFragment } from '../../../generated/graphql';
 import { RTCcontext } from '../../../utils/RTCProvider';
 import Video from './Video';
 
-interface VideoType {
-  peerId: string;
-  username?: string;
-  stream: MediaStream;
-  mic: boolean;
-  camera: boolean;
-  screenShare: boolean;
-  isMe: boolean;
-  volume: number;
-}
-
 type VideoChatProps = {
   callId: string;
+  thread: ThreadSnippetFragment;
 };
 
-interface VideoChatOptions {
-  mic: boolean;
-  camera: boolean;
-  screenShare: boolean;
-  isDeafened: boolean;
-  volume: number;
-  videoDevice: MediaDeviceInfo | undefined;
-  audioDevice: MediaDeviceInfo | undefined;
-}
 const defaultVolume = 100;
 
-const VideoChat: React.FC<VideoChatProps> = ({ callId }) => {
+const VideoChat: React.FC<VideoChatProps> = ({ callId, thread }) => {
   const rtcContext = useContext(RTCcontext);
 
   const videoContainer = useRef<HTMLDivElement | null>(null);
@@ -56,19 +38,20 @@ const VideoChat: React.FC<VideoChatProps> = ({ callId }) => {
           ref={videoContainer}
           style={{ padding: videoContainerPadding + 'px' }}
         >
-          {rtcContext.callDetails?.streams.map((video) => {
+          {rtcContext.callDetails?.streams.map((stream) => {
             return (
               <Video
-                isMe={video.isMe}
-                key={video.peerId}
-                stream={video.stream}
-                peerId={video.peerId}
-                camera={video.camera}
-                mic={video.mic}
-                screenShare={video.screenShare}
-                username={video.username}
+                isMe={stream.isMe}
+                stream={stream.stream}
+                peerId={stream.peerId}
+                camera={stream.camera}
+                mic={stream.mic}
+                screenShare={stream.screenShare}
+                userId={stream.userId}
                 volume={rtcContext.options.volume}
                 isDeafened={rtcContext.options.isDeafened}
+                thread={thread}
+                key={stream.peerId}
               />
             );
           })}

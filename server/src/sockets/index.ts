@@ -91,6 +91,13 @@ export interface OutgoingPeerChangeMessage extends SocketMessage {
   camera: boolean;
   screenShare: boolean;
 }
+
+// user update message types
+
+export interface OutgoingRequestAcceptMessage extends SocketMessage {
+  userId: string;
+  username: string;
+}
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -108,6 +115,7 @@ export const JOIN_CALL_CODE = 3012;
 export const KILL_CALL_CODE = 3013;
 export const PEER_CHANGE_CODE = 3015;
 export const LEAVE_CALL_CODE = 3016;
+export const REQUEST_ACCEPT_CODE = 3017;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -226,7 +234,7 @@ export const socketController = (server: Server) => {
       // subClient.unsubscribe();
       clearTimeout(elapsed);
       clearInterval(heartbeat);
-      await User.update({ id: user.id }, { status: 'offline' });
+      await User.update({ id: user.id }, { status: 'offline', isInCall: false });
 
       const latestUser = await User.findOne({
         where: { id: user.id },
@@ -235,7 +243,6 @@ export const socketController = (server: Server) => {
       latestUser?.threads?.forEach(async (thread) => {
         if (thread.thread.call) {
           const { memberIds } = thread.thread.call;
-          if (!memberIds) return;
           const newMemberIds = [...memberIds];
           if (newMemberIds.includes(user.id)) {
             newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
@@ -250,6 +257,15 @@ export const socketController = (server: Server) => {
               });
               return;
             }
+
+            const payload: OutgoingLeaveCallMessage = {
+              code: LEAVE_CALL_CODE,
+              callId: thread.thread.call.id,
+              userId: user.id
+            };
+            newMemberIds.forEach((memberId) => {
+              connections.getSocket(memberId)?.send(JSON.stringify(payload));
+            });
 
             // pubClient.publish(thread.id, JSON.stringify(payload));
           }
