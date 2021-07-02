@@ -203,6 +203,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
     }
   };
 
+  const amIAdmin = !!threadData?.thread.data?.members.find((member) => member.userId === meData?.me?.id);
   return (
     <>
       <div className="flex-grow px-3 mt-12 overflow-y-scroll relative" id="chat-feed">
@@ -213,7 +214,9 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
         )}
         {incomingThreadMessages?.pages?.map((page, pi) => {
           return page?.messages.data?.map((message, i) => {
-            const { id: messageId } = message;
+            const { id: messageId, userId } = message;
+
+            const sender = threadData?.thread.data?.members.find((member) => member.userId === userId);
             const date = new Date(parseInt(message.createdAt));
             const now = new Date();
             if (datesAreSameDay(date, now)) {
@@ -241,6 +244,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                       </div>
                       <ChatMessage
                         message={message}
+                        sender={sender?.user}
                         myId={meData?.me?.id}
                         resendCall={() => handleResendCall(message)}
                         replyCall={() => handleReplyCall(message)}
@@ -248,6 +252,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                         onReady={() => handleMessageReady()}
                         setGalleryFile={setGalleryFile}
                         thread={threadData?.thread.data as ThreadSnippetFragment}
+                        amIAdmin={amIAdmin}
                       />
                     </div>
                   );
@@ -257,6 +262,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
             return (
               <ChatMessage
                 message={message}
+                sender={sender?.user}
                 myId={meData?.me?.id}
                 key={messageId}
                 resendCall={() => handleResendCall(message)}
@@ -265,6 +271,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
                 onReady={() => handleMessageReady()}
                 setGalleryFile={setGalleryFile}
                 thread={threadData?.thread.data as ThreadSnippetFragment}
+                amIAdmin={amIAdmin}
               />
             );
           });

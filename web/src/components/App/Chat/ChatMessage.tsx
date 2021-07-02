@@ -12,6 +12,7 @@ import {
   MessageSnippetFragment,
   ThreadSnippetFragment,
   useDeleteMessageMutation,
+  UserSnippetFragment,
   useUpdateMessageMutation
 } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
@@ -21,24 +22,28 @@ import { errorToast } from '../../../utils/toasts';
 import Attachment from './Attachment';
 export interface ChatMessageProps {
   message: MessageSnippetFragment;
+  sender: UserSnippetFragment | undefined;
   myId: string | undefined;
   resendCall: () => void;
   replyCall: () => void;
   replyMessage: MessageSnippetFragment | null;
   onReady?: () => void;
   setGalleryFile: React.Dispatch<React.SetStateAction<FileSnippetFragment | null>>;
+  amIAdmin: boolean;
   thread: ThreadSnippetFragment | undefined;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({
   message,
+  sender,
   myId,
   resendCall,
   replyCall,
   replyMessage,
   onReady,
   setGalleryFile,
-  thread
+  thread,
+  amIAdmin
 }) => {
   const { mutate: updateMessage } = useUpdateMessageMutation({
     onSuccess: (data) => {
@@ -87,10 +92,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     });
   }, []);
 
-  const profilePictureId = message.user.profile_picture?.id;
+  const realSender = sender || message.user;
+
+  const profilePictureId = realSender.profile_picture?.id;
   const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
 
-  const meMember = thread?.members.find((member) => member.userId === myId);
   return (
     <div
       className={
@@ -114,7 +120,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       </div>
       <div className="flex-1 flex flex-col px-2 py-1">
         <div className="flex flex-row">
-          <div className="text-light font-roboto text-base">{message.user.username}</div>
+          <div className="text-light font-roboto text-base">{realSender.username}</div>
           <div className="text-light-300 font-roboto text-sm flex flex-col justify-center ml-2">
             {formatTime(message.createdAt)}
           </div>
@@ -192,7 +198,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     </li>
                   )}
                   <hr className="bg-dark-50 h-px border-none mt-1" />
-                  {(message.userId === myId || thread?.creatorId === myId || meMember?.isAdmin) && (
+                  {(message.userId === myId || thread?.creatorId === myId || amIAdmin) && (
                     <>
                       <li
                         className="text-red-600 font-opensans text-left p-2 hover:bg-dark-200 cursor-pointer flex flex-row items-center"

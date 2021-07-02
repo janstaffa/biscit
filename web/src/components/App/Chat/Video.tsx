@@ -57,7 +57,7 @@ const Video: React.FC<VideoProps> = ({
         <video id={peerId} autoPlay={true} ref={video} className="w-full h-full" muted={true}></video>
       ) : (
         <div className="w-full h-full flex flex-col justify-center items-center">
-          <ProfilePicture size="120px" src={profilePictureSrc} />
+          <ProfilePicture size={120} src={profilePictureSrc} />
         </div>
       )}
       <audio autoPlay={true} ref={audio} muted={isMe || !mic || isDeafened} className="hidden"></audio>

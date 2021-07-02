@@ -98,6 +98,21 @@ export interface OutgoingRequestAcceptMessage extends SocketMessage {
   userId: string;
   username: string;
 }
+export interface OutgoingRequestSendMessage extends SocketMessage {
+  userId: string;
+  username: string;
+}
+export type OutgoingRequestCancelMessage = SocketMessage;
+export type OutgoingFriendRemoveMessage = SocketMessage;
+export type OutgoingThreadAddMemberMessage = SocketMessage;
+export type OutgoingThreadRemoveMemberMessage = SocketMessage;
+export interface OutgoingUserStatusChange extends SocketMessage {
+  userId: string;
+  newStatus: string;
+}
+export interface OutgoingUserProfileChange extends SocketMessage {
+  userId: string;
+}
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -116,6 +131,13 @@ export const KILL_CALL_CODE = 3013;
 export const PEER_CHANGE_CODE = 3015;
 export const LEAVE_CALL_CODE = 3016;
 export const REQUEST_ACCEPT_CODE = 3017;
+export const REQUEST_SEND_CODE = 3018;
+export const REQUEST_CANCEL_CODE = 3019;
+export const FRIEND_REMOVE_CODE = 3020;
+export const THREAD_ADD_MEMBER_CODE = 3021;
+export const THREAD_REMOVE_MEMBER_CODE = 3022;
+export const USER_STATUS_CHANGE_CODE = 3023;
+export const USER_PROFILE_CHANGE_CODE = 3024;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -139,7 +161,6 @@ export const socketController = (server: Server) => {
   });
 
   server.on('upgrade', async (req: http.IncomingMessage, socket: net.Socket, head) => {
-    console.log('upgrade');
     let userId: string | undefined;
 
     try {
@@ -171,7 +192,10 @@ export const socketController = (server: Server) => {
     } catch (e) {
       return socket.destroy();
     }
-    const user = await User.findOne({ where: { id: userId } });
+    const user = await User.findOne({
+      where: { id: userId },
+      relations: ['threads', 'threads.thread', 'threads.thread.members']
+    });
     if (!user) return socket.destroy();
 
     wss.handleUpgrade(req, socket, head, (ws) => {
@@ -181,32 +205,36 @@ export const socketController = (server: Server) => {
       };
       ws.send(JSON.stringify(payload));
 
-      // const subClient = createClient({
-      //   url: process.env.REDIS_URL
-      // });
-
-      // subClient.on('error', (error) => {
-      //   console.error(error);
-      // });
-
-      // const pubClient = createClient({
-      //   url: process.env.REDIS_URL
-      // });
-
-      // pubClient.on('error', (error) => {
-      //   console.error(error);
-      // });
-
       wss.emit('connection', ws, req, user);
     });
   });
 
   wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, user: User) => {
-    console.log('new connection, total connections:', Array.from(wss.clients.entries()).length);
     if (!user.id) return;
     connections.addSocket(user.id, ws);
 
     await User.update({ id: user.id }, { status: 'online' });
+
+    const threadMemberIds = user.threads
+      .map((membership) => membership.thread.members.map((member) => member.userId))
+      .reduce((a, b) => a.concat(b), []);
+
+    let relatives: string[] = threadMemberIds || [];
+
+    relatives = relatives.filter((item, idx) => {
+      return relatives.indexOf(item) == idx;
+    });
+    relatives.splice(relatives.indexOf(user.id), 1);
+
+    relatives.forEach((relativeId) => {
+      const payload: OutgoingUserStatusChange = {
+        code: USER_STATUS_CHANGE_CODE,
+        userId: user.id,
+        newStatus: 'online'
+      };
+      connections.getSocket(relativeId)?.send(JSON.stringify(payload));
+    });
+
     const heartbeat = setInterval(async () => {
       if (ws.readyState === ws.CLOSING || ws.readyState === ws.CLOSED) {
         clearInterval(heartbeat);
@@ -228,17 +256,34 @@ export const socketController = (server: Server) => {
     }, ELAPSED_TIME);
 
     const closeConnectionAndClear = async () => {
-      console.log('connection closed');
       closeConnection(ws);
-      // subClient.removeAllListeners();
-      // subClient.unsubscribe();
       clearTimeout(elapsed);
       clearInterval(heartbeat);
       await User.update({ id: user.id }, { status: 'offline', isInCall: false });
 
       const latestUser = await User.findOne({
         where: { id: user.id },
-        relations: ['threads', 'threads.thread', 'threads.thread.call']
+        relations: ['threads', 'threads.thread', 'threads.thread.call', 'threads.thread.members', 'friends']
+      });
+
+      const threadMemberIds = latestUser?.threads
+        .map((membership) => membership.thread.members.map((member) => member.userId))
+        .reduce((a, b) => a.concat(b), []);
+
+      let relatives: string[] = threadMemberIds || [];
+
+      relatives = relatives.filter((item, idx) => {
+        return relatives.indexOf(item) == idx;
+      });
+      relatives.splice(relatives.indexOf(user.id), 1);
+
+      relatives.forEach((relativeId) => {
+        const payload: OutgoingUserStatusChange = {
+          code: USER_STATUS_CHANGE_CODE,
+          userId: user.id,
+          newStatus: 'offline'
+        };
+        connections.getSocket(relativeId)?.send(JSON.stringify(payload));
       });
       latestUser?.threads?.forEach(async (thread) => {
         if (thread.thread.call) {
@@ -266,8 +311,6 @@ export const socketController = (server: Server) => {
             newMemberIds.forEach((memberId) => {
               connections.getSocket(memberId)?.send(JSON.stringify(payload));
             });
-
-            // pubClient.publish(thread.id, JSON.stringify(payload));
           }
         }
       });
@@ -278,7 +321,7 @@ export const socketController = (server: Server) => {
 
     const throttle = setInterval(async () => {
       if (delayedMessages.length > 0) {
-        await handleMessage(delayedMessages[0], ws, /*subClient, pubClient,*/ user);
+        await handleMessage(delayedMessages[0], ws, user);
         delayedMessages.shift();
       } else {
         if (sentMessages > 0) sentMessages -= 3;
@@ -309,30 +352,5 @@ export const socketController = (server: Server) => {
     ws.on('close', async () => {
       await closeConnectionAndClear();
     });
-
-    // try {
-    //   const threads = await ThreadMembers.find({ where: { userId: user.id } });
-
-    //   threads.map((thread) => {
-    //     const { threadId } = thread;
-    //     subClient.subscribe(threadId);
-    //   });
-    // } catch (e) {
-    //   console.error(e);
-    // }
-
-    // subClient.on('message', async (channel, message) => {
-    //   const parsed = JSON.parse(message);
-    //   if (parsed.code === CHAT_MESSAGE_CODE) {
-    //     const { message, threadId } = parsed as SocketChatMessage;
-    //     if (message.userId !== user.id) {
-    //       const latestUser = await User.findOne({ where: { id: user.id } });
-    //       if (latestUser && latestUser.setAsUnread) {
-    //         await ThreadMembers.update({ userId: user.id, threadId }, { unread: () => 'unread + 1' });
-    //       }
-    //     }
-    //   }
-    //   ws.send(message);
-    // });
   });
 };

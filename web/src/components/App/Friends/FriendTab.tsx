@@ -41,7 +41,7 @@ const FriendTab: React.FC<FriendTabProps> = ({
     <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
-          <ProfilePicture online={friend.status === 'online'} size="44px" src={profilePictureSrc} />
+          <ProfilePicture online={friend.status === 'online'} size={44} src={profilePictureSrc} />
         </div>
         <div className="w-full flex-1 px-2">
           <div className="flex flex-row w-full justify-between">

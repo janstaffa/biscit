@@ -11,6 +11,7 @@ import SubmitButton from '../components/Buttons/SubmitButton';
 import { profilepApiURL, validProfilePictureUploadRegExp } from '../constants';
 import { useMeQuery, useUpdateSettingsMutation } from '../generated/graphql';
 import { queryClient } from '../utils/createQueryClient';
+import { formatTime } from '../utils/formatTime';
 import { errorToast, successToast } from '../utils/toasts';
 import { uploadProfilePicture } from '../utils/uploadFile';
 
@@ -53,12 +54,22 @@ const Settings: React.FC = () => {
     allowThreads?: boolean;
     allowFriendRequests?: boolean;
     soundNotifications?: boolean;
+    autoUpdate?: boolean;
   }>({});
 
   useEffect(() => {
     if (meData?.me) {
-      const { email, username, setAsUnread, allowFriendRequests, allowThreads, soundNotifications } = meData.me;
-      setUserDetails({ email, username, setAsUnread, allowFriendRequests, allowThreads, soundNotifications });
+      const { email, username, setAsUnread, allowFriendRequests, allowThreads, soundNotifications, autoUpdate } =
+        meData.me;
+      setUserDetails({
+        email,
+        username,
+        setAsUnread,
+        allowFriendRequests,
+        allowThreads,
+        soundNotifications,
+        autoUpdate
+      });
     }
   }, [meData]);
 
@@ -73,23 +84,28 @@ const Settings: React.FC = () => {
           <div className="w-64 bg-dark-300 text-light-300 flex flex-row justify-center pt-5">
             <ul className="w-auto text-lg list-none">
               <li>
-                <a href="#account" className="text-light-300">
+                <a href="#account" className="text-light-300 hover:text-light">
                   Account
                 </a>
               </li>
               <li>
-                <a href="#customization" className="text-light-300">
+                <a href="#customization" className="text-light-300 hover:text-light">
                   Customization
                 </a>
               </li>
               <li>
-                <a href="#notifications" className="text-light-300">
+                <a href="#notifications" className="text-light-300 hover:text-light">
                   Notifications
                 </a>
               </li>
               <li>
-                <a href="#privacy" className="text-light-300">
+                <a href="#privacy" className="text-light-300 hover:text-light">
                   Privacy
+                </a>
+              </li>
+              <li>
+                <a href="#performance" className="text-light-300 hover:text-light">
+                  Performance
                 </a>
               </li>
             </ul>
@@ -97,94 +113,117 @@ const Settings: React.FC = () => {
           <div className="flex-grow px-5 overflow-y-scroll">
             <div id="account" className="w-full h-auto bg-dark-200 rounded-lg my-5 p-3">
               <h2 className="text-light-300 text-lg font-opensans mb-3">Account:</h2>
-              <div className="mx-3">
-                <div className="flex flex-row h-32">
-                  <div
-                    className="w-32 h-32 bg-light-400 rounded-full cursor-pointer relative flex flex-col justify-center items-center"
-                    onClick={() => fileInput.current?.click()}
-                    onMouseOver={() => setIsHoveringFile(true)}
-                    onMouseLeave={() => setIsHoveringFile(false)}
-                  >
-                    {profilePictureSrc ? (
-                      <img
-                        src={profilePictureSrc || ''}
-                        className="w-full h-full rounded-full"
-                        ref={profilePictureDisplay}
-                      />
-                    ) : (
-                      <FaUser size={60} className="text-dark-100" />
-                    )}
+              <div className="w-full md:h-auto xl:h-full flex flex-row flex-wrap">
+                <div className="px-3 md:w-full xl:w-3/5">
+                  <div className="flex flex-row h-32">
                     <div
-                      className="w-full h-full rounded-full  flex-col items-center justify-center absolute top-0"
-                      style={{ backgroundColor: 'rgba(0,0,0,0.5)', display: isHoveringFile ? 'flex' : 'none' }}
+                      className="w-32 h-32 bg-light-400 rounded-full cursor-pointer relative flex flex-col justify-center items-center"
+                      onClick={() => fileInput.current?.click()}
+                      onMouseOver={() => setIsHoveringFile(true)}
+                      onMouseLeave={() => setIsHoveringFile(false)}
                     >
-                      <MdAddAPhoto size={30} className="text-light-400" />
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      ref={fileInput}
-                      accept=".jpeg,.png,.webp,.avif,.tiff,.svg"
-                      onChange={(e) => {
-                        if (!e.target.files || e.target.files.length !== 1) {
-                          return errorToast(
-                            'Something went wrong, please make sure you are uploading a single valid image file.'
-                          );
-                        }
-                        const reader = new FileReader();
-                        reader.readAsDataURL(e.target.files[0]);
-                        reader.onloadend = () => {
-                          if (cropArea.current && reader.result && typeof reader.result === 'string') {
-                            cropArea.current.src = reader.result;
-                            cropper.current = new Cropper(cropArea.current, {
-                              aspectRatio: 1 / 1,
-                              rotatable: false,
-                              viewMode: 1
-                            });
+                      {profilePictureSrc ? (
+                        <img
+                          src={profilePictureSrc || ''}
+                          className="w-full h-full rounded-full"
+                          ref={profilePictureDisplay}
+                        />
+                      ) : (
+                        <FaUser size={60} className="text-dark-100" />
+                      )}
+                      <div
+                        className="w-full h-full rounded-full  flex-col items-center justify-center absolute top-0"
+                        style={{ backgroundColor: 'rgba(0,0,0,0.5)', display: isHoveringFile ? 'flex' : 'none' }}
+                      >
+                        <MdAddAPhoto size={30} className="text-light-400" />
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        ref={fileInput}
+                        accept=".jpeg,.png,.webp,.avif,.tiff,.svg"
+                        onChange={(e) => {
+                          if (!e.target.files || e.target.files.length !== 1) {
+                            return errorToast(
+                              'Something went wrong, please make sure you are uploading a single valid image file.'
+                            );
                           }
-                        };
-                        setImageModalShow(true);
-                      }}
-                    />
+                          const reader = new FileReader();
+                          reader.readAsDataURL(e.target.files[0]);
+                          reader.onloadend = () => {
+                            if (cropArea.current && reader.result && typeof reader.result === 'string') {
+                              cropArea.current.src = reader.result;
+                              cropper.current = new Cropper(cropArea.current, {
+                                aspectRatio: 1 / 1,
+                                rotatable: false,
+                                viewMode: 1
+                              });
+                            }
+                          };
+
+                          setImageModalShow(true);
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-row justify-center items-center text-light-200 px-3">
+                      <span className="text-xl">{meData?.me?.username}</span>
+                      <span className="text-light-400 ml-2  text-base">#{meData?.me?.tag}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-row justify-center items-center text-light-200 px-3">
-                    <span className="text-xl">{meData?.me?.username}</span>
-                    <span className="text-light-400 ml-2  text-base">#{meData?.me?.tag}</span>
+                  <div className="md:w-full xl:w-4/6 mt-3">
+                    <div className="flex flex-col py-1">
+                      <label htmlFor="settings-username" className="text-light-300 text-md">
+                        Username
+                      </label>
+                      <input
+                        type="text"
+                        name="settings-username"
+                        className="w-full bg-dark-50 outline-none text-light-200 rounded-md px-3 py-1"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
+                        value={userDetails.username || ''}
+                        onChange={(e) => setUserDetails({ ...userDetails, username: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex flex-col py-1">
+                      <label htmlFor="settings-username" className="text-light-300 text-md">
+                        Email
+                      </label>
+                      <input
+                        type="text"
+                        name="settings-email"
+                        className="w-full bg-dark-50 outline-none text-light-200 rounded-md px-3 py-1"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
+                        value={userDetails.email || ''}
+                        onChange={(e) => setUserDetails({ ...userDetails, email: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="w-2/5 mt-3">
-                  <div className="flex flex-col py-1">
-                    <label htmlFor="settings-username" className="text-light-300 text-md">
-                      Username
-                    </label>
-                    <input
-                      type="text"
-                      name="settings-username"
-                      className="w-full bg-dark-50 outline-none text-light-200 rounded-md px-3 py-1"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                      spellCheck="false"
-                      value={userDetails.username}
-                      onChange={(e) => setUserDetails({ ...userDetails, username: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex flex-col py-1">
-                    <label htmlFor="settings-username" className="text-light-300 text-md">
-                      Email
-                    </label>
-                    <input
-                      type="text"
-                      name="settings-email"
-                      className="w-full bg-dark-50 outline-none text-light-200 rounded-md px-3 py-1"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="off"
-                      spellCheck="false"
-                      value={userDetails.email}
-                      onChange={(e) => setUserDetails({ ...userDetails, email: e.target.value })}
-                    />
-                  </div>
+                <div className="h-auto md:w-full xl:w-auto px-3 md:pt-5 xl:pt-0 md:border-l-0 md:border-t-2 md:mt-3 xl:mt-0 xl:border-l-2 xl:border-t-0 border-dark-50">
+                  <ul className="w-auto list-none text-light-200">
+                    <li>
+                      Registered:
+                      <span className="text-light-300 ml-1">
+                        {meData?.me?.createdAt ? formatTime(meData?.me?.createdAt, { fullDate: true }) : 'unknown date'}
+                      </span>
+                    </li>
+                    <li>
+                      Total messages sent:
+                      <span className="text-light-300 ml-1">
+                        {Math.random() * 100 > 90 ? '6.022e23' : meData?.me?.total_messages}
+                      </span>
+                    </li>
+                    <li>
+                      Bio:
+                      <span className="text-light-300 ml-1">{meData?.me?.bio}</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -194,8 +233,9 @@ const Settings: React.FC = () => {
                 <div className="flex flex-row items-center">
                   <input
                     type="checkbox"
-                    className="mr-2"
+                    className="mr-2 cursor-not-allowed"
                     checked={false}
+                    readOnly={true}
                     onClick={() => {
                       const audio = new Audio('/you-are-an-idiot.mp3');
                       let counter = 0;
@@ -230,7 +270,7 @@ const Settings: React.FC = () => {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={userDetails.soundNotifications}
+                    checked={userDetails.soundNotifications !== undefined ? userDetails.soundNotifications : true}
                     onChange={(e) => setUserDetails({ ...userDetails, soundNotifications: e.target.checked })}
                   />
                   <div className="text-light-300 text-lg">Sound notifications</div>
@@ -239,7 +279,7 @@ const Settings: React.FC = () => {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={userDetails.setAsUnread}
+                    checked={userDetails.setAsUnread !== undefined ? userDetails.setAsUnread : true}
                     onChange={(e) => setUserDetails({ ...userDetails, setAsUnread: e.target.checked })}
                   />
                   <div className="text-light-300 text-lg">Set as unread when not present</div>
@@ -254,7 +294,7 @@ const Settings: React.FC = () => {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={userDetails.allowFriendRequests}
+                    checked={userDetails.allowFriendRequests !== undefined ? userDetails.allowFriendRequests : true}
                     onChange={(e) => {
                       setUserDetails({ ...userDetails, allowFriendRequests: e.target.checked });
                     }}
@@ -265,14 +305,34 @@ const Settings: React.FC = () => {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={userDetails.allowThreads}
+                    checked={userDetails.allowThreads !== undefined ? userDetails.allowThreads : true}
                     onChange={(e) => setUserDetails({ ...userDetails, allowThreads: e.target.checked })}
                   />
                   <div className="text-light-300 text-lg">Allowed to be added to threads</div>
                 </div>
               </div>
             </div>
-            <div className="w-full flex flex-row justify-center items-center">
+            <div id="performance" className="w-full h-auto bg-dark-200 rounded-lg my-5 p-3">
+              <h2 className="text-light-300 text-lg font-opensans">Performance:</h2>
+              <div className="mx-3">
+                <div className="flex flex-row items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={userDetails.autoUpdate !== undefined ? userDetails.autoUpdate : true}
+                    onChange={(e) => {
+                      setUserDetails({ ...userDetails, autoUpdate: e.target.checked });
+                    }}
+                  />
+                  <div className="text-light-300 text-lg">
+                    <span className="text-sm text-light-400 mr-1">(recomended)</span>
+                    Automatically update user interface on minor changes. (user goes online/offline, user changes
+                    profile picture,...)
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="w-full flex flex-row justify-center items-center mb-5">
               <SubmitButton
                 onClick={() => {
                   updateSettings({
@@ -289,7 +349,8 @@ const Settings: React.FC = () => {
                       soundNotifications:
                         meData?.me?.soundNotifications !== userDetails.soundNotifications
                           ? userDetails.soundNotifications
-                          : null
+                          : null,
+                      autoUpdate: meData?.me?.autoUpdate !== userDetails.autoUpdate ? userDetails.autoUpdate : null
                     }
                   });
                 }}
@@ -300,7 +361,14 @@ const Settings: React.FC = () => {
           </div>
         </div>
       </SettingsLayout>
-      <Modal isOpen={imageModalShow}>
+      <Modal
+        isOpen={imageModalShow}
+        onClose={() => {
+          if (fileInput.current) {
+            fileInput.current.value = '';
+          }
+        }}
+      >
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">
             <div className="text-light-300 text-lg font-roboto">Change status</div>

@@ -90,3 +90,12 @@ export interface IncomingRequestAcceptMessage extends SocketMessage {
   userId: string;
   username: string;
 }
+
+export interface IncomingRequestSendMessage extends SocketMessage {
+  userId: string;
+  username: string;
+}
+
+export interface IncomingUserStatusChange extends SocketMessage {
+  userId: string;
+}

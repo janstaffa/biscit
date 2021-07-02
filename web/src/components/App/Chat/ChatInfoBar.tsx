@@ -37,6 +37,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
 
   const profilePictureId = thread?.thread.data?.thread_picture?.id;
   const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
+
   return (
     <div
       className="bg-dark-200 mt-12 border-l-2 border-dark-50 absolute right-0 overflow-x-hidden flex flex-col"
@@ -51,7 +52,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
         className="w-full h-60 flex flex-col items-center p-5 border-b-2 border-dark-50"
         style={{ minHeight: '15rem' }}
       >
-        <ProfilePicture src={profilePictureSrc} size="110px" className="mb-3" />
+        <ProfilePicture src={profilePictureSrc} size={110} className="mb-3" />
         <h3 className="text-xl text-light-200 text-center font-opensans">{thread?.thread.data?.name}</h3>
         <div className="mt-2 w-full flex flex-row justify-end">
           <MdPermMedia

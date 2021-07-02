@@ -92,7 +92,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, i
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">
-                <div className=" text-light font-roboto">{thread.name}</div>
+                <div className=" text-light font-roboto truncate w-48">{thread.name}</div>
                 {!isCalling && (
                   <div className=" text-light-200 text-sm font-roboto">{formatTime(thread.lastActivity)}</div>
                 )}

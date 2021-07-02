@@ -11,7 +11,17 @@ import {
 } from '../entities/types/friend';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
-import { connections, OutgoingRequestAcceptMessage, REQUEST_ACCEPT_CODE } from '../sockets';
+import {
+  connections,
+  FRIEND_REMOVE_CODE,
+  OutgoingFriendRemoveMessage,
+  OutgoingRequestAcceptMessage,
+  OutgoingRequestCancelMessage,
+  OutgoingRequestSendMessage,
+  REQUEST_ACCEPT_CODE,
+  REQUEST_CANCEL_CODE,
+  REQUEST_SEND_CODE
+} from '../sockets';
 import { ContextType } from '../types';
 import { getId } from '../utils/generateId';
 import { GQLValidationError } from '../utils/validateYupSchema';
@@ -28,6 +38,22 @@ export class FriendResolver {
     const userId = req.session.userId;
 
     const errors: GQLValidationError[] = [];
+
+    const user = await User.findOne({ where: { id: userId } });
+
+    if (!user) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: userId,
+          message: "It seems like, you don't exist."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
 
     if (!options.usernameAndTag && !options.userId) {
       errors.push(
@@ -117,6 +143,13 @@ export class FriendResolver {
         senderId: userId,
         recieverId: reciever.id
       }).save();
+
+      const payload: OutgoingRequestSendMessage = {
+        code: REQUEST_SEND_CODE,
+        userId,
+        username: user.username
+      };
+      connections.getSocket(reciever.id)?.send(JSON.stringify(payload));
     } else {
       errors.push(
         new GQLValidationError({
@@ -145,7 +178,7 @@ export class FriendResolver {
     const userId = req.session.userId;
     const request = await FriendRequest.findOne({
       where: { id: options.requestId, recieverId: userId },
-      relations: ['sender']
+      relations: ['sender', 'reciever']
     });
     const errors: GQLValidationError[] = [];
 
@@ -212,15 +245,23 @@ export class FriendResolver {
       ]);
     }
 
-    const payload: OutgoingRequestAcceptMessage = {
-      code: REQUEST_ACCEPT_CODE,
-      userId,
-      username: request.reciever.username
-    };
-    connections.getSocket(request.senderId)?.send(JSON.stringify(payload));
-
+    const senderId = request.senderId;
+    const reciever = request.reciever;
     await request.remove();
 
+    if (options.value) {
+      const payload: OutgoingRequestAcceptMessage = {
+        code: REQUEST_ACCEPT_CODE,
+        userId,
+        username: reciever.username
+      };
+      connections.getSocket(senderId)?.send(JSON.stringify(payload));
+    } else {
+      const payload: OutgoingRequestCancelMessage = {
+        code: REQUEST_CANCEL_CODE
+      };
+      connections.getSocket(senderId)?.send(JSON.stringify(payload));
+    }
     return {
       data: true,
       errors
@@ -256,8 +297,27 @@ export class FriendResolver {
       where: { isDm: true, id: friend[0].threadId }
     });
 
+    const otherFriend = friend.find((friend) => friend.userId !== userId);
+    if (!otherFriend) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: options.friendId,
+          message: 'Your friend was not found.'
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
+
     await Friend.remove(friend);
     await thread?.remove();
+    const payload: OutgoingFriendRemoveMessage = {
+      code: FRIEND_REMOVE_CODE
+    };
+    connections.getSocket(otherFriend.userId)?.send(JSON.stringify(payload));
 
     return {
       data: true,
@@ -290,7 +350,12 @@ export class FriendResolver {
         errors
       };
     }
+
     await request.remove();
+    const payload: OutgoingRequestCancelMessage = {
+      code: REQUEST_CANCEL_CODE
+    };
+    connections.getSocket(request.recieverId)?.send(JSON.stringify(payload));
 
     return {
       data: true,

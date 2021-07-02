@@ -10,6 +10,10 @@ query Me {
     allowThreads
     allowFriendRequests
     soundNotifications
+    autoUpdate
+    total_messages
+    createdAt
+    updatedAt
     friend_requests {
       incoming {
         id
