@@ -16,10 +16,12 @@ import * as yup from 'yup';
 import { COOKIE_NAME, EMAIL_REGEX, fallbackTokenSecret, SALT_ROUNDS, tokenExpiration } from '../constants';
 import { Friend } from '../entities/Friend';
 import { FriendRequest } from '../entities/FriendRequest';
+import { Message } from '../entities/Message';
 import { ProfilePicture } from '../entities/ProfilePicture';
 import { LoginInput, RegisterInput, UpdateSettingsInput, UpdateStatusInput } from '../entities/types/user';
 import { User } from '../entities/User';
 import { isAuth } from '../middleware/isAuth';
+import { connections, OutgoingUserProfileChange, USER_PROFILE_CHANGE_CODE } from '../sockets';
 import { ContextType } from '../types';
 import { GQLValidationError, validateSchema } from '../utils/validateYupSchema';
 import { BooleanResponse, ResponseType } from './types';
@@ -72,6 +74,17 @@ export class UserResolver {
     return await ProfilePicture.findOne({ where: { id: user.profile_pictureId } });
   }
 
+  @FieldResolver(() => Number)
+  async total_messages(@Root() user: User, @Ctx() { req }: ContextType): Promise<number | null> {
+    const userId = req.session.userId;
+    if (userId === user.id) {
+      const messageCount = await Message.count({
+        where: { userId }
+      });
+      return messageCount;
+    }
+    return null;
+  }
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req, res }: ContextType): Promise<User | undefined> {
     const userId = req.session.userId;
@@ -244,9 +257,33 @@ export class UserResolver {
     @Arg('options') options: UpdateStatusInput
   ): Promise<boolean> {
     const userId = req.session.userId;
+
+    const user = await User.findOne({
+      where: { id: userId },
+      relations: ['threads', 'threads.thread', 'threads.thread.members']
+    });
+    if (!user) return false;
     const response = await User.update(userId, { bio: options.status });
     if (!response.affected || response.affected === 0) return false;
 
+    const threadMemberIds = user.threads
+      .map((membership) => membership.thread.members.map((member) => member.userId))
+      .reduce((a, b) => a.concat(b), []);
+
+    let relatives: string[] = threadMemberIds || [];
+
+    relatives = relatives.filter((item, idx) => {
+      return relatives.indexOf(item) == idx;
+    });
+    relatives.splice(relatives.indexOf(user.id), 1);
+
+    relatives.forEach((relativeId) => {
+      const payload: OutgoingUserProfileChange = {
+        code: USER_PROFILE_CHANGE_CODE,
+        userId: user.id
+      };
+      connections.getSocket(relativeId)?.send(JSON.stringify(payload));
+    });
     return true;
   }
 
@@ -257,8 +294,25 @@ export class UserResolver {
     @Arg('options') options: UpdateSettingsInput
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
-
     const errors: GQLValidationError[] = [];
+
+    const user = await User.findOne({
+      where: { id: userId },
+      relations: ['threads', 'threads.thread', 'threads.thread.members']
+    });
+    if (!user) {
+      errors.push(
+        new GQLValidationError({
+          field: 'userId',
+          value: userId,
+          message: "It seems like, you don't exist."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
 
     const updateUser: any = {};
     if (options.newEmail && /\S/.test(options.newEmail)) {
@@ -302,6 +356,9 @@ export class UserResolver {
     if (options.allowThreads !== null) {
       updateUser.allowThreads = options.allowThreads;
     }
+    if (options.autoUpdate !== null) {
+      updateUser.autoUpdate = options.autoUpdate;
+    }
     const response = await User.update(userId, updateUser);
     if (!response.affected || response.affected === 0) {
       errors.push(
@@ -314,6 +371,24 @@ export class UserResolver {
       return { data: false, errors };
     }
 
+    const threadMemberIds = user.threads
+      .map((membership) => membership.thread.members.map((member) => member.userId))
+      .reduce((a, b) => a.concat(b), []);
+
+    let relatives: string[] = threadMemberIds || [];
+
+    relatives = relatives.filter((item, idx) => {
+      return relatives.indexOf(item) == idx;
+    });
+    relatives.splice(relatives.indexOf(user.id), 1);
+
+    relatives.forEach((relativeId) => {
+      const payload: OutgoingUserProfileChange = {
+        code: USER_PROFILE_CHANGE_CODE,
+        userId: user.id
+      };
+      connections.getSocket(relativeId)?.send(JSON.stringify(payload));
+    });
     return { data: true, errors };
   }
 }

@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { User } from '../../../generated/graphql';
+import { profilepApiURL } from '../../../constants';
+import { UserSnippetFragment } from '../../../generated/graphql';
+import ProfilePicture from '../ProfilePicture';
 
 export interface FriendListItemProps {
-  friend: Pick<User, 'id' | 'createdAt' | 'updatedAt' | 'username' | 'email' | 'status' | 'bio'>;
+  friend: UserSnippetFragment;
   onChecked?: (value: boolean) => void;
 }
 
 const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onChecked }) => {
   const [checked, setChecked] = useState<boolean>(false);
+
+  const profilePictureId = friend.profile_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
   return (
     <li
       className="list-none"
@@ -21,9 +26,7 @@ const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onChecked }) =>
           <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
         </div>
         <div className="w-full h-14 flex flex-row items-center cursor-pointer py-2">
-          <div className="w-9 h-full flex flex-col justify-center items-center">
-            <div className="w-9 h-9 rounded-full bg-light"></div>
-          </div>
+          <ProfilePicture src={profilePictureSrc} size={35} />
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">

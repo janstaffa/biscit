@@ -1,4 +1,4 @@
-export const serverIP = '192.168.8.105';
+export const serverIP = '192.168.8.103';
 
 export const __prod__ = process.env.NODE_ENV === 'production';
 export const serverURL = 'http://' + serverIP + ':9000';
@@ -22,3 +22,5 @@ export const videoRegExp = /mkv|flv|ogv|ogg|avi|mov|mp4|wmv|m4v|3gp|3g2|flv|webm
 export const audioRegExp = /wav|mp3|aac|flac|alac/;
 
 export const urlRegExp = /(https?:\/\/[^\s]+)/g;
+
+export const isPhoneRegExp = /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i;

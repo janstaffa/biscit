@@ -44,7 +44,7 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
   switch (tab) {
     case 1:
       return (
-        <div className="w-full h-full px-5 bg-dark-300 flex flex-col relative">
+        <div className="w-full h-auto px-5 bg-dark-300 flex flex-col relative">
           {media && media.length > 0 ? (
             <>
               <div className="sticky left-0 top-0 w-full py-2 bg-dark-300 z-10 text-light-200 text-lg mb-3 font-opensans">
@@ -55,7 +55,7 @@ const InfoBarTab: React.FC<ChatInfoBarTabProps> = ({
               ))}
             </>
           ) : (
-            <div className="text-light-300 flex flex-col items-center pt-10">
+            <div className="text-light-300 flex flex-col items-center py-10">
               <MdNotInterested size={40} />
               <span className="mt-1">no media sent</span>
             </div>

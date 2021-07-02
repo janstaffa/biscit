@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BsFillInfoCircleFill, BsFillPeopleFill } from 'react-icons/bs';
 import { MdEdit, MdPermMedia } from 'react-icons/md';
+import { profilepApiURL } from '../../../constants';
 import {
   FileSnippetFragment,
   MeQuery,
@@ -10,6 +11,7 @@ import {
   useThreadsQuery
 } from '../../../generated/graphql';
 import InfoBarTab from '../InfoBar/InfoBarTab';
+import ProfilePicture from '../ProfilePicture';
 export interface ChatInfoBarProps {
   show: boolean;
   thread: ThreadQuery | undefined;
@@ -30,8 +32,11 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
   editModalShow
 }) => {
   const [tab, setTab] = useState<number>(1);
-  const meData = useMeQuery();
+  const { data: meData } = useMeQuery();
   const { data: threads } = useThreadsQuery();
+
+  const profilePictureId = thread?.thread.data?.thread_picture?.id;
+  const profilePictureSrc = profilePictureId && profilepApiURL + '/' + profilePictureId;
 
   return (
     <div
@@ -47,7 +52,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
         className="w-full h-60 flex flex-col items-center p-5 border-b-2 border-dark-50"
         style={{ minHeight: '15rem' }}
       >
-        <div className="w-28 h-28 bg-white rounded-full mb-3"></div>
+        <ProfilePicture src={profilePictureSrc} size={110} className="mb-3" />
         <h3 className="text-xl text-light-200 text-center font-opensans">{thread?.thread.data?.name}</h3>
         <div className="mt-2 w-full flex flex-row justify-end">
           <MdPermMedia
@@ -79,7 +84,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
             title="More info."
             onClick={() => setTab(3)}
           />
-          {!thread?.thread.data?.isDm && meData.data?.me?.id === thread?.thread.data?.creatorId && (
+          {!thread?.thread.data?.isDm && meData?.me?.id === thread?.thread.data?.creatorId && (
             <MdEdit
               size={28}
               className="cursor-pointer text-light-400 mx-2 hover:text-light-200"
@@ -96,7 +101,7 @@ const ChatInfoBar: React.FC<ChatInfoBarProps> = ({
           setGalleryFile={setGalleryFile}
           setAddMemberModalShow={setAddMemberModalShow}
           tab={tab}
-          me={meData.data as MeQuery}
+          me={meData as MeQuery}
           myThreads={threads as ThreadsQuery | undefined}
         />
       </div>

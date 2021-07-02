@@ -9,7 +9,13 @@ import { File } from '../entities/File';
 import { ProfilePicture } from '../entities/ProfilePicture';
 import { Thread } from '../entities/Thread';
 import { User } from '../entities/User';
-import { connections, SocketThreadMessage, THREAD_CHANGE_CODE } from '../sockets';
+import {
+  connections,
+  OutgoingUserProfileChange,
+  SocketThreadMessage,
+  THREAD_CHANGE_CODE,
+  USER_PROFILE_CHANGE_CODE
+} from '../sockets';
 import { getId } from '../utils/generateId';
 
 export const fileUploadController = (app: Express) => {
@@ -94,7 +100,10 @@ export const fileUploadController = (app: Express) => {
       if (!userId) {
         return res.send({ error: 'You need to be signed in to upload files.' });
       }
-      const user = await User.findOne({ where: { id: userId }, relations: ['profile_picture'] });
+      const user = await User.findOne({
+        where: { id: userId },
+        relations: ['profile_picture', 'threads', 'threads.thread', 'threads.thread.members']
+      });
       if (!user) {
         return res.send({ error: 'Your account was not found.' });
       }
@@ -200,9 +209,27 @@ export const fileUploadController = (app: Express) => {
                 thread?.members.forEach((member) => {
                   connections.getSocket(member.userId)?.send(JSON.stringify(payload));
                 });
-                // pubClient.publish(req.body.threadId, JSON.stringify(payload));
               } else {
                 await User.update({ id: user.id }, { profile_pictureId: newFile.id });
+
+                const threadMemberIds = user.threads
+                  .map((membership) => membership.thread.members.map((member) => member.userId))
+                  .reduce((a, b) => a.concat(b), []);
+
+                let relatives: string[] = threadMemberIds || [];
+
+                relatives = relatives.filter((item, idx) => {
+                  return relatives.indexOf(item) == idx;
+                });
+                relatives.splice(relatives.indexOf(user.id), 1);
+
+                relatives.forEach((relativeId) => {
+                  const payload: OutgoingUserProfileChange = {
+                    code: USER_PROFILE_CHANGE_CODE,
+                    userId: user.id
+                  };
+                  connections.getSocket(relativeId)?.send(JSON.stringify(payload));
+                });
               }
 
               res.send({ status: 'success', fileId: newFile.id });

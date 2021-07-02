@@ -42,7 +42,7 @@ export class User extends BaseEntity {
   tag!: string;
   //username field
   @Field(() => String)
-  @Column({ unique: true })
+  @Column()
   username!: string;
 
   //username field
@@ -111,9 +111,17 @@ export class User extends BaseEntity {
   @Column({ default: true })
   allowThreads: boolean;
 
+  @Field(() => Boolean)
+  @Column({ default: true })
+  autoUpdate: boolean;
+
   @Field(() => Call, { nullable: true })
   @OneToOne(() => Call, (call) => call.creator, { nullable: true })
   callCreator: Call;
+
+  @Field(() => Boolean)
+  @Column({ default: false })
+  isInCall: boolean;
 
   //createdAt field
   @Field(() => String)

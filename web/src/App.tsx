@@ -8,6 +8,7 @@ import Chat from './pages/Chat';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import MyThreads from './pages/MyThreads';
+import OnlineFriends from './pages/OnlineFriends';
 import PendingRequests from './pages/PendingRequests';
 import ProtectedWrap from './pages/ProtectedWrap';
 import Register from './pages/Register';
@@ -45,6 +46,9 @@ const App: React.FC = () => {
                   <ProtectedWrap>
                     <PrivateRoute path="/app/friends/all">
                       <AllFriends />
+                    </PrivateRoute>
+                    <PrivateRoute path="/app/friends/online">
+                      <OnlineFriends />
                     </PrivateRoute>
                     <PrivateRoute path="/app/friends/pending">
                       <PendingRequests />

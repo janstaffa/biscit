@@ -49,4 +49,7 @@ export class UpdateSettingsInput {
 
   @Field(() => Boolean, { nullable: true })
   allowThreads?: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  autoUpdate?: boolean;
 }

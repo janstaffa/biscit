@@ -26,7 +26,7 @@ interface Socket {
 export const socket: Socket = {
   ws: undefined,
   connect: () => {
-    if (!socket.ws) {
+    if (!socket.ws || socket.ws.readyState === socket.ws.CLOSED) {
       socket.ws = new ReconnectingWebSocket(webSocketURL, undefined, WS_OPTIONS);
 
       socket.ws.onmessage = (e) => {
@@ -48,6 +48,7 @@ export const socket: Socket = {
         if (socket.ws) {
           socket.ws.onmessage = socket.ws.onerror = socket.ws.onclose = null;
           socket.ws?.close();
+          socket.ws = undefined;
         }
         useWebSocketStore.getState().setConnected(false);
       };

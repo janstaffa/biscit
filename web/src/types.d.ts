@@ -53,6 +53,10 @@ export interface IncomingJoinCallMessage extends SocketMessage {
   userId: string;
   user: UserSnippetFragment;
 }
+export interface IncomingLeaveCallMessage extends SocketMessage {
+  userId: string;
+  callId: string;
+}
 export interface IncomingCancelCallMessage extends SocketMessage {
   callId: string;
 }
@@ -63,4 +67,35 @@ export interface IncomingStartCallMessage extends SocketMessage {
 }
 export interface IncomingKillCallMessage extends SocketMessage {
   callId: string;
+}
+export interface IncomingPeerChangeMessage extends SocketMessage {
+  peerId: string;
+  userId: string;
+  audio: boolean;
+  camera: boolean;
+  screenShare: boolean;
+}
+
+export interface OutgoingPeerChangeMessage extends SocketMessage {
+  peerId: string;
+  callId: string;
+  audio: boolean;
+  camera: boolean;
+  screenShare: boolean;
+}
+
+// user update message types
+
+export interface IncomingRequestAcceptMessage extends SocketMessage {
+  userId: string;
+  username: string;
+}
+
+export interface IncomingRequestSendMessage extends SocketMessage {
+  userId: string;
+  username: string;
+}
+
+export interface IncomingUserStatusChange extends SocketMessage {
+  userId: string;
 }

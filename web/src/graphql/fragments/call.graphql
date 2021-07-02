@@ -1,0 +1,12 @@
+fragment callSnippet on Call {
+  id
+  accepted
+  creatorId
+  creator {
+    ...userSnippet
+  }
+  threadId
+  memberIds
+  createdAt
+  updatedAt
+}

@@ -59,7 +59,7 @@ const MemberListItem: React.FC<MemberListItemProps> = ({
   const isFriend = !!friends?.find((friend) => friend.friend.id === user?.id);
 
   const threads = myThreads?.threads;
-  const isAdmin = threads?.find((t) => t.threadId === thread?.thread.data?.id)?.isAdmin;
+  const isAdmin = threads?.find((m) => m.threadId === thread?.thread.data?.id)?.isAdmin;
 
   const { mutate: changeAdmin } = useChangeAdminMutation({
     onSuccess: (d, { options: { value } }) => {
@@ -80,7 +80,11 @@ const MemberListItem: React.FC<MemberListItemProps> = ({
     <li className="list-none">
       <div className="py-1 px-2 rounded-sm flex flex-row items-center hover:bg-dark-100 hover:text-light-hover">
         <div className="w-full h-14 flex flex-row items-center py-2">
-          <ProfilePicture online={member.user.status === 'online'} size="36px" src={profilePictureSrc} />
+          <ProfilePicture
+            online={me.me?.id === member.userId || member.user.status === 'online'}
+            size={36}
+            src={profilePictureSrc}
+          />
           <div className="w-full flex-1 px-2">
             <div className="flex flex-col">
               <div className="flex flex-row justify-between items-center">

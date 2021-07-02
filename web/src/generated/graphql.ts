@@ -447,6 +447,7 @@ export type UpdateSettingsInput = {
   setAsUnread?: Maybe<Scalars['Boolean']>;
   allowFriendRequests?: Maybe<Scalars['Boolean']>;
   allowThreads?: Maybe<Scalars['Boolean']>;
+  autoUpdate?: Maybe<Scalars['Boolean']>;
 };
 
 export type UpdateStatusInput = {
@@ -469,11 +470,23 @@ export type User = {
   setAsUnread: Scalars['Boolean'];
   allowFriendRequests: Scalars['Boolean'];
   allowThreads: Scalars['Boolean'];
+  autoUpdate: Scalars['Boolean'];
   callCreator?: Maybe<Call>;
+  isInCall: Scalars['Boolean'];
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
+  total_messages: Scalars['Float'];
 };
+
+export type CallSnippetFragment = (
+  { __typename?: 'Call' }
+  & Pick<Call, 'id' | 'accepted' | 'creatorId' | 'threadId' | 'memberIds' | 'createdAt' | 'updatedAt'>
+  & { creator: (
+    { __typename?: 'User' }
+    & UserSnippetFragment
+  ) }
+);
 
 export type ErrorSnippetFragment = (
   { __typename?: 'GQLValidationError' }
@@ -535,6 +548,9 @@ export type ThreadSnippetFragment = (
   )>, thread_picture?: Maybe<(
     { __typename?: 'ProfilePicture' }
     & ProfilePictureSnippetFragment
+  )>, call?: Maybe<(
+    { __typename?: 'Call' }
+    & CallSnippetFragment
   )> }
 );
 
@@ -963,7 +979,7 @@ export type MeQuery = (
   { __typename?: 'Query' }
   & { me?: Maybe<(
     { __typename?: 'User' }
-    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'tag' | 'setAsUnread' | 'allowThreads' | 'allowFriendRequests' | 'soundNotifications'>
+    & Pick<User, 'id' | 'username' | 'email' | 'status' | 'bio' | 'tag' | 'setAsUnread' | 'allowThreads' | 'allowFriendRequests' | 'soundNotifications' | 'autoUpdate' | 'total_messages' | 'createdAt' | 'updatedAt'>
     & { friend_requests: (
       { __typename?: 'FriendRequestResponse' }
       & { incoming: Array<(
@@ -1163,6 +1179,20 @@ export const ThreadMembersSnippetFragmentDoc = `
   updatedAt
 }
     ${UserSnippetFragmentDoc}`;
+export const CallSnippetFragmentDoc = `
+    fragment callSnippet on Call {
+  id
+  accepted
+  creatorId
+  creator {
+    ...userSnippet
+  }
+  threadId
+  memberIds
+  createdAt
+  updatedAt
+}
+    ${UserSnippetFragmentDoc}`;
 export const ThreadSnippetFragmentDoc = `
     fragment threadSnippet on Thread {
   id
@@ -1186,6 +1216,9 @@ export const ThreadSnippetFragmentDoc = `
   }
   messagesCount
   lastActivity
+  call {
+    ...callSnippet
+  }
   createdAt
   updatedAt
 }
@@ -1193,7 +1226,8 @@ export const ThreadSnippetFragmentDoc = `
 ${ThreadMembersSnippetFragmentDoc}
 ${FileSnippetFragmentDoc}
 ${UserSnippetFragmentDoc}
-${ProfilePictureSnippetFragmentDoc}`;
+${ProfilePictureSnippetFragmentDoc}
+${CallSnippetFragmentDoc}`;
 export const AcceptRequestDocument = `
     mutation AcceptRequest($options: RequestAcceptInput!) {
   FriendRequestAccept(options: $options) {
@@ -1639,6 +1673,10 @@ export const MeDocument = `
     allowThreads
     allowFriendRequests
     soundNotifications
+    autoUpdate
+    total_messages
+    createdAt
+    updatedAt
     friend_requests {
       incoming {
         id

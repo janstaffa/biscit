@@ -3,7 +3,8 @@ import { FaUserFriends } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
 import { currentUrl, genericErrorMessage } from '../../../constants';
-import { useSendRequestMutation } from '../../../generated/graphql';
+import { useMeQuery, useSendRequestMutation } from '../../../generated/graphql';
+import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
 import NavLink from '../../Buttons/NavLink';
 import SubmitButton from '../../Buttons/SubmitButton';
@@ -25,7 +26,11 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
   const [newFriendInput, setNewFriendInput] = useState<string>('');
 
   const { mutate: sendRequest } = useSendRequestMutation();
+  const { data: meData } = useMeQuery();
+  const requests = meData?.me?.friend_requests;
 
+  const hasPendingRequests =
+    (requests?.incoming && requests?.incoming.length > 0) || (requests?.outcoming && requests?.outcoming.length > 0);
   return (
     <>
       <Layout>
@@ -41,7 +46,9 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
               Online
             </NavLink>
             <NavLink href="/app/friends/pending" active={currentPath === '/app/friends/pending'}>
-              Pending
+              <div className="flex flex-row justify-center items-center">
+                Pending {hasPendingRequests && <div className="w-2 h-2 bg-accent rounded-full ml-2"></div>}
+              </div>
             </NavLink>
             <div
               className={
@@ -109,7 +116,6 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
                     errorToast('Invalid format. Please try again.');
                     return;
                   }
-                  console.log(inputArr);
                   sendRequest(
                     { options: { usernameAndTag: newFriendInput } },
                     {
@@ -122,6 +128,7 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
                         } else {
                           if (data.FriendRequestSend.data) {
                             successToast(`Friends request sent to ${newFriendInput}.`);
+                            queryClient.invalidateQueries('Me');
                           } else {
                             errorToast(genericErrorMessage);
                           }

@@ -8,3 +8,9 @@ export const successToast = (message: string) =>
     position: 'bottom-right',
     className: 'bg-lime-100'
   });
+
+export const infoToast = (message: string) =>
+  toast.info(message, {
+    position: 'bottom-right',
+    className: 'bg-lime-100'
+  });

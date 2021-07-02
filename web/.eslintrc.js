@@ -35,7 +35,8 @@ module.exports = {
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
     'react/no-unescaped-entities': 'off',
-    '@typescript-eslint/no-empty-interface': 'off'
+    '@typescript-eslint/no-empty-interface': 'off',
+    'no-new': 'off'
   },
   settings: {
     'import/resolver': {

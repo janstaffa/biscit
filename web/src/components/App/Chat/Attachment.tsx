@@ -77,7 +77,7 @@ const Attachment: React.FC<AttachmentProps> = ({ file, setGalleryFile, fullWidth
           <div>{iconDisplay}</div>
           <div
             className="text-light-200 ml-1.5 truncate flex flex-col justify-center text-sm font-roboto"
-            style={{ maxWidth: fullWidth ? '250px' : '110px' }}
+            style={{ maxWidth: fullWidth ? '190px' : '110px' }}
           >
             {file.fileName}
           </div>
