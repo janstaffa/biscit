@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { BiMessageAltDetail } from 'react-icons/bi';
 import { HiDotsVertical } from 'react-icons/hi';
 import { ImCross } from 'react-icons/im';
@@ -6,10 +6,12 @@ import { IoMdCall } from 'react-icons/io';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { useHistory } from 'react-router-dom';
 import { Popup } from 'react-tiny-modals';
-import { genericErrorMessage } from '../../../constants';
+import { genericErrorMessage, profilepApiURL } from '../../../constants';
 import { ThreadSnippetFragment, useDeleteThreadMutation, useLeaveThreadMutation } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
+import { RTCcontext } from '../../../utils/RTCProvider';
 import { errorToast } from '../../../utils/toasts';
+import ProfilePicture from '../ProfilePicture';
 
 export interface ThreadTabProps {
   thread: ThreadSnippetFragment;
@@ -35,11 +37,17 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
       queryClient.invalidateQueries('Threads');
     }
   });
+
+  const threadPictureId = thread.thread_picture?.id;
+  const threadPictureSrc = threadPictureId && profilepApiURL + '/' + threadPictureId;
+
+  const rtcContext = useContext(RTCcontext);
+
   return (
-    <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
+    <div className="w-full h-16 bg-dark-100 hover:bg-dark-50" onClick={() => history.push(`/app/chat/${id}`)}>
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
-          <div className="w-11 h-11 rounded-full bg-light"></div>
+          <ProfilePicture size={44} src={threadPictureSrc} />
         </div>
         <div className="w-full flex-1 px-2">
           <div className="flex flex-row w-full justify-between">
@@ -52,7 +60,13 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
                 title="Message"
                 onClick={() => history.push(`/app/chat/${id}`)}
               />
-              <IoMdCall className="text-light-300 text-2xl mx-2 hover:text-light-200" title="Call" />
+              <IoMdCall
+                className="text-light-300 text-2xl mx-2 hover:text-light-200"
+                title="Call"
+                onClick={() => {
+                  rtcContext?.createCall(thread.id);
+                }}
+              />
               <Popup
                 position={['left', 'bottom', 'top', 'right']}
                 onClickOutside={({ setShow }) => setShow(false)}

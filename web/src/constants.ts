@@ -1,4 +1,4 @@
-export const serverIP = '192.168.8.103';
+export const serverIP = '192.168.8.105';
 
 export const __prod__ = process.env.NODE_ENV === 'production';
 export const serverURL = 'http://' + serverIP + ':9000';

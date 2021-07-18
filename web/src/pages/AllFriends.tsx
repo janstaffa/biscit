@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import FriendsLayout from '../components/App/Friends/FriendsLayout';
 import FriendTab from '../components/App/Friends/FriendTab';
 import SplashScreen from '../components/SplashScreen';
-import { useMeQuery } from '../generated/graphql';
+import { Friend, useMeQuery } from '../generated/graphql';
 
 const AllFriends: React.FC = () => {
   const { data: meData, isLoading } = useMeQuery();
@@ -21,17 +21,8 @@ const AllFriends: React.FC = () => {
                 All friends - {friends.length}
               </p>
               <div>
-                {friends.map((friendship) => {
-                  const { friend } = friendship;
-
-                  return (
-                    <FriendTab
-                      friendId={friendship.key}
-                      friend={friend}
-                      key={friendship.id}
-                      threadId={friendship.threadId}
-                    />
-                  );
+                {friends.map((friend) => {
+                  return <FriendTab friend={friend as Friend} key={friend.id} />;
                 })}
               </div>
             </div>
