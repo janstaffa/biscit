@@ -44,7 +44,7 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
   const rtcContext = useContext(RTCcontext);
 
   return (
-    <div className="w-full h-16 bg-dark-100 hover:bg-dark-50" onClick={() => history.push(`/app/chat/${id}`)}>
+    <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
           <ProfilePicture size={44} src={threadPictureSrc} />
@@ -53,6 +53,9 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
           <div className="flex flex-row w-full justify-between">
             <div className="flex flex-col justify-center items-start">
               <div className=" text-light font-roboto">{name}</div>
+              <div className="text-light-300 w-full font-roboto text-sm truncate">
+                {thread.lastMessage?.content || ''}
+              </div>
             </div>
             <div className="flex flex-row items-center">
               <BiMessageAltDetail
@@ -64,6 +67,7 @@ const ThreadTab: React.FC<ThreadTabProps> = ({ thread: { id, name }, thread, myI
                 className="text-light-300 text-2xl mx-2 hover:text-light-200"
                 title="Call"
                 onClick={() => {
+                  history.push(`/app/chat/${id}`);
                   rtcContext?.createCall(thread.id);
                 }}
               />

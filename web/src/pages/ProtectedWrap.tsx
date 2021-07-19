@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useMeQuery, useThreadsQuery, useTokenQuery } from '../generated/graphql';
 import { useTokenStore } from '../stores/useTokenStore';
 import {
@@ -23,6 +23,7 @@ const ProtectedWrap: React.FC<ProtectedWrapProps> = ({ children }) => {
 
   const { setToken } = useTokenStore();
 
+  const [appEnabled, setAppEnabled] = useState<boolean>(true);
   useEffect(() => {
     if (token?.token) {
       setToken(token.token);
@@ -65,6 +66,8 @@ const ProtectedWrap: React.FC<ProtectedWrapProps> = ({ children }) => {
       });
       queryClient.invalidateQueries('Me');
       queryClient.invalidateQueries('Threads');
+    } else if (incoming.code === 3025) {
+      setAppEnabled(false);
     }
   };
   useEffect(() => {
@@ -90,7 +93,20 @@ const ProtectedWrap: React.FC<ProtectedWrapProps> = ({ children }) => {
 
   return (
     <>
-      <RTCProvider>{children}</RTCProvider>
+      {appEnabled ? (
+        <RTCProvider>{children}</RTCProvider>
+      ) : (
+        <div className="text-center mt-5">
+          <h3 className="text-light-200 text-xl">you are logged in to your account on another device</h3>
+          <a
+            href="#"
+            className="text-accent hover:text-accent-hover font-black"
+            onClick={() => window.location.reload()}
+          >
+            Relogin
+          </a>
+        </div>
+      )}
     </>
   );
 };

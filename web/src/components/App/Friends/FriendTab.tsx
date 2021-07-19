@@ -36,10 +36,7 @@ const FriendTab: React.FC<FriendTabProps> = ({ friend: friendship, friend: { fri
   const rtcContext = useContext(RTCcontext);
 
   return (
-    <div
-      className="w-full h-16 bg-dark-100 hover:bg-dark-50"
-      onClick={() => history.push(`/app/chat/${friendship.threadId}`)}
-    >
+    <div className="w-full h-16 bg-dark-100 hover:bg-dark-50">
       <div className="w-full h-full flex flex-row items-center cursor-pointer py-2">
         <div className="w-16 h-full flex flex-col justify-center items-center">
           <ProfilePicture online={friend.status === 'online'} size={44} src={profilePictureSrc} />
@@ -62,6 +59,7 @@ const FriendTab: React.FC<FriendTabProps> = ({ friend: friendship, friend: { fri
                 className="text-light-300 text-2xl mx-2 hover:text-light-200"
                 title="Call"
                 onClick={() => {
+                  history.push(`/app/chat/${friendship.threadId}`);
                   rtcContext?.createCall(friendship.threadId);
                 }}
               />

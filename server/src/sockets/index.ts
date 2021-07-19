@@ -113,6 +113,9 @@ export interface OutgoingUserStatusChange extends SocketMessage {
 export interface OutgoingUserProfileChange extends SocketMessage {
   userId: string;
 }
+
+export type OutgoingLoggedInElsewhere = SocketMessage;
+
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -138,6 +141,7 @@ export const THREAD_ADD_MEMBER_CODE = 3021;
 export const THREAD_REMOVE_MEMBER_CODE = 3022;
 export const USER_STATUS_CHANGE_CODE = 3023;
 export const USER_PROFILE_CHANGE_CODE = 3024;
+export const LOGGED_IN_ELSEWHERE_CODE = 3025;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -211,6 +215,15 @@ export const socketController = (server: Server) => {
 
   wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, user: User) => {
     if (!user.id) return;
+
+    const prevConnection = connections.getSocket(user.id);
+    if (prevConnection) {
+      const payload: OutgoingLoggedInElsewhere = {
+        code: LOGGED_IN_ELSEWHERE_CODE
+      };
+      prevConnection.send(JSON.stringify(payload));
+      connections.removeSocket(user.id);
+    }
     connections.addSocket(user.id, ws);
 
     await User.update({ id: user.id }, { status: 'online' });
