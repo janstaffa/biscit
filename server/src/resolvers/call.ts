@@ -66,7 +66,7 @@ export class CallResolver {
         new GQLValidationError({
           field: 'threadId',
           value: options.threadId,
-          message: 'You are already in a call.'
+          message: "You can't join two calls at once."
         })
       );
       return {
@@ -84,6 +84,25 @@ export class CallResolver {
             field: 'threadId',
             value: options.threadId,
             message: 'There is already a call happening in this thread.'
+          })
+        );
+        return {
+          data: null,
+          errors
+        };
+      }
+    }
+    if (member.thread.isDm) {
+      const otherUser = member.thread.members.find((member) => {
+        return member.user.id !== userId;
+      });
+      console.log(otherUser, member);
+      if (otherUser?.user.isInCall) {
+        errors.push(
+          new GQLValidationError({
+            field: 'threadId',
+            value: options.threadId,
+            message: 'This user is already in a call.'
           })
         );
         return {
@@ -295,7 +314,7 @@ export class CallResolver {
     }
 
     await Call.update({ id: options.callId }, partialCallEntity);
-    await User.update(user, { isInCall: true });
+    await User.update({ id: userId }, { isInCall: true });
 
     const startCallPayload: OutgoingStartCallMessage = {
       code: START_CALL_CODE,
