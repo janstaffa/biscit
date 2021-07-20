@@ -43,7 +43,7 @@ export class CallResolver {
 
     const member = await ThreadMembers.findOne({
       where: { userId, threadId: options.threadId },
-      relations: ['user', 'thread', 'thread.call', 'thread.members', 'thread.members.user']
+      relations: ['user', 'thread', 'thread.call', 'thread.call.members', 'thread.members', 'thread.members.user']
     });
     const errors: GQLValidationError[] = [];
 
@@ -76,7 +76,7 @@ export class CallResolver {
     }
 
     if (member.thread.call) {
-      if (!member.thread.call?.memberIds || member.thread.call?.memberIds.length === 0) {
+      if (!member.thread.call?.members || member.thread.call?.members.length === 0) {
         await Call.delete({ threadId: options.threadId });
       } else {
         errors.push(
@@ -96,7 +96,6 @@ export class CallResolver {
       const otherUser = member.thread.members.find((member) => {
         return member.user.id !== userId;
       });
-      console.log(otherUser, member);
       if (otherUser?.user.isInCall) {
         errors.push(
           new GQLValidationError({
@@ -113,14 +112,13 @@ export class CallResolver {
     }
 
     const callId = await getId(Call, 'id');
-    const membersIds = [userId];
     await Call.create({
       id: callId,
       accepted: false,
       threadId: options.threadId,
-      creatorId: userId,
-      memberIds: membersIds
+      creatorId: userId
     }).save();
+    await User.update({ id: userId }, { isInCall: true, callId });
 
     if (member.thread.isDm) {
       const otherUser = member.thread.members.filter((member) => {
@@ -164,11 +162,11 @@ export class CallResolver {
   ): Promise<ResponseType<boolean>> {
     const userId = req.session.userId;
 
-    const call = await Call.findOne({ where: { id: options.callId }, relations: ['thread', 'thread.members'] });
-    // const member = await ThreadMembers.findOne({
-    //   where: { userId, threadId: options.threadId },
-    //   relations: ['user', 'thread', 'thread.call', 'thread.members']
-    // });
+    const call = await Call.findOne({
+      where: { id: options.callId },
+      relations: ['members', 'thread', 'thread.members']
+    });
+
     const errors: GQLValidationError[] = [];
 
     if (!call) {
@@ -210,6 +208,9 @@ export class CallResolver {
         connections.getSocket(member.userId)?.send(JSON.stringify(payload));
       });
 
+      for (const member of call.members) {
+        await User.update({ id: member.id }, { isInCall: false /*callId: null*/ });
+      }
       await Call.delete({ id: call.id });
     }
 
@@ -258,7 +259,7 @@ export class CallResolver {
     }
     const call = await Call.findOne({
       where: { id: options.callId },
-      relations: ['thread', 'thread.members']
+      relations: ['members', 'thread', 'thread.members']
     });
 
     if (!call) {
@@ -290,7 +291,7 @@ export class CallResolver {
       };
     }
 
-    if (call.memberIds.includes(userId)) {
+    if (call.members.find((member) => member.id === userId)) {
       errors.push(
         new GQLValidationError({
           field: 'callId',
@@ -304,17 +305,12 @@ export class CallResolver {
       };
     }
 
-    const newMembers = [...call.memberIds, userId];
-    const partialCallEntity: Pick<Call, 'accepted' | 'memberIds'> = { memberIds: newMembers, accepted: call.accepted };
-    const isInitial = newMembers.length === 2;
-
-    if (isInitial) {
-      partialCallEntity.accepted = true;
+    if (!call.accepted) {
       await Thread.update({ id: call.threadId }, { lastActivity: new Date() });
+      await Call.update({ id: options.callId }, { accepted: true });
     }
 
-    await Call.update({ id: options.callId }, partialCallEntity);
-    await User.update({ id: userId }, { isInCall: true });
+    await User.update({ id: userId }, { isInCall: true, callId: call.id });
 
     const startCallPayload: OutgoingStartCallMessage = {
       code: START_CALL_CODE,
@@ -323,8 +319,8 @@ export class CallResolver {
       thread: call.thread
     };
 
-    if (isInitial) {
-      newMembers.forEach((memberId) => {
+    if (!call.accepted) {
+      [...call.members.map((member) => member.id), userId].forEach((memberId) => {
         connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
       });
     }
@@ -353,7 +349,7 @@ export class CallResolver {
 
     const call = await Call.findOne({
       where: { id: options.callId },
-      relations: ['thread', 'thread.members']
+      relations: ['members', 'thread', 'thread.members']
     });
     const errors: GQLValidationError[] = [];
 
@@ -372,7 +368,7 @@ export class CallResolver {
     }
 
     const isMember = call.thread.members?.find((member) => member.userId === userId);
-    if (!isMember || !call.memberIds.includes(userId)) {
+    if (!isMember) {
       errors.push(
         new GQLValidationError({
           field: 'callId',
@@ -385,19 +381,41 @@ export class CallResolver {
         errors
       };
     }
+    if (!call.members.find((member) => member.id === userId)) {
+      errors.push(
+        new GQLValidationError({
+          field: 'callId',
+          value: options.callId,
+          message: "You aren't a member of this call."
+        })
+      );
+      return {
+        data: false,
+        errors
+      };
+    }
 
-    await User.update({ id: userId }, { isInCall: false });
-
-    if (call.memberIds.length - 1 < 2) {
-      await Call.delete({ id: options.callId });
+    console.log(options.callId, call.members);
+    if (call.members.length - 1 < 2) {
+      console.log('called');
+      try {
+        for (const member of call.members) {
+          await User.update({ id: member.id }, { isInCall: false /*callId: null*/ });
+        }
+        await Call.delete({ id: options.callId });
+      } catch (e) {
+        console.error(e);
+      }
+      console.log('deleted');
       const payload: OutgoingKillCallMessage = {
         code: KILL_CALL_CODE,
-        callId: call.id
+        callId: call.id,
+        threadId: call.threadId
       };
 
-      call.memberIds.forEach((memberId) => {
-        connections.getSocket(memberId)?.send(JSON.stringify(payload));
-      });
+      for (const member of call.members) {
+        connections.getSocket(member.id)?.send(JSON.stringify(payload));
+      }
 
       return {
         data: true,
@@ -405,19 +423,17 @@ export class CallResolver {
       };
     }
 
-    const newMemberIds = [...call.memberIds];
-    newMemberIds.splice(newMemberIds.indexOf(userId), 1);
-
-    await Call.update({ id: options.callId }, { memberIds: newMemberIds });
+    await User.update({ id: userId }, { isInCall: false, callId: null });
 
     const payload: OutgoingLeaveCallMessage = {
       code: LEAVE_CALL_CODE,
       callId: options.callId,
       userId
     };
-    newMemberIds.forEach((memberId) => {
-      connections.getSocket(memberId)?.send(JSON.stringify(payload));
-    });
+    for (const member of call.members) {
+      if (member.id === userId) continue;
+      connections.getSocket(member.id)?.send(JSON.stringify(payload));
+    }
 
     return {
       data: true,

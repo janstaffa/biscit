@@ -14,12 +14,14 @@ import {
   IncomingCancelCallMessage,
   IncomingCreateCallMessage,
   IncomingJoinCallMessage,
+  IncomingKillCallMessage,
   IncomingLeaveCallMessage,
   IncomingPeerChangeMessage,
   IncomingStartCallMessage,
   OutgoingJoinCallMessage,
   OutgoingPeerChangeMessage
 } from '../types';
+import { queryClient } from './createQueryClient';
 import { RTCconnection } from './createRTCconnection';
 import { socket } from './createWSconnection';
 import { errorToast } from './toasts';
@@ -101,7 +103,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   const ringingDetailsRef = useRef<RingingDetails | undefined>(ringingDetails);
   ringingDetailsRef.current = ringingDetails;
 
-  const [options, setOptions] = useState<PeerOptions>({
+  const defaultOptions = {
     mic: true,
     camera: true,
     screenShare: false,
@@ -109,7 +111,8 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     volume: defaultVolume,
     videoDevice: undefined,
     audioDevice: undefined
-  });
+  };
+  const [options, setOptions] = useState<PeerOptions>(defaultOptions);
   const optionsRef = useRef<PeerOptions>(options);
   optionsRef.current = options;
 
@@ -365,6 +368,9 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         if (isInCallRef.current) return;
 
         initializeCall(cId, thread.id);
+      } else if (incoming.code === 3013) {
+        const { threadId } = incoming as IncomingKillCallMessage;
+        queryClient.invalidateQueries(['Thread', { options: { threadId } }]);
       }
     };
     ws?.addEventListener('message', handleMessage);
@@ -553,7 +559,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
             });
           }
           setIsInCall(false);
-
+          setOptions(defaultOptions);
           connection.current = null;
         }
       }

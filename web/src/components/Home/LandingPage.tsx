@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { FiArrowDownCircle } from 'react-icons/fi';
 import { HiOutlineDownload } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
+import { isPhone } from '../../constants';
 import { randomNumber } from '../../utils/getRandomNumber';
 import HomeNav from './Navbar';
 
@@ -15,13 +16,13 @@ interface Biscuit {
 const LandingPage: React.FC<LandingPageProps> = () => {
   const background = useRef<HTMLDivElement | null>(null);
   const BISCUIT_SIZE = 50;
-  const BISCUIT_COUNT = 20;
+  const BISCUIT_COUNT = isPhone ? 5 : 10;
   useEffect(() => {
     const biscuits: Biscuit[] = [];
     if (!background.current) return;
     const pixiApp = new PIXI.Application({
       backgroundAlpha: 0,
-      resolution: window.devicePixelRatio || 1,
+      // resolution: window.devicePixelRatio || 1,
       resizeTo: background.current
     });
 
@@ -66,6 +67,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
 
     pixiApp.ticker.add((delta) => {
       biscuits.forEach((biscuit, idx) => {
+        if (!background.current) return;
         biscuit.sprite.rotation -= (biscuit.rotation / 100) * delta;
 
         const newY = biscuit.sprite.y + biscuit.speed * delta;

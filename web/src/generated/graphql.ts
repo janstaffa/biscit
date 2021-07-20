@@ -31,10 +31,9 @@ export type Call = {
   id: Scalars['String'];
   accepted: Scalars['Boolean'];
   creatorId: Scalars['String'];
-  creator: User;
   threadId: Scalars['String'];
   thread: Thread;
-  memberIds?: Maybe<Array<Scalars['String']>>;
+  members?: Maybe<Array<User>>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
 };
@@ -471,8 +470,9 @@ export type User = {
   allowFriendRequests: Scalars['Boolean'];
   allowThreads: Scalars['Boolean'];
   autoUpdate: Scalars['Boolean'];
-  callCreator?: Maybe<Call>;
   isInCall: Scalars['Boolean'];
+  callId?: Maybe<Scalars['String']>;
+  call?: Maybe<Scalars['String']>;
   createdAt: Scalars['String'];
   updatedAt: Scalars['String'];
   friend_requests: FriendRequestResponse;
@@ -481,11 +481,11 @@ export type User = {
 
 export type CallSnippetFragment = (
   { __typename?: 'Call' }
-  & Pick<Call, 'id' | 'accepted' | 'creatorId' | 'threadId' | 'memberIds' | 'createdAt' | 'updatedAt'>
-  & { creator: (
+  & Pick<Call, 'id' | 'accepted' | 'creatorId' | 'threadId' | 'createdAt' | 'updatedAt'>
+  & { members?: Maybe<Array<(
     { __typename?: 'User' }
     & UserSnippetFragment
-  ) }
+  )>> }
 );
 
 export type ErrorSnippetFragment = (
@@ -1184,11 +1184,10 @@ export const CallSnippetFragmentDoc = `
   id
   accepted
   creatorId
-  creator {
+  threadId
+  members {
     ...userSnippet
   }
-  threadId
-  memberIds
   createdAt
   updatedAt
 }

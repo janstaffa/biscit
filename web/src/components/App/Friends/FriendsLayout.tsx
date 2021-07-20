@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect, useState } from 'react';
+import { BsFillPersonPlusFill } from 'react-icons/bs';
 import { FaUserFriends } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { Modal } from 'react-tiny-modals';
@@ -35,29 +36,31 @@ const FriendsLayout: React.FC<FriendsLayoutProps> = ({ children }) => {
     <>
       <Layout>
         <ContentNav>
-          <div className="flex flex-row items-center h-full select-none">
-            <div className="border-r border-light-300 px-4 mr-2">
-              <FaUserFriends className="text-light-300 text-2xl" />
-            </div>
-            <NavLink href="/app/friends/all" active={currentPath === '/app/friends/all'}>
-              All
-            </NavLink>
-            <NavLink href="/app/friends/online" active={currentPath === '/app/friends/online'}>
-              Online
-            </NavLink>
-            <NavLink href="/app/friends/pending" active={currentPath === '/app/friends/pending'}>
-              <div className="flex flex-row justify-center items-center">
-                Pending {hasPendingRequests && <div className="w-2 h-2 bg-accent rounded-full ml-2"></div>}
+          <div className="flex flex-row items-center justify-between h-full select-none">
+            <div className="flex flex-row items-center">
+              <div className="border-r border-light-300 px-4 mr-2">
+                <FaUserFriends className="text-light-300 text-2xl" />
               </div>
-            </NavLink>
+              <NavLink href="/app/friends/all" active={currentPath === '/app/friends/all'}>
+                All
+              </NavLink>
+              <NavLink href="/app/friends/online" active={currentPath === '/app/friends/online'}>
+                Online
+              </NavLink>
+              <NavLink href="/app/friends/pending" active={currentPath === '/app/friends/pending'}>
+                <div className="flex flex-row justify-center items-center">
+                  Pending {hasPendingRequests && <div className="w-2 h-2 bg-accent rounded-full ml-2"></div>}
+                </div>
+              </NavLink>
+            </div>
             <div
               className={
-                'border-lime-300 border-2 text-lime-200 font-bold mx-2 px-3 rounded-full cursor-pointer ml-5' +
+                'text-lime-200 font-bold mx-1 p-1.5 rounded-full cursor-pointer ml-5' +
                 (currentPath === '/app/friends/add' ? ' bg-dark-50' : ' hover:bg-dark-50 bg-dark-100')
               }
               onClick={() => setModalShow(true)}
             >
-              Add friend
+              <BsFillPersonPlusFill size={20} />
             </div>
           </div>
         </ContentNav>

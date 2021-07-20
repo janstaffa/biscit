@@ -38,9 +38,10 @@ import TabButton from './Sidebar/TabButton';
 import ThreadButton from './Sidebar/ThreadButton';
 
 interface LeftSidebarProps {
+  isOpen: boolean;
   threadId?: string;
 }
-const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId }) => {
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId, isOpen }) => {
   const history = useHistory();
   const { setAuthenticated } = useAuth();
   const { setToken } = useTokenStore();
@@ -199,7 +200,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ threadId }) => {
 
   return (
     <>
-      <div className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 relative flex flex-col">
+      <div
+        className="h-full w-96 bg-dark-200 border-r-2 border-dark-50 z-50 absolute md:relative flex flex-col transition-all duration-200 ease-in-out"
+        style={{ marginLeft: isOpen ? 0 : '-24rem', minWidth: '24rem' }}
+      >
         <div className="flex-col w-full h-auto border-b-2 border-dark-50 px-10 py-5">
           <TabButton active={currentPath?.includes('/app/friends/all')} href="/app/friends/all">
             <div className="flex flex-row items-center">

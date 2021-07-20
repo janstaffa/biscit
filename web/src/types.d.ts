@@ -65,7 +65,7 @@ export interface IncomingStartCallMessage extends SocketMessage {
   user: UserSnippetFragment;
   thread: ThreadSnippetFragment;
 }
-export interface IncomingKillCallMessage extends SocketMessage {
+export interface IncomingKillCallMessage extends SocketThreadMessage {
   callId: string;
 }
 export interface IncomingPeerChangeMessage extends SocketMessage {

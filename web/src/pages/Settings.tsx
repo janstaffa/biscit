@@ -8,7 +8,7 @@ import { MdAddAPhoto } from 'react-icons/md';
 import { Modal } from 'react-tiny-modals';
 import SettingsLayout from '../components/App/Settings/SettingsLayout';
 import SubmitButton from '../components/Buttons/SubmitButton';
-import { profilepApiURL, validProfilePictureUploadRegExp } from '../constants';
+import { isPhone, profilepApiURL, validProfilePictureUploadRegExp } from '../constants';
 import { useMeQuery, useUpdateSettingsMutation } from '../generated/graphql';
 import { queryClient } from '../utils/createQueryClient';
 import { formatTime } from '../utils/formatTime';
@@ -74,37 +74,64 @@ const Settings: React.FC = () => {
   }, [meData]);
 
   const blinkScreen = useRef<HTMLDivElement | null>(null);
+
+  const [isSmallScreen, setIsSmallScreen] = useState<boolean>(isPhone);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      if (window.innerWidth < 1200) {
+        setIsSmallScreen(true);
+        return;
+      }
+      setIsSmallScreen(false);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
   return (
     <>
       <Helmet>
         <title>Biscit | Settings</title>
       </Helmet>
       <SettingsLayout>
-        <div className="w-full h-full flex flex-row">
-          <div className="w-64 bg-dark-300 text-light-300 flex flex-row justify-center pt-5">
-            <ul className="w-auto text-lg list-none">
+        <div className={'w-full h-full flex ' + (isSmallScreen ? 'flex-col' : 'flex-row')}>
+          <div
+            className={
+              'bg-dark-300 text-light-300 flex flex-row justify-center py-5 ' +
+              (isSmallScreen ? 'w-full items-center text-base' : 'w-64 text-lg')
+            }
+            style={{ minWidth: '16rem' }}
+          >
+            <ul className={'w-auto list-none ' + (isSmallScreen ? 'flex flex-row' : 'flex-row')}>
               <li>
-                <a href="#account" className="text-light-300 hover:text-light">
+                <a href="#account" className="text-light-300 hover:text-light px-1">
                   Account
                 </a>
               </li>
+              {isSmallScreen && <span>&bull;</span>}
               <li>
-                <a href="#customization" className="text-light-300 hover:text-light">
+                <a href="#customization" className="text-light-300 hover:text-light px-1">
                   Customization
                 </a>
               </li>
+              {isSmallScreen && <span>&bull;</span>}
               <li>
-                <a href="#notifications" className="text-light-300 hover:text-light">
+                <a href="#notifications" className="text-light-300 hover:text-light px-1">
                   Notifications
                 </a>
               </li>
+              {isSmallScreen && <span>&bull;</span>}
               <li>
-                <a href="#privacy" className="text-light-300 hover:text-light">
+                <a href="#privacy" className="text-light-300 hover:text-light px-1">
                   Privacy
                 </a>
               </li>
+              {isSmallScreen && <span>&bull;</span>}
               <li>
-                <a href="#performance" className="text-light-300 hover:text-light">
+                <a href="#performance" className="text-light-300 hover:text-light px-1">
                   Performance
                 </a>
               </li>

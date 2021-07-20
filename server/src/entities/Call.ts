@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryColumn,
   UpdateDateColumn
@@ -37,11 +37,6 @@ export class Call extends BaseEntity {
   @Column()
   creatorId: string;
 
-  @Field(() => User)
-  @ManyToOne(() => User, (user) => user.callCreator, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'creatorId' })
-  creator: User;
-
   @Field()
   @Column()
   threadId: string;
@@ -51,9 +46,9 @@ export class Call extends BaseEntity {
   @JoinColumn({ name: 'threadId' })
   thread: Thread;
 
-  @Field(() => [String], { nullable: true })
-  @Column('text', { array: true, nullable: true })
-  memberIds: string[];
+  @Field(() => [User], { nullable: true })
+  @OneToMany(() => User, (user) => user.call, { nullable: true })
+  members: User[];
 
   //createdAt field
   @Field(() => String)

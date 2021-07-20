@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryColumn,
@@ -115,13 +116,18 @@ export class User extends BaseEntity {
   @Column({ default: true })
   autoUpdate: boolean;
 
-  @Field(() => Call, { nullable: true })
-  @OneToOne(() => Call, (call) => call.creator, { nullable: true })
-  callCreator: Call;
-
   @Field(() => Boolean)
   @Column({ default: false })
   isInCall: boolean;
+
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'text', nullable: true })
+  callId: string | null;
+
+  @Field(() => String, { nullable: true })
+  @ManyToOne(() => Call, (call) => call.members, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'callId' })
+  call: Call;
 
   //createdAt field
   @Field(() => String)

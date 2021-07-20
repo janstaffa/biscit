@@ -41,7 +41,7 @@ export class ThreadResolver {
   @FieldResolver()
   @UseMiddleware(isAuth)
   async call(@Root() thread: Thread, @Ctx() { req, res }: ContextType): Promise<Call | undefined> {
-    const call = await Call.findOne({ where: { threadId: thread.id }, relations: ['creator'] });
+    const call = await Call.findOne({ where: { threadId: thread.id } });
     if (!call) return;
 
     return call;
