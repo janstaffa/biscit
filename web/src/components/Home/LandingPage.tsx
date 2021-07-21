@@ -90,7 +90,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
       <div className="w-screen h-screen z-10">
         <HomeNav />
         <div className="w-full h-auto bg-transparent flex flex-row justify-center items-center mt-10">
-          <div className="w-full h-80">
+          <div className="w-full h-80 animate-fade-in">
             <p className="text-light text-3xl font-opensans font-bold text-center">Welcome to Biscit</p>
             <p className="text-light text-base font-opensans font-bold text-center">the open source chat</p>
             <div className="w-full flex flex-row flex-wrap justify-center mt-10">
