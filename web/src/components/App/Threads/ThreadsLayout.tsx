@@ -4,7 +4,7 @@ import { FaUserFriends } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { useHistory } from 'react-router-dom';
 import { Modal } from 'react-tiny-modals';
-import { currentUrl, genericErrorMessage } from '../../../constants';
+import { currentUrl, genericErrorMessage, maxPeoplePerThread } from '../../../constants';
 import { useCreateThreadMutation, useMeQuery } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
@@ -101,17 +101,22 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
                       <FriendListItem
                         friend={friend}
                         key={friendship.id}
-                        onChecked={(checked) => {
+                        onChecked={(checked, setChecked) => {
                           if (checked) {
-                            setNewThreadMembers([...newThreadMembers, friend.id]);
+                            const newNewThreadMembers = [...newThreadMembers, friend.id];
+                            if (newNewThreadMembers.length > maxPeoplePerThread) {
+                              errorToast(`There can only be ${maxPeoplePerThread} people in one thread.`);
+                              setChecked(false);
+                            }
+                            setNewThreadMembers(newNewThreadMembers);
                             return;
                           }
-                          const currentResendThreads = [...newThreadMembers];
-                          const newResendThreads = currentResendThreads.filter((resendThread) => {
+                          const currentThreadMembers = [...newThreadMembers];
+                          const newNewThreadMembers = currentThreadMembers.filter((resendThread) => {
                             if (resendThread === friend.id) return false;
                             return true;
                           });
-                          setNewThreadMembers(newResendThreads);
+                          setNewThreadMembers(newNewThreadMembers);
                         }}
                       />
                     );

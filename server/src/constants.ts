@@ -9,3 +9,4 @@ export const tokenExpiration = '7d';
 export const validProfilePictureUploadRegExp = /jpeg|png|webp|avif|tiff|svg/;
 
 export const peerIdEndpoint = 'http://localhost:8000/peer/peerjs/id';
+export const maxPeoplePerThread = 20;

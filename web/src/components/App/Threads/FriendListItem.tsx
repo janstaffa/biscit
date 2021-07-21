@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { profilepApiURL } from '../../../constants';
 import { UserSnippetFragment } from '../../../generated/graphql';
 import ProfilePicture from '../ProfilePicture';
 
 export interface FriendListItemProps {
   friend: UserSnippetFragment;
-  onChecked?: (value: boolean) => void;
+  onChecked?: (value: boolean, setChecked: Dispatch<SetStateAction<boolean>>) => void;
 }
 
 const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onChecked }) => {
@@ -17,7 +17,7 @@ const FriendListItem: React.FC<FriendListItemProps> = ({ friend, onChecked }) =>
     <li
       className="list-none"
       onClick={(e) => {
-        onChecked?.(!checked);
+        onChecked?.(!checked, setChecked);
         setChecked(!checked);
       }}
     >

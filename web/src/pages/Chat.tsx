@@ -16,6 +16,7 @@ import Layout from '../components/App/Layout';
 import FriendListItem from '../components/App/Threads/FriendListItem';
 import SubmitButton from '../components/Buttons/SubmitButton';
 import EditThreadModal from '../components/Modals/EditThreadModal';
+import { maxPeoplePerThread } from '../constants';
 import {
   FileSnippetFragment,
   MessageSnippetFragment,
@@ -291,9 +292,14 @@ const Chat: React.FC = () => {
                       <FriendListItem
                         friend={friend}
                         key={friendship.id}
-                        onChecked={(checked) => {
+                        onChecked={(checked, setChecked) => {
                           if (checked) {
-                            setToAddMembers([...toAddMembers, friend.id]);
+                            const newNewThreadMembers = [...toAddMembers, friend.id];
+                            if (newNewThreadMembers.length > maxPeoplePerThread) {
+                              errorToast(`There can only be ${maxPeoplePerThread} people in one thread.`);
+                              setChecked(false);
+                            }
+                            setToAddMembers(newNewThreadMembers);
                             return;
                           }
                           const currentToAddMembers = [...toAddMembers];

@@ -25,3 +25,4 @@ export const urlRegExp = /(https?:\/\/[^\s]+)/g;
 
 export const isPhoneRegExp = /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i;
 export const isPhone = isPhoneRegExp.test(navigator.userAgent);
+export const maxPeoplePerThread = 20;

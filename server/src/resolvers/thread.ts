@@ -1,5 +1,6 @@
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { createQueryBuilder } from 'typeorm';
+import { maxPeoplePerThread } from '../constants';
 import { Call } from '../entities/Call';
 import { File } from '../entities/File';
 import { Message } from '../entities/Message';
@@ -226,6 +227,27 @@ export class ThreadResolver {
   ): Promise<ResponseType<string>> {
     const userId = req.session.userId;
 
+    let members = [userId];
+    if (options.members) {
+      members = [...members, ...options.members];
+    }
+
+    const errors: GQLValidationError[] = [];
+
+    if (members.length > maxPeoplePerThread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'members',
+          value: members.join(','),
+          message: `Maximum number of people in one thread is ${maxPeoplePerThread}.`
+        })
+      );
+      return {
+        data: null,
+        errors
+      };
+    }
+
     const id = await getId(Thread, 'id');
     await Thread.create({
       id,
@@ -234,13 +256,6 @@ export class ThreadResolver {
       creatorId: userId,
       lastActivity: new Date()
     }).save();
-
-    let members = [userId];
-    if (options.members) {
-      members = [...members, ...options.members];
-    }
-    console.log('MEMBERS', members);
-    const errors: GQLValidationError[] = [];
     for (const member of members) {
       const userToAdd = await User.findOne({ where: { id: member } });
       if (userToAdd && !userToAdd?.allowThreads) {
@@ -318,7 +333,6 @@ export class ThreadResolver {
       thread?.members.forEach((member) => {
         connections.getSocket(member.userId)?.send(JSON.stringify(payload));
       });
-      // pubClient.publish(options.threadId, JSON.stringify(payload));
 
       await Thread.update(
         {
@@ -459,6 +473,10 @@ export class ThreadResolver {
           message: "This thread doesn't exist, or it wasn't created by you."
         })
       );
+      return {
+        data: null,
+        errors
+      };
     }
 
     if (!options.newMembers || options.newMembers.length === 0) {
@@ -471,6 +489,20 @@ export class ThreadResolver {
       );
     }
 
+    const allMembersLength = thread.members.length + options.newMembers.length;
+    if (allMembersLength > maxPeoplePerThread) {
+      errors.push(
+        new GQLValidationError({
+          field: 'newMembers',
+          value: options.newMembers.join(','),
+          message: `Maximum number of people in one thread is ${maxPeoplePerThread}.`
+        })
+      );
+      return {
+        data: null,
+        errors
+      };
+    }
     if (errors.length === 0) {
       const alreadyMembers = await createQueryBuilder(ThreadMembers, 'member')
         .where('member.threadId = :threadId AND member.userId IN (:...ids)', {
