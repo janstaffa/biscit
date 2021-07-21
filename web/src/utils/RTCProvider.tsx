@@ -86,6 +86,24 @@ interface CallMetadata {
 }
 const defaultVolume = 100;
 
+interface AudioPlayerProps {
+  stream: MediaStream;
+  volume: number;
+  isMe: boolean;
+  mic: boolean;
+  isDeafened: boolean;
+}
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ isMe, mic, isDeafened, volume, stream }) => {
+  const audioElement = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    if (audioElement.current) {
+      audioElement.current.srcObject = stream;
+      audioElement.current.volume = volume / 100;
+    }
+  });
+  return <audio autoPlay={true} ref={audioElement} muted={isMe || !mic || isDeafened} className="hidden"></audio>;
+};
+
 export const RTCcontext = React.createContext<RTCcontextType | null>(null);
 const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   // STATES
@@ -181,6 +199,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   const connection = useRef<RTCconnection | null>(null);
 
   const initializeCall = (callId: string, threadId: string) => {
+    console.log('aaa');
     setIsRinging(false);
     setIsInCall(true);
     setCallDetails({ callId, threadId, callMembers: [], streams: [] });
@@ -199,10 +218,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         navigator.mediaDevices
           .enumerateDevices()
           .then((d) => {
-            // const bestVideoDevice = d.find((device) => device.kind === 'videoinput');
-            // const bestAudioDevice = d.find((device) => device.kind === 'audioinput');
-
-            // setOptions({ ...optionsRef.current, videoDevice: bestVideoDevice, audioDevice: bestAudioDevice });
             setDevices(d);
           })
           .catch((e) => {
@@ -215,9 +230,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
           createStream(id, meRef.current?.me?.id, stream, camera, true, false, true);
         }
 
-        // setTimeout(() => {
-        //   rtc.myStream.getTracks().forEach((track) => track.stop());
-        // }, 10000);
         rtc.peer.on('call', (call) => {
           call.answer(stream);
 
@@ -367,10 +379,19 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         const { user, thread, callId: cId } = incoming as IncomingStartCallMessage;
         if (isInCallRef.current) return;
 
+        console.log('here');
         initializeCall(cId, thread.id);
       } else if (incoming.code === 3013) {
         const { threadId } = incoming as IncomingKillCallMessage;
         queryClient.invalidateQueries(['Thread', { options: { threadId } }]);
+        connection.current?.myStream.getTracks().forEach((track) => track.stop());
+        connection.current = null;
+        rtcRef.current?.myStream.getTracks().forEach((track) => track.stop());
+        rtcRef.current = undefined;
+
+        setIsInCall(false);
+        setOptions(defaultOptions);
+        setCallDetails(undefined);
       }
     };
     ws?.addEventListener('message', handleMessage);
@@ -560,7 +581,11 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
           }
           setIsInCall(false);
           setOptions(defaultOptions);
+          setCallDetails(undefined);
+          connection.current?.myStream.getTracks().forEach((track) => track.stop());
           connection.current = null;
+          rtcRef.current?.myStream.getTracks().forEach((track) => track.stop());
+          rtcRef.current = undefined;
         }
       }
     );
@@ -618,6 +643,16 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         }}
       >
         {children}
+        {callDetails?.streams.map((stream) => (
+          <AudioPlayer
+            stream={stream.stream}
+            volume={stream.volume}
+            isMe={stream.isMe}
+            isDeafened={options.isDeafened}
+            mic={options.mic}
+            key={stream.peerId}
+          />
+        ))}
       </RTCcontext.Provider>
     </>
   );

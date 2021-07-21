@@ -60,7 +60,7 @@ const Video: React.FC<VideoProps> = ({
           <ProfilePicture size={120} src={profilePictureSrc} />
         </div>
       )}
-      <audio autoPlay={true} ref={audio} muted={isMe || !mic || isDeafened} className="hidden"></audio>
+      {/* <audio autoPlay={true} ref={audio} muted={isMe || !mic || isDeafened} className="hidden"></audio> */}
       <div className="absolute right-0 bottom-0 bg-dark-100 w-full px-5 py-2 flex flex-row justify-between items-center rounded-b-md">
         <span className="text-light-200 font-bold text-lg">
           {thisUser?.user.username || 'unknown user'}

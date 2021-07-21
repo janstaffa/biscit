@@ -320,7 +320,7 @@ export class CallResolver {
     };
 
     if (!call.accepted) {
-      [...call.members.map((member) => member.id), userId].forEach((memberId) => {
+      [...call.members.map((member) => member.id)].forEach((memberId) => {
         connections.getSocket(memberId)?.send(JSON.stringify(startCallPayload));
       });
     }

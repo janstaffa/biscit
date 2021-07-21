@@ -40,7 +40,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
 
   const incomingThreadMessagesRef = useRef<InfiniteData<ThreadMessagesQuery> | undefined>();
 
-  const { data: incomingThreadMessages, fetchNextPage, hasNextPage } = usePaginatedMessagesQuery(threadId);
+  const { data: incomingThreadMessages, fetchNextPage, hasNextPage, isFetched } = usePaginatedMessagesQuery(threadId);
   incomingThreadMessagesRef.current = incomingThreadMessages;
 
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
@@ -205,7 +205,8 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
   };
 
   const amIAdmin = !!threadData?.thread.data?.members.find((member) => member.userId === meData?.me?.id);
-  const firstPagedata = incomingThreadMessages?.pages[0].messages.data;
+  const firstPagedata = incomingThreadMessages?.pages[incomingThreadMessages?.pages.length - 1].messages.data;
+
   return (
     <>
       <div className="flex-grow px-3 mt-12 overflow-y-scroll overflow-x-hidden relative" id="chat-feed">
@@ -214,83 +215,80 @@ const ChatFeed: React.FC<ChatFeedProps> = ({
             <ClipLoader color="#e09f3e" size={30} />
           </div>
         )}
-        {firstPagedata && firstPagedata.length > 0 ? (
-          incomingThreadMessages?.pages.map((page, pi) => {
-            return page?.messages.data?.map((message, i) => {
-              const { id: messageId, userId } = message;
+        {firstPagedata && firstPagedata.length > 0
+          ? incomingThreadMessages?.pages.map((page, pi) => {
+              return page?.messages.data?.map((message, i) => {
+                const { id: messageId, userId } = message;
 
-              const sender = threadData?.thread.data?.members.find((member) => member.userId === userId);
-              const date = new Date(parseInt(message.createdAt));
-              const now = new Date();
-              if (datesAreSameDay(date, now)) {
-                let prevMessage = page.messages.data && page.messages.data[i - 1];
-                if (i === 0) {
-                  const prevPage = incomingThreadMessages?.pages[pi - 1];
-                  if (prevPage) {
-                    prevMessage = prevPage.messages.data && prevPage.messages.data[prevPage.messages.data.length - 1];
+                const sender = threadData?.thread.data?.members.find((member) => member.userId === userId);
+                const date = new Date(parseInt(message.createdAt));
+                const now = new Date();
+                if (datesAreSameDay(date, now)) {
+                  let prevMessage = page.messages.data && page.messages.data[i - 1];
+                  if (i === 0) {
+                    const prevPage = incomingThreadMessages?.pages[pi - 1];
+                    if (prevPage) {
+                      prevMessage = prevPage.messages.data && prevPage.messages.data[prevPage.messages.data.length - 1];
+                    }
                   }
-                }
-                if (prevMessage) {
-                  const prevDate = new Date(parseInt(prevMessage.createdAt));
+                  if (prevMessage) {
+                    const prevDate = new Date(parseInt(prevMessage.createdAt));
 
-                  if (!datesAreSameDay(prevDate, now)) {
-                    return (
-                      <div key={messageId}>
-                        <div className="text-center my-4">
-                          <hr className="bg-dark-50 h-px border-none" />
-                          <div
-                            className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
-                            style={{ marginTop: '-10px' }}
-                          >
-                            today
+                    if (!datesAreSameDay(prevDate, now)) {
+                      return (
+                        <div key={messageId}>
+                          <div className="text-center my-4">
+                            <hr className="bg-dark-50 h-px border-none" />
+                            <div
+                              className="text-light-300 font-roboto bg-dark w-20 text-md leading-none mx-auto bg-dark-100"
+                              style={{ marginTop: '-10px' }}
+                            >
+                              today
+                            </div>
                           </div>
+                          <ChatMessage
+                            message={message}
+                            sender={sender?.user}
+                            myId={meData?.me?.id}
+                            resendCall={() => handleResendCall(message)}
+                            replyCall={() => handleReplyCall(message)}
+                            replyMessage={replyMessage}
+                            onReady={() => handleMessageReady()}
+                            setGalleryFile={setGalleryFile}
+                            thread={threadData?.thread.data as ThreadSnippetFragment}
+                            amIAdmin={amIAdmin}
+                          />
                         </div>
-                        <ChatMessage
-                          message={message}
-                          sender={sender?.user}
-                          myId={meData?.me?.id}
-                          resendCall={() => handleResendCall(message)}
-                          replyCall={() => handleReplyCall(message)}
-                          replyMessage={replyMessage}
-                          onReady={() => handleMessageReady()}
-                          setGalleryFile={setGalleryFile}
-                          thread={threadData?.thread.data as ThreadSnippetFragment}
-                          amIAdmin={amIAdmin}
-                        />
-                      </div>
-                    );
+                      );
+                    }
                   }
                 }
-              }
-              return (
-                <ChatMessage
-                  message={message}
-                  sender={sender?.user}
-                  myId={meData?.me?.id}
-                  key={messageId}
-                  resendCall={() => handleResendCall(message)}
-                  replyCall={() => handleReplyCall(message)}
-                  replyMessage={replyMessage}
-                  onReady={() => handleMessageReady()}
-                  setGalleryFile={setGalleryFile}
-                  thread={threadData?.thread.data as ThreadSnippetFragment}
-                  amIAdmin={amIAdmin}
+                return (
+                  <ChatMessage
+                    message={message}
+                    sender={sender?.user}
+                    myId={meData?.me?.id}
+                    key={messageId}
+                    resendCall={() => handleResendCall(message)}
+                    replyCall={() => handleReplyCall(message)}
+                    replyMessage={replyMessage}
+                    onReady={() => handleMessageReady()}
+                    setGalleryFile={setGalleryFile}
+                    thread={threadData?.thread.data as ThreadSnippetFragment}
+                    amIAdmin={amIAdmin}
+                  />
+                );
+              });
+            })
+          : !isLoadingMessages && (
+              <div className="overflow-hidden">
+                <SplashScreen
+                  src="/no_messages_splash.svg"
+                  alt="No messages splash image"
+                  caption="There are no messages yet."
                 />
-              );
-            });
-          })
-        ) : (
-          // <div className="w-full h-64 text-center">
-          //   <h3 className="text-light-200 text-lg font-opensans">There are no messages yet.</h3>
-          // </div>
-          <div className="overflow-hidden">
-            <SplashScreen
-              src="/no_messages_splash.svg"
-              alt="No messages splash image"
-              caption="There are no messages yet."
-            />
-          </div>
-        )}
+              </div>
+            )}
       </div>
     </>
   );
