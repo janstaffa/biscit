@@ -280,13 +280,10 @@ export const socketController = (server: Server) => {
 
       await User.update({ id: user.id }, { status: 'offline', isInCall: false, callId: null });
 
-      console.log(latestUser?.isInCall, latestUser?.callId, latestUser?.call, latestUser?.call?.members.length);
       if (latestUser?.isInCall && latestUser.callId && latestUser.call) {
         const { members } = latestUser.call;
         if (members.find((member) => member.id === user.id)) {
-          console.log('AAAAA', members.length);
           if (members.length - 1 < 2) {
-            console.log('here');
             try {
               await Call.delete({ id: latestUser.callId });
             } catch (e) {

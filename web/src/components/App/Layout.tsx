@@ -49,12 +49,6 @@ const Layout: React.FC<LayoutProps> = ({ children, threadId }) => {
         } else {
           setIsOpen(true);
         }
-      } else {
-        if (yDiff > 0) {
-          console.log('up');
-        } else {
-          console.log('down');
-        }
       }
 
       xDown = null;

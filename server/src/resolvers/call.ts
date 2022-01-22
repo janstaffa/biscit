@@ -395,9 +395,7 @@ export class CallResolver {
       };
     }
 
-    console.log(options.callId, call.members);
     if (call.members.length - 1 < 2) {
-      console.log('called');
       try {
         for (const member of call.members) {
           await User.update({ id: member.id }, { isInCall: false /*callId: null*/ });
@@ -406,7 +404,6 @@ export class CallResolver {
       } catch (e) {
         console.error(e);
       }
-      console.log('deleted');
       const payload: OutgoingKillCallMessage = {
         code: KILL_CALL_CODE,
         callId: call.id,

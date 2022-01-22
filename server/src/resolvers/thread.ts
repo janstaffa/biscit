@@ -269,7 +269,6 @@ export class ThreadResolver {
         continue;
       }
       await ThreadMembers.create({ threadId: id, userId: member, isAdmin: member === userId ? true : false }).save();
-      console.log('created');
     }
     return {
       data: id,

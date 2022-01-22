@@ -30,7 +30,7 @@ export const getFilesController = (app: Express) => {
       return res.send({ error: 'You dont have access to view this file.' });
     }
 
-    res.download(path.join(__dirname, '../../uploaded/', file.id + '.' + file.format), file.fileName);
+    res.download(path.join('/upload', file.id + '.' + file.format), file.fileName);
   });
 
   app.get('/files/profilep/:fileId', async (req, res) => {
@@ -73,6 +73,6 @@ export const getFilesController = (app: Express) => {
       }
     }
 
-    res.sendFile(path.join(__dirname, '../../uploaded/profilepics/', file.id + '.' + file.format), file.fileName);
+    res.sendFile(path.join('/upload/profilepics/', file.id + '.' + file.format), file.fileName);
   });
 };

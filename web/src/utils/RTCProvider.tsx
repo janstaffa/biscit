@@ -165,7 +165,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     // if (!thisThread) return;
     // const thisUser = thisThread.thread.members.find((member) => member.userId === userId);
     // if (!thisUser) return;
-    // console.log('creating a stream for', thisUser.user, 'with id', userId);
 
     const prevStreams = [...callDetailsRef.current.streams];
     const alreadyExists = callDetailsRef.current.streams.find((s) => s.peerId === peerId || s.userId === userId);
@@ -199,7 +198,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   const connection = useRef<RTCconnection | null>(null);
 
   const initializeCall = (callId: string, threadId: string) => {
-    console.log('aaa');
     setIsRinging(false);
     setIsInCall(true);
     setCallDetails({ callId, threadId, callMembers: [], streams: [] });
@@ -379,7 +377,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         const { user, thread, callId: cId } = incoming as IncomingStartCallMessage;
         if (isInCallRef.current) return;
 
-        console.log('here');
         initializeCall(cId, thread.id);
       } else if (incoming.code === 3013) {
         const { threadId } = incoming as IncomingKillCallMessage;
