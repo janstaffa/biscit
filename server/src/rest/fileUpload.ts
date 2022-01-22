@@ -56,11 +56,7 @@ export const fileUploadController = (app: Express) => {
         });
 
         fs.writeFile(
-          path.join(
-            __dirname,
-            '../../uploaded',
-            newFile.id.replace(/\./g, '') + (extension ? '.' + extension.replace(/\./g, '') : '')
-          ),
+          path.join('/upload', newFile.id.replace(/\./g, '') + (extension ? '.' + extension.replace(/\./g, '') : '')),
           file.data,
           { encoding: 'binary' },
           async () => {
@@ -156,8 +152,7 @@ export const fileUploadController = (app: Express) => {
           })
           .toFile(
             path.join(
-              __dirname,
-              '../../uploaded/profilepics',
+              '/upload/profilepics',
               newFile.id.replace(/\./g, '') + (extension ? '.' + extension.replace(/\./g, '') : '')
             )
           )
@@ -175,8 +170,7 @@ export const fileUploadController = (app: Express) => {
                 await new Promise((resolve, reject) =>
                   fs.unlink(
                     path.join(
-                      __dirname,
-                      '../../uploaded/profilepics',
+                      '/upload/profilepics',
                       ppId.replace(/\./g, '') + (ppFormat ? '.' + ppFormat.replace(/\./g, '') : '')
                     ),
                     async (err) => {

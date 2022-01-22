@@ -2,11 +2,10 @@ fragment callSnippet on Call {
   id
   accepted
   creatorId
-  creator {
+  threadId
+  members {
     ...userSnippet
   }
-  threadId
-  memberIds
   createdAt
   updatedAt
 }

@@ -83,7 +83,7 @@ const ThreadButton: React.FC<ThreadButtonProps> = ({ thread, unread, threadId, i
           <div className="w-16 h-full flex flex-col justify-center items-center">
             <div className="w-11 h-11 rounded-full bg-light-400 flex flex-col justify-center items-center">
               {profilePictureSrc ? (
-                <img src={profilePictureSrc || ''} className="w-full h-full rounded-full" />
+                <img src={profilePictureSrc} className="w-full h-full rounded-full" />
               ) : (
                 <FaUser size={30} className="text-dark-100" />
               )}

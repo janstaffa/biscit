@@ -77,6 +77,8 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
   const [attachments, setAttachments] = useState<attachment[]>([]);
   const attachmentRef = useRef<attachment[]>([]);
   attachmentRef.current = attachments;
+
+  const messageInput = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     setMessageInputValue('');
     const ws = socket.connect();
@@ -102,10 +104,9 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
       }
     };
     const handleEnterListener = () => {
-      const messageInput = document.getElementById('message-input')! as HTMLDivElement;
-      if (!messageInput) return;
+      if (!messageInput.current) return;
 
-      messageInput.addEventListener('keyup', (e) => {
+      messageInput.current.addEventListener('keyup', (e) => {
         if (!e.repeat && e.key === 'Enter') {
           const value = messageInputValueRef.current;
           if (attachmentRef.current.length === 0 && (!value || !/\S/.test(value))) {
@@ -119,7 +120,6 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             media: attachmentRef.current.length > 0 ? attachmentRef.current.map((at) => at.id) : null
           } as OutgoingSocketChatMessage;
 
-          // currently not supported
           if (replyMessageRef.current) {
             payload = {
               ...payload,
@@ -130,8 +130,9 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
             if (ws.readyState === ws.OPEN) {
               socket.send(JSON.stringify(payload));
               setAttachments([]);
+              setReplyMessage(null);
               setMessageInputValue('');
-              messageInput.focus();
+              messageInput.current?.focus();
             }
           } catch (err) {
             console.error(err);
@@ -170,7 +171,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
 
   useEffect(() => {
     if (replyMessage) {
-      (document.querySelector('#message-input') as HTMLDivElement).focus();
+      messageInput.current?.focus();
     }
   }, [replyMessage]);
 
@@ -266,7 +267,7 @@ const ChatBottomBar: React.FC<ChatBottomBarProps> = ({ replyMessage, setReplyMes
               spellCheck="false"
               placeholder="press 'enter' to send the message"
               value={messageInputValue}
-              id="message-input"
+              ref={messageInput}
               onChange={(e) => setMessageInputValue(e.target.value)}
             />
           </div>

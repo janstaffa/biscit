@@ -1,0 +1,49 @@
+services:
+  biscit-db:
+    image: 'postgres:14-alpine'
+    container_name: biscit-db
+    restart: always
+    volumes:
+      - biscit-db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+
+  biscit-redis:
+    image: 'redis:6.2-alpine'
+    container_name: biscit-redis
+    restart: always
+    ports:
+      - 6379:6379
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - biscit-redis-data:/data
+  biscit-server:
+    build: ./server
+    container_name: biscit-server
+    restart: always
+    command: yarn start
+    ports:
+      - 9000:9000
+      - 8000:8000
+    links:
+      - biscit-db
+    volumes:
+      - biscit-upload-data:/upload
+
+  biscit-web:
+    build: ./web
+    container_name: biscit-web
+    restart: always
+    ports:
+      - 8001:80
+    links:
+      - biscit-server
+
+volumes:
+  biscit-db-data:
+  biscit-redis-data:
+  biscit-upload-data:

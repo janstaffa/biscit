@@ -1,6 +1,6 @@
-export const serverIP = '192.168.8.103';
+export const serverIP = 'localhost';
 
-export const __prod__ = process.env.NODE_ENV === 'production';
+export const __prod__ = false; // process.env.NODE_ENV === 'production';
 export const serverURL = 'http://' + serverIP + ':9000';
 export const gqlEndpoint = __prod__ ? '' : serverURL + '/graphql';
 export const currentUrl = () => window.location;
@@ -24,3 +24,5 @@ export const audioRegExp = /wav|mp3|aac|flac|alac/;
 export const urlRegExp = /(https?:\/\/[^\s]+)/g;
 
 export const isPhoneRegExp = /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i;
+export const isPhone = isPhoneRegExp.test(navigator.userAgent);
+export const maxPeoplePerThread = 20;

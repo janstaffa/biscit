@@ -73,7 +73,7 @@ export interface OutgoingStartCallMessage extends SocketMessage {
 }
 
 //to cancel the call for everyone
-export interface OutgoingKillCallMessage extends SocketMessage {
+export interface OutgoingKillCallMessage extends SocketThreadMessage {
   callId: string;
 }
 
@@ -113,6 +113,9 @@ export interface OutgoingUserStatusChange extends SocketMessage {
 export interface OutgoingUserProfileChange extends SocketMessage {
   userId: string;
 }
+
+export type OutgoingLoggedInElsewhere = SocketMessage;
+
 export const LOAD_MESSAGES_CODE = 3003;
 export const JOIN_THREAD_CODE = 3002;
 export const CHAT_MESSAGE_CODE = 3000;
@@ -138,6 +141,7 @@ export const THREAD_ADD_MEMBER_CODE = 3021;
 export const THREAD_REMOVE_MEMBER_CODE = 3022;
 export const USER_STATUS_CHANGE_CODE = 3023;
 export const USER_PROFILE_CHANGE_CODE = 3024;
+export const LOGGED_IN_ELSEWHERE_CODE = 3025;
 
 const HEARTBEAT_INTERVAL = 10000;
 const ELAPSED_TIME = 30000;
@@ -211,6 +215,15 @@ export const socketController = (server: Server) => {
 
   wss.on('connection', async (ws: WebSocket, req: http.IncomingMessage, user: User) => {
     if (!user.id) return;
+
+    const prevConnection = connections.getSocket(user.id);
+    if (prevConnection) {
+      const payload: OutgoingLoggedInElsewhere = {
+        code: LOGGED_IN_ELSEWHERE_CODE
+      };
+      prevConnection.send(JSON.stringify(payload));
+      connections.removeSocket(user.id);
+    }
     connections.addSocket(user.id, ws);
 
     await User.update({ id: user.id }, { status: 'online' });
@@ -259,12 +272,46 @@ export const socketController = (server: Server) => {
       closeConnection(ws);
       clearTimeout(elapsed);
       clearInterval(heartbeat);
-      await User.update({ id: user.id }, { status: 'offline', isInCall: false });
 
       const latestUser = await User.findOne({
         where: { id: user.id },
-        relations: ['threads', 'threads.thread', 'threads.thread.call', 'threads.thread.members', 'friends']
+        relations: ['call', 'call.members', 'threads', 'threads.thread', 'threads.thread.members', 'friends']
       });
+
+      await User.update({ id: user.id }, { status: 'offline', isInCall: false, callId: null });
+
+      if (latestUser?.isInCall && latestUser.callId && latestUser.call) {
+        const { members } = latestUser.call;
+        if (members.find((member) => member.id === user.id)) {
+          if (members.length - 1 < 2) {
+            try {
+              await Call.delete({ id: latestUser.callId });
+            } catch (e) {
+              console.error(e);
+            }
+            const payload: OutgoingKillCallMessage = {
+              code: KILL_CALL_CODE,
+              callId: latestUser.callId,
+              threadId: latestUser.call.threadId
+            };
+            for (const member of members) {
+              if (member.id === user.id) continue;
+              connections.getSocket(member.id)?.send(JSON.stringify(payload));
+            }
+            return;
+          }
+
+          const payload: OutgoingLeaveCallMessage = {
+            code: LEAVE_CALL_CODE,
+            callId: latestUser.callId,
+            userId: user.id
+          };
+          for (const member of members) {
+            if (member.id === user.id) continue;
+            connections.getSocket(member.id)?.send(JSON.stringify(payload));
+          }
+        }
+      }
 
       const threadMemberIds = latestUser?.threads
         .map((membership) => membership.thread.members.map((member) => member.userId))
@@ -284,35 +331,6 @@ export const socketController = (server: Server) => {
           newStatus: 'offline'
         };
         connections.getSocket(relativeId)?.send(JSON.stringify(payload));
-      });
-      latestUser?.threads?.forEach(async (thread) => {
-        if (thread.thread.call) {
-          const { memberIds } = thread.thread.call;
-          const newMemberIds = [...memberIds];
-          if (newMemberIds.includes(user.id)) {
-            newMemberIds.splice(newMemberIds.indexOf(user.id), 1);
-            if (newMemberIds.length <= 1) {
-              await Call.delete({ id: thread.thread.call.id });
-              const payload: OutgoingKillCallMessage = {
-                code: KILL_CALL_CODE,
-                callId: thread.thread.call.id
-              };
-              newMemberIds.forEach((memberId) => {
-                connections.getSocket(memberId)?.send(JSON.stringify(payload));
-              });
-              return;
-            }
-
-            const payload: OutgoingLeaveCallMessage = {
-              code: LEAVE_CALL_CODE,
-              callId: thread.thread.call.id,
-              userId: user.id
-            };
-            newMemberIds.forEach((memberId) => {
-              connections.getSocket(memberId)?.send(JSON.stringify(payload));
-            });
-          }
-        }
       });
     };
 

@@ -14,12 +14,14 @@ import {
   IncomingCancelCallMessage,
   IncomingCreateCallMessage,
   IncomingJoinCallMessage,
+  IncomingKillCallMessage,
   IncomingLeaveCallMessage,
   IncomingPeerChangeMessage,
   IncomingStartCallMessage,
   OutgoingJoinCallMessage,
   OutgoingPeerChangeMessage
 } from '../types';
+import { queryClient } from './createQueryClient';
 import { RTCconnection } from './createRTCconnection';
 import { socket } from './createWSconnection';
 import { errorToast } from './toasts';
@@ -84,6 +86,24 @@ interface CallMetadata {
 }
 const defaultVolume = 100;
 
+interface AudioPlayerProps {
+  stream: MediaStream;
+  volume: number;
+  isMe: boolean;
+  mic: boolean;
+  isDeafened: boolean;
+}
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ isMe, mic, isDeafened, volume, stream }) => {
+  const audioElement = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    if (audioElement.current) {
+      audioElement.current.srcObject = stream;
+      audioElement.current.volume = volume / 100;
+    }
+  });
+  return <audio autoPlay={true} ref={audioElement} muted={isMe || !mic || isDeafened} className="hidden"></audio>;
+};
+
 export const RTCcontext = React.createContext<RTCcontextType | null>(null);
 const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   // STATES
@@ -101,7 +121,7 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
   const ringingDetailsRef = useRef<RingingDetails | undefined>(ringingDetails);
   ringingDetailsRef.current = ringingDetails;
 
-  const [options, setOptions] = useState<PeerOptions>({
+  const defaultOptions = {
     mic: true,
     camera: true,
     screenShare: false,
@@ -109,7 +129,8 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     volume: defaultVolume,
     videoDevice: undefined,
     audioDevice: undefined
-  });
+  };
+  const [options, setOptions] = useState<PeerOptions>(defaultOptions);
   const optionsRef = useRef<PeerOptions>(options);
   optionsRef.current = options;
 
@@ -144,7 +165,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
     // if (!thisThread) return;
     // const thisUser = thisThread.thread.members.find((member) => member.userId === userId);
     // if (!thisUser) return;
-    // console.log('creating a stream for', thisUser.user, 'with id', userId);
 
     const prevStreams = [...callDetailsRef.current.streams];
     const alreadyExists = callDetailsRef.current.streams.find((s) => s.peerId === peerId || s.userId === userId);
@@ -196,10 +216,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         navigator.mediaDevices
           .enumerateDevices()
           .then((d) => {
-            // const bestVideoDevice = d.find((device) => device.kind === 'videoinput');
-            // const bestAudioDevice = d.find((device) => device.kind === 'audioinput');
-
-            // setOptions({ ...optionsRef.current, videoDevice: bestVideoDevice, audioDevice: bestAudioDevice });
             setDevices(d);
           })
           .catch((e) => {
@@ -212,9 +228,6 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
           createStream(id, meRef.current?.me?.id, stream, camera, true, false, true);
         }
 
-        // setTimeout(() => {
-        //   rtc.myStream.getTracks().forEach((track) => track.stop());
-        // }, 10000);
         rtc.peer.on('call', (call) => {
           call.answer(stream);
 
@@ -365,6 +378,17 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         if (isInCallRef.current) return;
 
         initializeCall(cId, thread.id);
+      } else if (incoming.code === 3013) {
+        const { threadId } = incoming as IncomingKillCallMessage;
+        queryClient.invalidateQueries(['Thread', { options: { threadId } }]);
+        connection.current?.myStream.getTracks().forEach((track) => track.stop());
+        connection.current = null;
+        rtcRef.current?.myStream.getTracks().forEach((track) => track.stop());
+        rtcRef.current = undefined;
+
+        setIsInCall(false);
+        setOptions(defaultOptions);
+        setCallDetails(undefined);
       }
     };
     ws?.addEventListener('message', handleMessage);
@@ -553,8 +577,12 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
             });
           }
           setIsInCall(false);
-
+          setOptions(defaultOptions);
+          setCallDetails(undefined);
+          connection.current?.myStream.getTracks().forEach((track) => track.stop());
           connection.current = null;
+          rtcRef.current?.myStream.getTracks().forEach((track) => track.stop());
+          rtcRef.current = undefined;
         }
       }
     );
@@ -612,6 +640,16 @@ const RTCProvider: React.FC<RTCwrapProps> = ({ children }) => {
         }}
       >
         {children}
+        {callDetails?.streams.map((stream) => (
+          <AudioPlayer
+            stream={stream.stream}
+            volume={stream.volume}
+            isMe={stream.isMe}
+            isDeafened={options.isDeafened}
+            mic={options.mic}
+            key={stream.peerId}
+          />
+        ))}
       </RTCcontext.Provider>
     </>
   );

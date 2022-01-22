@@ -1,6 +1,6 @@
 import Peer, { MediaConnection } from 'peerjs';
 import adapter from 'webrtc-adapter';
-import { isPhoneRegExp, serverIP } from '../constants';
+import { isPhone, serverIP } from '../constants';
 import { getEmptyStream } from './fakeStream';
 import { errorToast } from './toasts';
 
@@ -106,7 +106,7 @@ export class RTCconnection {
     let media: Promise<any> | undefined;
 
     if (screenShare && !this.isScreenSharing) {
-      if (!isPhoneRegExp.test(navigator.userAgent)) {
+      if (!isPhone) {
         // @ts-ignore
         media = navigator.mediaDevices?.getDisplayMedia?.();
       }

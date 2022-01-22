@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import FriendsLayout from '../components/App/Friends/FriendsLayout';
 import FriendTab from '../components/App/Friends/FriendTab';
 import SplashScreen from '../components/SplashScreen';
-import { useMeQuery } from '../generated/graphql';
+import { Friend, useMeQuery } from '../generated/graphql';
 
 const OnlineFriends: React.FC = () => {
   const { data: meData, isLoading } = useMeQuery();
@@ -23,23 +23,14 @@ const OnlineFriends: React.FC = () => {
               </p>
               <div>
                 {friends.map((friendship) => {
-                  const { friend } = friendship;
-
-                  return (
-                    <FriendTab
-                      friendId={friendship.key}
-                      friend={friend}
-                      key={friendship.id}
-                      threadId={friendship.threadId}
-                    />
-                  );
+                  return <FriendTab friend={friendship as Friend} key={friendship.id} />;
                 })}
               </div>
             </div>
           ) : (
             <SplashScreen
               src="/all_splash.svg"
-              alt="Pending splash image"
+              alt="No friends online splash image"
               caption="There are currently none of your friends online."
             />
           )}

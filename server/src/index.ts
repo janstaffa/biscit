@@ -4,6 +4,7 @@ import dotenv from 'dotenv-safe';
 import express from 'express';
 import fileUpload from 'express-fileupload';
 import session from 'express-session';
+import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { PeerServer } from 'peer';
@@ -23,8 +24,12 @@ import { fileUploadController } from './rest/fileUpload';
 import { getFilesController } from './rest/getFiles';
 import { socketController } from './sockets';
 import { ContextType } from './types';
-
 dotenv.config();
+
+const dir = '/upload/profilepics';
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir);
+}
 
 (async () => {
   const conn = await createConnection({
@@ -35,12 +40,14 @@ dotenv.config();
     entities: [path.join(__dirname, './entities/*')],
     synchronize: true
   });
+
   await conn.runMigrations();
 
   // await User.delete({});
   const app = express();
 
   app.get('/', (_, res) => {
+    //  res.sendFile(path.join(__dirname, '../..', 'web/build/index.html'));
     res.send('Hey from the server!');
   });
 
@@ -127,7 +134,6 @@ dotenv.config();
   );
   fileUploadController(app);
   getFilesController(app);
-
   server.listen(port, () => {
     console.log(`🚀 server running on port ${port}`);
   });

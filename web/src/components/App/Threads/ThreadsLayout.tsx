@@ -1,9 +1,10 @@
 import React, { ReactNode, useEffect, useState } from 'react';
+import { AiOutlinePlus } from 'react-icons/ai';
 import { FaUserFriends } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { useHistory } from 'react-router-dom';
 import { Modal } from 'react-tiny-modals';
-import { currentUrl, genericErrorMessage } from '../../../constants';
+import { currentUrl, genericErrorMessage, maxPeoplePerThread } from '../../../constants';
 import { useCreateThreadMutation, useMeQuery } from '../../../generated/graphql';
 import { queryClient } from '../../../utils/createQueryClient';
 import { errorToast, successToast } from '../../../utils/toasts';
@@ -29,7 +30,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
   const { data: meData, isLoading } = useMeQuery();
   const friends = meData?.me?.friends;
 
-  const [showModal, setShowModal] = useState<boolean>(false);
+  const [modalShow, setModalShow] = useState<boolean>(false);
   const [newThreadMembers, setNewThreadMembers] = useState<string[]>([]);
 
   const [newThreadName, setNewThreadName] = useState<string>('');
@@ -37,36 +38,39 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
     <>
       <Layout>
         <ContentNav>
-          <div className="flex flex-row items-center h-full select-none">
-            <div className="border-r border-light-300 px-4 mr-2">
-              <FaUserFriends className="text-light-300 text-2xl" />
+          <div className="flex flex-row items-center justify-between h-full select-none">
+            <div className="flex flex-row items-center">
+              <div className="border-r border-light-300 px-4 mr-2">
+                <FaUserFriends className="text-light-300 text-2xl" />
+              </div>
+              <NavLink href="/app/threads/all" active={currentPath === '/app/threads/all'}>
+                All
+              </NavLink>
+              <NavLink href="/app/threads/my" active={currentPath === '/app/threads/my'}>
+                My
+              </NavLink>
             </div>
-            <NavLink href="/app/threads/all" active={currentPath === '/app/threads/all'}>
-              All
-            </NavLink>
-            <NavLink href="/app/threads/my" active={currentPath === '/app/threads/my'}>
-              My
-            </NavLink>
             <div
-              className="border-lime-300 border-2 text-lime-200 font-bold mx-2 px-3 rounded-full cursor-pointer ml-5"
-              onClick={() => {
-                setShowModal(true);
-              }}
+              className={
+                'text-lime-200 font-bold mx-1 p-1.5 rounded-full cursor-pointer ml-5' +
+                (currentPath === '/app/friends/add' ? ' bg-dark-50' : ' hover:bg-dark-50 bg-dark-100')
+              }
+              onClick={() => setModalShow(true)}
             >
-              Create a thread
+              <AiOutlinePlus size={20} />
             </div>
           </div>
         </ContentNav>
         <div className="w-full h-full overflow-hidden relative">{children} </div>
       </Layout>
-      <Modal isOpen={showModal} backOpacity={0.5}>
+      <Modal isOpen={modalShow} backOpacity={0.5}>
         <div className="bg-dark-200 p-5 rounded-xl w-96">
           <div className="w-full h-10 flex flex-row justify-between">
             <div className="text-light-300 text-lg font-roboto">Create a thread</div>
             <div>
               <IoMdClose
                 className="text-2xl text-light-300 hover:text-light cursor-pointer"
-                onClick={() => setShowModal(false)}
+                onClick={() => setModalShow(false)}
               />
             </div>
           </div>
@@ -97,17 +101,22 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
                       <FriendListItem
                         friend={friend}
                         key={friendship.id}
-                        onChecked={(checked) => {
+                        onChecked={(checked, setChecked) => {
                           if (checked) {
-                            setNewThreadMembers([...newThreadMembers, friend.id]);
+                            const newNewThreadMembers = [...newThreadMembers, friend.id];
+                            if (newNewThreadMembers.length > maxPeoplePerThread) {
+                              errorToast(`There can only be ${maxPeoplePerThread} people in one thread.`);
+                              setChecked(false);
+                            }
+                            setNewThreadMembers(newNewThreadMembers);
                             return;
                           }
-                          const currentResendThreads = [...newThreadMembers];
-                          const newResendThreads = currentResendThreads.filter((resendThread) => {
+                          const currentThreadMembers = [...newThreadMembers];
+                          const newNewThreadMembers = currentThreadMembers.filter((resendThread) => {
                             if (resendThread === friend.id) return false;
                             return true;
                           });
-                          setNewThreadMembers(newResendThreads);
+                          setNewThreadMembers(newNewThreadMembers);
                         }}
                       />
                     );
@@ -121,7 +130,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
             <div className="w-full flex flex-row justify-end mt-6">
               <button
                 className="px-6 py-1.5 bg-transparent text-light-200 hover:text-light-300  rounded-md font-bold mt-2"
-                onClick={() => setShowModal(false)}
+                onClick={() => setModalShow(false)}
               >
                 Cancel
               </button>
@@ -142,7 +151,7 @@ const ThreadsLayout: React.FC<ThreadsLayoutProps> = ({ children }) => {
                         } else {
                           errorToast(genericErrorMessage);
                         }
-                        setShowModal(false);
+                        setModalShow(false);
                       }
                     }
                   );

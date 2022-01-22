@@ -13,7 +13,7 @@ const NavLink: React.FC<NavLinkProps> = ({ children, href, active = false, ...pr
         className={
           props.className
             ? ` ${props.className}`
-            : 'text-light-200 font-bold mx-2 px-3 rounded-sm cursor-pointer' +
+            : 'text-light-200 font-bold mx-1 px-3 rounded-sm cursor-pointer' +
               (active ? ' bg-dark-50' : ' hover:bg-dark-100')
         }
         {...props}
